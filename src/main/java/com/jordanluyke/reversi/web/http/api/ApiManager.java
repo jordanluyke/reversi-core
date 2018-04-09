@@ -9,7 +9,5 @@ import rx.Observable;
  */
 public interface ApiManager {
 
-    Observable<Void> start();
-
     Observable<ServerResponse> handleRequest(ServerRequest request);
 }

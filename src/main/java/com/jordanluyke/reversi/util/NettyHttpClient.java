@@ -1,11 +1,10 @@
-package com.jordanluyke.reversi.util.httpclient;
+package com.jordanluyke.reversi.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.primitives.Bytes;
 import com.google.inject.Singleton;
-import com.jordanluyke.reversi.util.HttpUtil;
-import com.jordanluyke.reversi.util.httpclient.model.ClientResponse;
+import com.jordanluyke.reversi.util.model.ClientResponse;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -216,4 +215,3 @@ public class NettyHttpClient {
         return HttpUtil.toQuerystring(body).getBytes();
     }
 }
-

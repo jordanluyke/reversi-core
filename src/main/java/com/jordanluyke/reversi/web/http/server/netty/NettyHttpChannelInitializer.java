@@ -1,6 +1,6 @@
 package com.jordanluyke.reversi.web.http.server.netty;
 
-import com.jordanluyke.reversi.web.Config;
+import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.web.http.api.ApiManager;
 import com.jordanluyke.reversi.web.http.server.HttpServer;
 import io.netty.channel.ChannelInitializer;

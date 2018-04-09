@@ -1,7 +1,4 @@
-package com.jordanluyke.reversi.util.httpclient.model;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
+package com.jordanluyke.reversi.util.model;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;

@@ -2,8 +2,8 @@ package com.jordanluyke.reversi;
 
 import com.google.inject.Guice;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
-import com.jordanluyke.reversi.web.http.api.ApiManager;
-import com.jordanluyke.reversi.web.http.api.ApiModule;
+import com.jordanluyke.reversi.web.WebApp;
+import com.jordanluyke.reversi.web.WebAppModule;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,8 +13,8 @@ public class Main {
     public static void main(String[] args) {
         logger.info("Initializing");
 
-        Guice.createInjector(new ApiModule())
-                .getInstance(ApiManager.class)
+        Guice.createInjector(new WebAppModule())
+                .getInstance(WebApp.class)
                 .start()
                 .subscribe(new ErrorHandlingSubscriber<>());
     }

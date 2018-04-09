@@ -1,7 +1,6 @@
 package com.jordanluyke.reversi.web.http.api;
 
 import com.google.inject.Inject;
-import com.jordanluyke.reversi.web.http.server.HttpServer;
 import com.jordanluyke.reversi.web.http.server.model.ServerRequest;
 import com.jordanluyke.reversi.web.http.server.model.ServerResponse;
 import rx.Observable;
@@ -11,18 +10,11 @@ import rx.Observable;
  */
 public class ApiManagerImpl implements ApiManager {
 
-    HttpServer httpServer;
     RouteMatcher routeMatcher;
 
     @Inject
-    public ApiManagerImpl(HttpServer httpServer, RouteMatcher routeMatcher) {
-        this.httpServer = httpServer;
+    public ApiManagerImpl(RouteMatcher routeMatcher) {
         this.routeMatcher = routeMatcher;
-    }
-
-    @Override
-    public Observable<Void> start() {
-        return httpServer.start();
     }
 
     @Override

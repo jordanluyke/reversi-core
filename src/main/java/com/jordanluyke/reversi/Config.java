@@ -1,4 +1,4 @@
-package com.jordanluyke.reversi.web;
+package com.jordanluyke.reversi;
 
 import com.google.inject.Singleton;
 import io.netty.handler.ssl.SslContext;
