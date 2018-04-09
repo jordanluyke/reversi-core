@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+mvn clean compile assembly:single
+
+java -jar target/reversi-1.0-SNAPSHOT-jar-with-dependencies.jar
