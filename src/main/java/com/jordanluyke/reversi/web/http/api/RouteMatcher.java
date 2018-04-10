@@ -24,10 +24,10 @@ import java.util.stream.IntStream;
 public class RouteMatcher {
     private static final Logger logger = LogManager.getLogger(RouteMatcher.class);
 
-    private List<ApiRoute> routes = new ArrayList<>(new ApiV1().getRoutes());
+    private List<ApiRoute> routes = new ArrayList<>(new HttpApiV1().getRoutes());
 
     public Observable<ServerResponse> handle(ServerRequest request) {
-        Injector injector = Guice.createInjector(new ApiModule());
+        Injector injector = Guice.createInjector(new HttpApiModule());
 
         logger.info("{} {}", request.getMethod(), request.getPath());
 

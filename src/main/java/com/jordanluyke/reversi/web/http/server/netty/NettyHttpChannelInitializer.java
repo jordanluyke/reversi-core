@@ -1,7 +1,8 @@
 package com.jordanluyke.reversi.web.http.server.netty;
 
+import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
-import com.jordanluyke.reversi.web.http.api.ApiManager;
+import com.jordanluyke.reversi.web.http.api.HttpApiManager;
 import com.jordanluyke.reversi.web.http.server.HttpServer;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -19,11 +20,12 @@ public class NettyHttpChannelInitializer extends ChannelInitializer<SocketChanne
     private static final Logger logger = LogManager.getLogger(HttpServer.class);
 
     private Config config;
-    private ApiManager apiManager;
+    private HttpApiManager httpApiManager;
 
-    public NettyHttpChannelInitializer(Config config, ApiManager apiManager) {
+    @Inject
+    public NettyHttpChannelInitializer(Config config, HttpApiManager httpApiManager) {
         this.config = config;
-        this.apiManager = apiManager;
+        this.httpApiManager = httpApiManager;
     }
 
     @Override
@@ -34,6 +36,6 @@ public class NettyHttpChannelInitializer extends ChannelInitializer<SocketChanne
         pipeline.addLast(new HttpRequestDecoder());
         pipeline.addLast(new HttpResponseEncoder());
         pipeline.addLast(new HttpContentCompressor());
-        pipeline.addLast(new NettyHttpChannelInboundHandler(apiManager));
+        pipeline.addLast(new NettyHttpChannelInboundHandler(httpApiManager));
     }
 }

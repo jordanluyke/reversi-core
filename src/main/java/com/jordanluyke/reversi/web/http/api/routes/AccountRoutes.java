@@ -20,7 +20,7 @@ public class AccountRoutes {
             return o.map(r -> {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
-                node.put("class", this.getClass().getSimpleName());
+                node.put("class", this.getClass().getCanonicalName());
                 return node;
             });
         }
@@ -32,7 +32,7 @@ public class AccountRoutes {
             return o.map(r -> {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
-                node.put("class", this.getClass().getSimpleName());
+                node.put("class", this.getClass().getCanonicalName());
                 return node;
             });
         }
@@ -44,7 +44,7 @@ public class AccountRoutes {
             return o.map(r -> {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
-                node.put("class", this.getClass().getSimpleName());
+                node.put("class", this.getClass().getCanonicalName());
                 return node;
             });
         }
@@ -57,7 +57,7 @@ public class AccountRoutes {
                 logger.info("params {}", r.getQueryParams());
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
-                node.put("class", this.getClass().getSimpleName());
+                node.put("class", this.getClass().getCanonicalName());
                 return node;
             });
         }

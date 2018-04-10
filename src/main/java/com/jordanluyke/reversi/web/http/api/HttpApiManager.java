@@ -7,7 +7,7 @@ import rx.Observable;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public interface ApiManager {
+public interface HttpApiManager {
 
     Observable<ServerResponse> handleRequest(ServerRequest request);
 }

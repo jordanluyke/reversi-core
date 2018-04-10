@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.primitives.Bytes;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
-import com.jordanluyke.reversi.web.http.api.ApiManager;
+import com.jordanluyke.reversi.web.http.api.HttpApiManager;
 import com.jordanluyke.reversi.web.http.server.model.ServerRequest;
 import com.jordanluyke.reversi.web.http.server.model.ServerResponse;
 import io.netty.buffer.Unpooled;
@@ -13,6 +13,8 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
 import java.net.URI;
@@ -23,23 +25,20 @@ import java.util.stream.Collectors;
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
 public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<Object> {
+    private static final Logger logger = LogManager.getLogger(NettyHttpChannelInboundHandler.class);
 
-    private ApiManager apiManager;
+    private HttpApiManager httpApiManager;
 
     private byte[] content = new byte[0];
     private ServerRequest serverRequest = new ServerRequest();
 
-    public NettyHttpChannelInboundHandler(ApiManager apiManager) {
-        this.apiManager = apiManager;
-    }
-
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-        ctx.flush();
+    public NettyHttpChannelInboundHandler(HttpApiManager httpApiManager) {
+        this.httpApiManager = httpApiManager;
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+        logger.info("channel read {}", msg.getClass().getCanonicalName());
         if(msg instanceof HttpRequest) {
             HttpRequest httpRequest = (HttpRequest) msg;
             URI uri = new URI(httpRequest.uri());
@@ -74,6 +73,11 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
     }
 
     @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        ctx.flush();
+    }
+
+    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         cause.printStackTrace();
         ctx.close();
@@ -104,7 +108,7 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
 
         serverRequest.setBody(NodeUtil.getJsonNode(content));
 
-        return apiManager.handleRequest(serverRequest);
+        return httpApiManager.handleRequest(serverRequest);
     }
 
     private void writeResponse(ChannelHandlerContext ctx, ServerResponse serverResponse) {

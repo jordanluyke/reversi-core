@@ -1,9 +1,7 @@
-package com.jordanluyke.reversi.web.http.server.netty;
+package com.jordanluyke.reversi.web.ws.server.netty;
 
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
-import com.jordanluyke.reversi.web.http.api.HttpApiManager;
-import com.jordanluyke.reversi.web.http.server.HttpServer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -18,16 +16,16 @@ import rx.Observable;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class NettyHttpServerInitializer {
-    private static final Logger logger = LogManager.getLogger(NettyHttpServerInitializer.class);
+public class NettyWsServerInitializer {
+    private static final Logger logger = LogManager.getLogger(NettyWsServerInitializer.class);
 
     private Config config;
-    private HttpApiManager httpApiManager;
+    private NettyWsChannelInitializer nettyWsChannelInitializer;
 
     @Inject
-    public NettyHttpServerInitializer(Config config, HttpApiManager httpApiManager) {
+    public NettyWsServerInitializer(Config config, NettyWsChannelInitializer nettyWsChannelInitializer) {
+        this.nettyWsChannelInitializer = nettyWsChannelInitializer;
         this.config = config;
-        this.httpApiManager = httpApiManager;
     }
 
     public Observable<Void> initialize() {
@@ -36,10 +34,10 @@ public class NettyHttpServerInitializer {
         ServerBootstrap bootstrap = new ServerBootstrap()
                 .group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
-                .childHandler(new NettyHttpChannelInitializer(config, httpApiManager));
+                .childHandler(nettyWsChannelInitializer);
 
-        return channelFutureToObservable(bootstrap.bind(config.httpPort))
-                .doOnNext(Void -> logger.info("Listening on port {}", config.httpPort))
+        return channelFutureToObservable(bootstrap.bind(config.wsPort))
+                .doOnNext(Void -> logger.info("Listening on port {}", config.wsPort))
                 .flatMap(channel -> channelFutureToObservable(channel.closeFuture()))
                 .ignoreElements()
                 .cast(Void.class);

@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class ApiV1 implements Api {
+public class HttpApiV1 implements Api {
 
     @Override
     public int getVersion() {

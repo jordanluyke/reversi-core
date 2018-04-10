@@ -8,12 +8,12 @@ import rx.Observable;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class ApiManagerImpl implements ApiManager {
+public class HttpHttpApiManagerImpl implements HttpApiManager {
 
     RouteMatcher routeMatcher;
 
     @Inject
-    public ApiManagerImpl(RouteMatcher routeMatcher) {
+    public HttpHttpApiManagerImpl(RouteMatcher routeMatcher) {
         this.routeMatcher = routeMatcher;
     }
 

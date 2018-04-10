@@ -5,10 +5,10 @@ import com.google.inject.AbstractModule;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class ApiModule extends AbstractModule {
+public class HttpApiModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(ApiManager.class).to(ApiManagerImpl.class);
+        bind(HttpApiManager.class).to(HttpHttpApiManagerImpl.class);
     }
 }
