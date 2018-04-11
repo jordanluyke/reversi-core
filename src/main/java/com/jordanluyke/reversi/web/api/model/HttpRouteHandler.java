@@ -9,5 +9,5 @@ import rx.Observable;
  */
 public interface HttpRouteHandler {
 
-    Observable<ObjectNode> handle(Observable<ServerRequest> o);
+    Observable<?> handle(Observable<ServerRequest> o);
 }

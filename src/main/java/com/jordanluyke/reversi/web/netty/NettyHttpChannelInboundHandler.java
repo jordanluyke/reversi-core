@@ -3,6 +3,7 @@ package com.jordanluyke.reversi.web.netty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.primitives.Bytes;
+import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
@@ -48,12 +49,13 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
             serverRequest.setHeaders(httpRequest.headers()
                     .entries()
                     .stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+                    .collect(Collectors.toMap(key -> key.getKey().toLowerCase(), Map.Entry::getValue)));
             serverRequest.setQueryParams(new QueryStringDecoder(httpRequest.uri())
                     .parameters()
                     .entrySet()
                     .stream()
                     .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get(0))));
+//            logger.info("r {}", serverRequest.getHeaders());
         } else if(msg instanceof HttpContent) {
             HttpContent httpContent = (HttpContent) msg;
 
@@ -61,13 +63,10 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
             httpContent.content().readBytes(chunk);
             content = Bytes.concat(content, chunk);
 
-            if (msg instanceof LastHttpContent) {
+            if(msg instanceof LastHttpContent) {
                 handleRequest(httpContent, content)
-                        .subscribe(serverResponse -> {
-                            writeResponse(ctx, serverResponse);
-                        }, err -> {
-                            System.err.println("Error: " + err.getMessage());
-                        });
+                        .doOnNext(serverResponse -> writeResponse(ctx, serverResponse))
+                        .subscribe(new ErrorHandlingSubscriber<>());
             }
         }
     }
@@ -115,6 +114,7 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
         FullHttpResponse httpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, serverResponse.getStatus(), Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(serverResponse.getBody())));
         httpResponse.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
         httpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, httpResponse.content().readableBytes());
+        serverResponse.getHeaders().forEach((key, value) -> httpResponse.headers().set(key, value));
         ctx.write(httpResponse);
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
     }

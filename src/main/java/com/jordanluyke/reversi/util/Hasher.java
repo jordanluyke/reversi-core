@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 public class Hasher {
+    private static final MessageDigest sha1;
     private static final MessageDigest sha256;
     private static final MessageDigest md5;
     private static final Mac sha256hmac;
@@ -15,6 +16,7 @@ public class Hasher {
 
     static {
         try {
+            sha1 = MessageDigest.getInstance("SHA-1");
             sha256 = MessageDigest.getInstance("SHA-256");
             md5 = MessageDigest.getInstance("MD5");
             sha256hmac = Mac.getInstance("HmacSHA256");
@@ -26,6 +28,10 @@ public class Hasher {
     }
 
     private Hasher() {
+    }
+
+    static public String sha1base64(String data) {
+        return new String(Base64.getEncoder().encode(sha1.digest((data).getBytes())));
     }
 
     static public String sha256base64(String data, String salt) {

@@ -1,11 +1,11 @@
-package com.jordanluyke.reversi.web.api.model;
+package com.jordanluyke.reversi.web.model.exceptions;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class HttpException extends Exception {
+public class HttpException extends RuntimeException {
 
     private HttpResponseStatus status;
     private String exceptionType;

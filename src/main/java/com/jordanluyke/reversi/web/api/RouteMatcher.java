@@ -6,9 +6,11 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
-import com.jordanluyke.reversi.web.api.model.HttpException;
+import com.jordanluyke.reversi.web.model.exceptions.BadRequestException;
+import com.jordanluyke.reversi.web.model.exceptions.HttpException;
 import com.jordanluyke.reversi.web.model.ServerRequest;
 import com.jordanluyke.reversi.web.model.ServerResponse;
+import com.jordanluyke.reversi.web.model.exceptions.NotFoundException;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.logging.log4j.LogManager;
@@ -37,6 +39,7 @@ public class RouteMatcher {
                         return Observable.error(new HttpException("Invalid HTTP method", HttpResponseStatus.METHOD_NOT_ALLOWED, "MethodNotAllowedException"));
                     return Observable.from(routes);
                 })
+                .filter(route -> request.getMethod() == route.getMethod())
                 .filter(route -> {
                     String[] splitRequestPath = request.getPath().split("/");
                     String[] splitRouteHandlerPath = route.getPath().split("/");
@@ -59,7 +62,7 @@ public class RouteMatcher {
                 .defaultIfEmpty(null)
                 .flatMap(route -> {
                     if(route == null)
-                        return Observable.error(new HttpException("Invalid path", HttpResponseStatus.NOT_FOUND, "NotFoundException"));
+                        throw new NotFoundException();
 
                     List<String> splitRouteHandlerPath = Arrays.asList(route.getPath().split("/"));
                     List<String> splitRequestPath = Arrays.asList(request.getPath().split("/"));
@@ -83,11 +86,17 @@ public class RouteMatcher {
                 })
                 .map(injector::getInstance)
                 .flatMap(instance -> instance.handle(Observable.just(request)))
-                .map(node -> {
-                    ServerResponse response = new ServerResponse();
-                    response.setStatus(HttpResponseStatus.OK);
-                    response.setBody(node);
-                    return response;
+                .map(object -> {
+                    if(object instanceof ObjectNode) {
+                        ObjectNode node = (ObjectNode) object;
+                        ServerResponse res = new ServerResponse();
+                        res.setStatus(HttpResponseStatus.OK);
+                        res.setBody(node);
+                        return res;
+                    } else if(object instanceof ServerResponse) {
+                        return (ServerResponse) object;
+                    } else
+                        throw new RuntimeException("Invalid handler object");
                 })
                 .onErrorResumeNext(err -> {
                     ServerResponse response = new ServerResponse();
@@ -99,11 +108,8 @@ public class RouteMatcher {
                         response.setStatus(((HttpException) err).getStatus());
                         body.put("message", err.getMessage());
                         body.put("exceptionType", ((HttpException) err).getExceptionType());
-                    } else {
-                        response.setStatus(HttpResponseStatus.BAD_REQUEST);
-                        body.put("message", "Something went wrong");
-                        body.put("exceptionType", "BadRequestException");
-                    }
+                    } else
+                        throw new BadRequestException();
 
                     response.setBody(body);
                     return Observable.just(response);

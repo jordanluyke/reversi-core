@@ -1,5 +1,6 @@
 package com.jordanluyke.reversi.web.model;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
@@ -12,7 +13,7 @@ import java.util.Map;
 public class ServerResponse {
 
     private HttpResponseStatus status;
-    private ObjectNode body;
+    private ObjectNode body = new ObjectMapper().createObjectNode();
     private Map<String, String> headers = new HashMap<>();
 
     public ServerResponse() {
