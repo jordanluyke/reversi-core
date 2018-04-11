@@ -1,14 +1,14 @@
-package com.jordanluyke.reversi.web.http.api;
+package com.jordanluyke.reversi.web.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.jordanluyke.reversi.util.RandomUtil;
-import com.jordanluyke.reversi.web.http.api.model.ApiRoute;
-import com.jordanluyke.reversi.web.http.server.model.HttpException;
-import com.jordanluyke.reversi.web.http.server.model.ServerRequest;
-import com.jordanluyke.reversi.web.http.server.model.ServerResponse;
+import com.jordanluyke.reversi.web.api.model.HttpRoute;
+import com.jordanluyke.reversi.web.api.model.HttpException;
+import com.jordanluyke.reversi.web.model.ServerRequest;
+import com.jordanluyke.reversi.web.model.ServerResponse;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.logging.log4j.LogManager;
@@ -24,10 +24,10 @@ import java.util.stream.IntStream;
 public class RouteMatcher {
     private static final Logger logger = LogManager.getLogger(RouteMatcher.class);
 
-    private List<ApiRoute> routes = new ArrayList<>(new HttpApiV1().getRoutes());
+    private List<HttpRoute> routes = new ArrayList<>(new HttpApiV1().getRoutes());
 
     public Observable<ServerResponse> handle(ServerRequest request) {
-        Injector injector = Guice.createInjector(new HttpApiModule());
+        Injector injector = Guice.createInjector(new ApiModule());
 
         logger.info("{} {}", request.getMethod(), request.getPath());
 

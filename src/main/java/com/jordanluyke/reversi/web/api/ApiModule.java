@@ -1,14 +1,14 @@
-package com.jordanluyke.reversi.web.ws.server;
+package com.jordanluyke.reversi.web.api;
 
 import com.google.inject.AbstractModule;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class WsServerModule extends AbstractModule {
+public class ApiModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(WsServer.class).to(WsServerImpl.class);
+        bind(ApiManager.class).to(ApiManagerImpl.class);
     }
 }

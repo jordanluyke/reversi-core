@@ -1,4 +1,4 @@
-package com.jordanluyke.reversi.web.ws.server.netty;
+package com.jordanluyke.reversi.web.netty;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -9,15 +9,15 @@ import org.apache.logging.log4j.Logger;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class NettyWsChannelInboundHandler extends SimpleChannelInboundHandler<Object> {
-    private static final Logger logger = LogManager.getLogger(NettyWsChannelInboundHandler.class);
+public class NettyWebsocketChannelInboundHandler extends SimpleChannelInboundHandler<Object> {
+    private static final Logger logger = LogManager.getLogger(NettyWebsocketChannelInboundHandler.class);
 
     private WebSocketServerHandshaker handshaker;
     private byte[] content = new byte[0];
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
-        logger.info("channel read {}", msg.getClass().getCanonicalName());
+        logger.info("channel read {}", msg.getClass().getSimpleName());
 //        if(msg instanceof WebSocketFrame) {
 //            handleWebsocketFrame(ctx, (WebSocketFrame) msg);
 //        } else {

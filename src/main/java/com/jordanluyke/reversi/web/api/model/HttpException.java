@@ -1,4 +1,4 @@
-package com.jordanluyke.reversi.web.http.server.model;
+package com.jordanluyke.reversi.web.api.model;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 

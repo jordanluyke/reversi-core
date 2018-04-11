@@ -15,8 +15,7 @@ import java.security.cert.CertificateException;
 @Singleton
 public class Config {
 
-    public int httpPort = 8080;
-    public int wsPort = 8000;
+    public int port = 8080;
     public boolean sslEnabled = false;
     public SslContext sslContext = null;
 

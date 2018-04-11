@@ -1,4 +1,4 @@
-package com.jordanluyke.reversi.web.http.server.model;
+package com.jordanluyke.reversi.web.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

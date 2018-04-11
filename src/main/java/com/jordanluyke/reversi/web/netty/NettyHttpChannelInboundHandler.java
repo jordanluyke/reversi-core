@@ -1,13 +1,13 @@
-package com.jordanluyke.reversi.web.http.server.netty;
+package com.jordanluyke.reversi.web.netty;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.primitives.Bytes;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
-import com.jordanluyke.reversi.web.http.api.HttpApiManager;
-import com.jordanluyke.reversi.web.http.server.model.ServerRequest;
-import com.jordanluyke.reversi.web.http.server.model.ServerResponse;
+import com.jordanluyke.reversi.web.api.ApiManager;
+import com.jordanluyke.reversi.web.model.ServerRequest;
+import com.jordanluyke.reversi.web.model.ServerResponse;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -27,18 +27,18 @@ import java.util.stream.Collectors;
 public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<Object> {
     private static final Logger logger = LogManager.getLogger(NettyHttpChannelInboundHandler.class);
 
-    private HttpApiManager httpApiManager;
+    private ApiManager apiManager;
 
     private byte[] content = new byte[0];
     private ServerRequest serverRequest = new ServerRequest();
 
-    public NettyHttpChannelInboundHandler(HttpApiManager httpApiManager) {
-        this.httpApiManager = httpApiManager;
+    public NettyHttpChannelInboundHandler(ApiManager apiManager) {
+        this.apiManager = apiManager;
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-        logger.info("channel read {}", msg.getClass().getCanonicalName());
+        logger.info("channel read {}", msg.getClass().getSimpleName());
         if(msg instanceof HttpRequest) {
             HttpRequest httpRequest = (HttpRequest) msg;
             URI uri = new URI(httpRequest.uri());
@@ -108,7 +108,7 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
 
         serverRequest.setBody(NodeUtil.getJsonNode(content));
 
-        return httpApiManager.handleRequest(serverRequest);
+        return apiManager.handleHttpRequest(serverRequest);
     }
 
     private void writeResponse(ChannelHandlerContext ctx, ServerResponse serverResponse) {
