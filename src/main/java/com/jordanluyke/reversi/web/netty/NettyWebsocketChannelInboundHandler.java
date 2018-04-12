@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LogManager.getLogger(NettyWebSocketChannelInboundHandler.class);
 
-    private ByteBuf content = Unpooled.copiedBuffer(new byte[0]);
+    private ByteBuf content = Unpooled.buffer();
     private ApiManager apiManager;
     private WebSocketServerHandshaker handshaker;
 
@@ -39,8 +39,8 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
-        logger.info("channelReadComplete {}", content.toString(StandardCharsets.UTF_8));
-        content = Unpooled.copiedBuffer(new byte[0]);
+        logger.info("channelReadComplete {} {}", content.toString(StandardCharsets.UTF_8), content.readableBytes());
+        content = Unpooled.buffer();
         ctx.flush();
     }
 

@@ -33,7 +33,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
     private ApiManager apiManager;
     private WebSocketServerHandshaker handshaker;
 
-    private byte[] content = new byte[0];
+    private ByteBuf reqContent = Unpooled.buffer();
     private ServerRequest serverRequest = new ServerRequest();
 
     public NettyHttpChannelInboundHandler(ApiManager apiManager) {
@@ -58,20 +58,14 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
                     .stream()
                     .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get(0))));
 
-            if(WebSocketUtil.isHandshakeRequest(serverRequest)) {
+            if(WebSocketUtil.isHandshakeRequest(serverRequest))
                 handleHandshake(ctx, httpRequest);
-                ctx.pipeline().remove(this);
-                ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, handshaker));
-            }
         } else if(msg instanceof HttpContent) {
             HttpContent httpContent = (HttpContent) msg;
-
-            byte[] chunk = new byte[httpContent.content().readableBytes()];
-            httpContent.content().readBytes(chunk);
-            content = Bytes.concat(content, chunk);
+            reqContent = Unpooled.copiedBuffer(reqContent, httpContent.content());
 
             if(msg instanceof LastHttpContent) {
-                handleRequest(httpContent, content)
+                handleRequest(httpContent, reqContent)
                         .doOnNext(serverResponse -> writeResponse(ctx, serverResponse))
                         .subscribe(new ErrorHandlingSubscriber<>());
             }
@@ -89,7 +83,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
         ctx.close();
     }
 
-    private Observable<ServerResponse> handleRequest(HttpContent httpContent, byte[] content) {
+    private Observable<ServerResponse> handleRequest(HttpContent httpContent, ByteBuf content) {
         if(httpContent.decoderResult().isFailure()) {
             ServerResponse response = new ServerResponse();
             response.setStatus(HttpResponseStatus.BAD_REQUEST);
@@ -101,7 +95,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
             return Observable.just(response);
         }
 
-        if(!NodeUtil.isValidJSON(content)) {
+        if(!NodeUtil.isValidJSON(content.array())) {
             ServerResponse response = new ServerResponse();
             response.setStatus(HttpResponseStatus.BAD_REQUEST);
             ObjectNode body = new ObjectMapper().createObjectNode();
@@ -112,7 +106,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
             return Observable.just(response);
         }
 
-        serverRequest.setBody(NodeUtil.getJsonNode(content));
+        serverRequest.setBody(NodeUtil.getJsonNode(content.array()));
 
         return apiManager.handleHttpRequest(serverRequest);
     }
@@ -131,9 +125,13 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
         String webSocketUrl = "ws://" + req.headers().get(HttpHeaderNames.HOST) + req.uri();
         WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(webSocketUrl, null, true);
         handshaker = wsFactory.newHandshaker(req);
-        if(handshaker == null)
-            WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
-        else
+        if(handshaker != null) {
             handshaker.handshake(ctx.channel(), req);
+            ctx.pipeline().remove(this);
+            ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, handshaker));
+        } else {
+            WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
+            logger.error("Handshaker detected supported version");
+        }
     }
 }
