@@ -8,6 +8,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 public class NotFoundException extends HttpException {
 
     public NotFoundException() {
-        super("Invalid path", HttpResponseStatus.NOT_FOUND, NotFoundException.class.getSimpleName());
+        super("Invalid path", HttpResponseStatus.NOT_FOUND);
     }
 }

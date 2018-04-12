@@ -23,7 +23,6 @@ public class HttpApiV1 implements HttpApi {
     @Override
     public List<HttpRoute> getRoutes() {
         return Stream.of(
-                new HttpRoute("/", HttpMethod.GET, SystemRoutes.GetRoot.class),
                 new HttpRoute("/status", HttpMethod.GET, SystemRoutes.GetStatus.class),
                 new HttpRoute("/accounts", HttpMethod.GET, AccountRoutes.GetAccounts.class),
                 new HttpRoute("/accounts", HttpMethod.POST, AccountRoutes.CreateAccount.class),

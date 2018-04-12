@@ -8,6 +8,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 public class BadRequestException extends HttpException {
 
     public BadRequestException() {
-        super("Something went wrong", HttpResponseStatus.BAD_REQUEST, BadRequestException.class.getSimpleName());
+        super("Something went wrong", HttpResponseStatus.BAD_REQUEST);
     }
 }

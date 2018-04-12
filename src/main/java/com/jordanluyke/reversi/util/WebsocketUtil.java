@@ -1,26 +1,23 @@
 package com.jordanluyke.reversi.util;
 
 import com.jordanluyke.reversi.web.model.ServerRequest;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpMethod;
-
-import java.util.Map;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class WebsocketUtil {
-
-    private static String magicString = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+public class WebSocketUtil {
 
     public static boolean isHandshakeRequest(ServerRequest request) {
         return request.getMethod() == HttpMethod.GET &&
-                request.getHeaders().get("upgrade").equals("websocket") &&
-                request.getHeaders().get("connection").equals("Upgrade") &&
-                request.getHeaders().containsKey("sec-websocket-key") &&
-                request.getHeaders().get("sec-websocket-version").equals("13");
-    }
-
-    public static String getAcceptValue(String key) {
-        return Hasher.sha1base64(key + magicString);
+                request.getHeaders().containsKey(HttpHeaderNames.UPGRADE.toString()) &&
+                request.getHeaders().containsKey(HttpHeaderNames.CONNECTION.toString()) &&
+                request.getHeaders().containsKey(HttpHeaderNames.SEC_WEBSOCKET_KEY.toString()) &&
+                request.getHeaders().containsKey(HttpHeaderNames.SEC_WEBSOCKET_VERSION.toString()) &&
+                request.getHeaders().get(HttpHeaderNames.UPGRADE.toString()).equalsIgnoreCase(HttpHeaderValues.WEBSOCKET.toString()) &&
+                request.getHeaders().get(HttpHeaderNames.CONNECTION.toString()).equalsIgnoreCase(HttpHeaderValues.UPGRADE.toString()) &&
+                request.getHeaders().get(HttpHeaderNames.SEC_WEBSOCKET_VERSION.toString()).equals("13");
     }
 }

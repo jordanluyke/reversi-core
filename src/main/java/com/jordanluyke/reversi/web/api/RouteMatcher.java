@@ -62,17 +62,15 @@ public class RouteMatcher {
                 .defaultIfEmpty(null)
                 .flatMap(route -> {
                     if(route == null)
-                        throw new NotFoundException();
+                        return Observable.error(new NotFoundException());
 
                     List<String> splitRouteHandlerPath = Arrays.asList(route.getPath().split("/"));
                     List<String> splitRequestPath = Arrays.asList(request.getPath().split("/"));
 
                     List<Integer> paramIndexes = new ArrayList<>();
-                    for(int i = 0; i < splitRouteHandlerPath.size(); i++) {
-                        if(splitRouteHandlerPath.get(i).startsWith(":")) {
+                    for(int i = 0; i < splitRouteHandlerPath.size(); i++)
+                        if(splitRouteHandlerPath.get(i).startsWith(":"))
                             paramIndexes.add(i);
-                        }
-                    }
 
                     Map<String, String> params = request.getQueryParams();
                     paramIndexes.forEach(i -> {
@@ -86,33 +84,38 @@ public class RouteMatcher {
                 })
                 .map(injector::getInstance)
                 .flatMap(instance -> instance.handle(Observable.just(request)))
-                .map(object -> {
-                    if(object instanceof ObjectNode) {
-                        ObjectNode node = (ObjectNode) object;
-                        ServerResponse res = new ServerResponse();
-                        res.setStatus(HttpResponseStatus.OK);
-                        res.setBody(node);
-                        return res;
-                    } else if(object instanceof ServerResponse) {
-                        return (ServerResponse) object;
-                    } else
-                        throw new RuntimeException("Invalid handler object");
+//                .map(object -> {
+//                    if(object instanceof ObjectNode) {
+//                        ObjectNode node = (ObjectNode) object;
+//                        ServerResponse res = new ServerResponse();
+//                        res.setStatus(HttpResponseStatus.OK);
+//                        res.setBody(node);
+//                        return res;
+//                    } else if(object instanceof ServerResponse) {
+//                        return (ServerResponse) object;
+//                    } else
+//                        throw new RuntimeException("Invalid handler object");
+//                })
+                .map(node -> {
+                    ServerResponse res = new ServerResponse();
+                    res.setStatus(HttpResponseStatus.OK);
+                    res.setBody(node);
+                    return res;
                 })
                 .onErrorResumeNext(err -> {
-                    ServerResponse response = new ServerResponse();
-                    ObjectNode body = new ObjectMapper().createObjectNode();
-                    body.put("exceptionId", RandomUtil.generateRandom(6));
-
-                    if(err instanceof HttpException) {
-                        logger.error("{}: {}", ((HttpException) err).getExceptionType(), err.getMessage());
-                        response.setStatus(((HttpException) err).getStatus());
-                        body.put("message", err.getMessage());
-                        body.put("exceptionType", ((HttpException) err).getExceptionType());
-                    } else
-                        throw new BadRequestException();
-
-                    response.setBody(body);
-                    return Observable.just(response);
+                    HttpException e = (err instanceof HttpException) ? (HttpException) err : new BadRequestException();
+                    return Observable.just(exceptionToResponse(e));
                 });
+    }
+
+    private ServerResponse exceptionToResponse(HttpException e) {
+        ServerResponse res = new ServerResponse();
+        ObjectNode body = new ObjectMapper().createObjectNode();
+        body.put("exceptionId", RandomUtil.generateRandom(6));
+        body.put("message", e.getMessage());
+        body.put("exceptionType", e.getExceptionType());
+        res.setBody(body);
+        res.setStatus(e.getStatus());
+        return res;
     }
 }

@@ -6,14 +6,16 @@ import com.google.common.primitives.Bytes;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
+import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
 import com.jordanluyke.reversi.web.model.ServerRequest;
 import com.jordanluyke.reversi.web.model.ServerResponse;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
+import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
@@ -25,10 +27,11 @@ import java.util.stream.Collectors;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<Object> {
+public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LogManager.getLogger(NettyHttpChannelInboundHandler.class);
 
     private ApiManager apiManager;
+    private WebSocketServerHandshaker handshaker;
 
     private byte[] content = new byte[0];
     private ServerRequest serverRequest = new ServerRequest();
@@ -38,8 +41,7 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-        logger.info("channel read {}", msg.getClass().getSimpleName());
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if(msg instanceof HttpRequest) {
             HttpRequest httpRequest = (HttpRequest) msg;
             URI uri = new URI(httpRequest.uri());
@@ -55,7 +57,12 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
                     .entrySet()
                     .stream()
                     .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get(0))));
-//            logger.info("r {}", serverRequest.getHeaders());
+
+            if(WebSocketUtil.isHandshakeRequest(serverRequest)) {
+                handleHandshake(ctx, httpRequest);
+                ctx.pipeline().remove(this);
+                ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, handshaker));
+            }
         } else if(msg instanceof HttpContent) {
             HttpContent httpContent = (HttpContent) msg;
 
@@ -110,12 +117,23 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
         return apiManager.handleHttpRequest(serverRequest);
     }
 
-    private void writeResponse(ChannelHandlerContext ctx, ServerResponse serverResponse) {
-        FullHttpResponse httpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, serverResponse.getStatus(), Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(serverResponse.getBody())));
+    private void writeResponse(ChannelHandlerContext ctx, ServerResponse res) {
+        ByteBuf content = Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(res.getBody()));
+        FullHttpResponse httpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, res.getStatus(), content);
         httpResponse.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
         httpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, httpResponse.content().readableBytes());
-        serverResponse.getHeaders().forEach((key, value) -> httpResponse.headers().set(key, value));
+//        res.getHeaders().forEach((key, value) -> httpResponse.headers().set(key, value));
         ctx.write(httpResponse);
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+    }
+
+    private void handleHandshake(ChannelHandlerContext ctx, HttpRequest req) {
+        String webSocketUrl = "ws://" + req.headers().get(HttpHeaderNames.HOST) + req.uri();
+        WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(webSocketUrl, null, true);
+        handshaker = wsFactory.newHandshaker(req);
+        if(handshaker == null)
+            WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
+        else
+            handshaker.handshake(ctx.channel(), req);
     }
 }

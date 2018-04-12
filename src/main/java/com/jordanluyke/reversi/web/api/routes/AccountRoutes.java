@@ -17,7 +17,7 @@ public class AccountRoutes {
     public static class GetAccounts implements HttpRouteHandler {
         @Override
         public Observable<ObjectNode> handle(Observable<ServerRequest> o) {
-            return o.map(r -> {
+            return o.map(req -> {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
                 node.put("class", this.getClass().getCanonicalName());
@@ -29,7 +29,7 @@ public class AccountRoutes {
     public static class CreateAccount implements HttpRouteHandler {
         @Override
         public Observable<ObjectNode> handle(Observable<ServerRequest> o) {
-            return o.map(r -> {
+            return o.map(req -> {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
                 node.put("class", this.getClass().getCanonicalName());
@@ -41,7 +41,7 @@ public class AccountRoutes {
     public static class GetAccount implements HttpRouteHandler {
         @Override
         public Observable<ObjectNode> handle(Observable<ServerRequest> o) {
-            return o.map(r -> {
+            return o.map(req -> {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
                 node.put("class", this.getClass().getCanonicalName());
@@ -53,8 +53,8 @@ public class AccountRoutes {
     public static class GetAccountProfile implements HttpRouteHandler {
         @Override
         public Observable<ObjectNode> handle(Observable<ServerRequest> o) {
-            return o.map(r -> {
-                logger.info("params {}", r.getQueryParams());
+            return o.map(req -> {
+                logger.info("params {}", req.getQueryParams());
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
                 node.put("class", this.getClass().getCanonicalName());
