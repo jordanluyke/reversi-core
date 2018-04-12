@@ -85,7 +85,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+        logger.error(cause.getStackTrace());
         ctx.close();
     }
 

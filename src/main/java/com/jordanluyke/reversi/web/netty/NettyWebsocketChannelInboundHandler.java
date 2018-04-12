@@ -1,13 +1,15 @@
 package com.jordanluyke.reversi.web.netty;
 
 import com.jordanluyke.reversi.web.api.ApiManager;
-import com.jordanluyke.reversi.web.model.ServerRequest;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -15,7 +17,7 @@ import org.apache.logging.log4j.Logger;
 public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LogManager.getLogger(NettyWebSocketChannelInboundHandler.class);
 
-//    private byte[] content = new byte[0];
+    private ByteBuf content = Unpooled.copiedBuffer(new byte[0]);
     private ApiManager apiManager;
     private WebSocketServerHandshaker handshaker;
 
@@ -26,21 +28,25 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        logger.info("websocket read: {}", msg.getClass().getSimpleName());
-        if(msg instanceof WebSocketFrame)
+        logger.info("channelRead: {}", msg.getClass().getSimpleName());
+        if(msg instanceof WebSocketFrame) {
             handleWebsocketFrame(ctx, (WebSocketFrame) msg);
-        else
-            logger.info("msg is not WebSocketFrame", msg.getClass().getSimpleName());
+        } else {
+            logger.error("Not a WebSocketFrame: {}", msg.getClass().getCanonicalName());
+            throw new RuntimeException("Not a WebSocketFrame");
+        }
     }
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
+        logger.info("channelReadComplete {}", content.toString(StandardCharsets.UTF_8));
+        content = Unpooled.copiedBuffer(new byte[0]);
         ctx.flush();
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+        logger.error(cause.getStackTrace());
         ctx.close();
     }
 
@@ -49,9 +55,10 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
             handshaker.close(ctx.channel(), (CloseWebSocketFrame) frame);
         } else if(frame instanceof PingWebSocketFrame) {
             ctx.channel().write(new PongWebSocketFrame(frame.content()));
-        } else if(frame instanceof TextWebSocketFrame) {
-            String t = ((TextWebSocketFrame) frame).text();
-            logger.info("TextWebSocketFrame {}", t);
+        } else if(frame instanceof TextWebSocketFrame ||
+                frame instanceof BinaryWebSocketFrame ||
+                frame instanceof ContinuationWebSocketFrame) {
+            content = Unpooled.copiedBuffer(content, frame.content());
         } else {
             logger.error("Frame not supported: {}", frame.getClass().getSimpleName());
             throw new RuntimeException("Frame not supported");
