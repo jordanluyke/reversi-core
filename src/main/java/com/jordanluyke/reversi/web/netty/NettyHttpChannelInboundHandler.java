@@ -1,14 +1,12 @@
 package com.jordanluyke.reversi.web.netty;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
-import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.HttpServerResponse;
+import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -78,33 +76,18 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        logger.error("Http exception: {}", cause.getMessage());
+        logger.error("Error {}: {}", ctx.channel().remoteAddress(), cause.getMessage());
         ctx.close();
     }
 
     private Observable<HttpServerResponse> handleRequest(HttpContent httpContent, ByteBuf content) {
-        if(httpContent.decoderResult().isFailure()) {
-            HttpServerResponse response = new HttpServerResponse();
-            response.setStatus(HttpResponseStatus.BAD_REQUEST);
-            ObjectNode body = new ObjectMapper().createObjectNode();
-            body.put("exceptionType", "BadRequestException");
-            body.put("message", "Unable to decode request");
-            body.put("exceptionId", RandomUtil.generateRandom(8));
-            response.setBody(body);
-            return Observable.just(response);
-        }
+        if(httpContent.decoderResult().isFailure())
+            return Observable.just(new WebException(HttpResponseStatus.BAD_REQUEST).toHttpServerResponse());
 
         try {
             NodeUtil.isValidJSON(content.array());
         } catch(RuntimeException e) {
-            HttpServerResponse response = new HttpServerResponse();
-            response.setStatus(HttpResponseStatus.BAD_REQUEST);
-            ObjectNode body = new ObjectMapper().createObjectNode();
-            body.put("exceptionType", "JsonProcessingException");
-            body.put("message", "Not valid JSON");
-            body.put("exceptionId", RandomUtil.generateRandom(8));
-            response.setBody(body);
-            return Observable.just(response);
+            return Observable.just(new WebException(HttpResponseStatus.BAD_REQUEST).toHttpServerResponse());
         }
 
         httpServerRequest.setBody(NodeUtil.getJsonNode(content.array()));
@@ -130,6 +113,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
             handshaker.handshake(ctx.channel(), req);
             ctx.pipeline().remove(this);
             ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, handshaker));
+            logger.info("Handshake accepted: {}", ctx.channel().remoteAddress());
         } else {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
             logger.error("Handshaker detected supported version");

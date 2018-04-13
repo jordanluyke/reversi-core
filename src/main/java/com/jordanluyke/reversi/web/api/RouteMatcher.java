@@ -1,18 +1,12 @@
 package com.jordanluyke.reversi.web.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketEvent;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
-import com.jordanluyke.reversi.web.model.HttpServerResponse;
-import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
-import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
-import com.jordanluyke.reversi.web.model.exceptions.*;
-import com.jordanluyke.reversi.web.model.HttpServerRequest;
+import com.jordanluyke.reversi.web.model.*;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.logging.log4j.LogManager;
@@ -39,7 +33,7 @@ public class RouteMatcher {
         return Observable.just(request.getMethod())
                 .flatMap(method -> {
                     if(!Arrays.asList(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE).contains(method))
-                        return Observable.error(new HttpException("Invalid HTTP method", HttpResponseStatus.METHOD_NOT_ALLOWED, "MethodNotAllowedException"));
+                        return Observable.error(new WebException("Invalid HTTP method", HttpResponseStatus.METHOD_NOT_ALLOWED, "MethodNotAllowedException"));
                     return Observable.from(routes);
                 })
                 .filter(route -> request.getMethod() == route.getMethod())
@@ -66,7 +60,7 @@ public class RouteMatcher {
                 .defaultIfEmpty(null)
                 .flatMap(route -> {
                     if(route == null)
-                        return Observable.error(new NotFoundException());
+                        return Observable.error(new WebException(HttpResponseStatus.NOT_FOUND));
 
                     List<String> splitRouteHandlerPath = Arrays.asList(route.getPath().split("/"));
                     List<String> splitRequestPath = Arrays.asList(request.getPath().split("/"));
@@ -107,8 +101,8 @@ public class RouteMatcher {
                     return res;
                 })
                 .onErrorResumeNext(err -> {
-                    HttpException e = (err instanceof HttpException) ? (HttpException) err : new BadRequestException();
-                    return Observable.just(exceptionToResponse(e));
+                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    return Observable.just(e.toHttpServerResponse());
                 });
     }
 
@@ -119,7 +113,7 @@ public class RouteMatcher {
                 .defaultIfEmpty(null)
                 .flatMap(event -> {
                     if(event == null)
-                        return Observable.error(new WsNotFoundException());
+                        return Observable.error(new WebException(HttpResponseStatus.NOT_FOUND));
                     return Observable.just(injector.getInstance(event.getType()));
                 })
                 .flatMap(instance -> ((WebSocketEventHandler) instance).handle(Observable.just(request)))
@@ -131,30 +125,8 @@ public class RouteMatcher {
                     return res;
                 })
                 .onErrorResumeNext(err -> {
-                    WsException e = (err instanceof WsException) ? (WsException) err : new WsBadRequestException();
-                    return Observable.just(exceptionToResponse(e));
+                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    return Observable.just(e.toWebSocketServerResponse());
                 });
-    }
-
-
-    private HttpServerResponse exceptionToResponse(HttpException e) {
-        HttpServerResponse res = new HttpServerResponse();
-        ObjectNode body = new ObjectMapper().createObjectNode();
-        body.put("exceptionId", RandomUtil.generateRandom(6));
-        body.put("message", e.getMessage());
-        body.put("exceptionType", e.getExceptionType());
-        res.setBody(body);
-        res.setStatus(e.getStatus());
-        return res;
-    }
-
-    private WebSocketServerResponse exceptionToResponse(WsException e) {
-        WebSocketServerResponse res = new WebSocketServerResponse();
-        ObjectNode body = new ObjectMapper().createObjectNode();
-        body.put("exceptionId", RandomUtil.generateRandom(6));
-        body.put("message", e.getMessage());
-        body.put("exceptionType", e.getExceptionType());
-        res.setBody(body);
-        return res;
     }
 }

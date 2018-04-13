@@ -13,22 +13,12 @@ import java.io.IOException;
  */
 public class NodeUtil {
 
-    public static boolean isValidJSON(String json) {
-        try {
-            new ObjectMapper().readTree(json);
-        } catch(IOException e) {
-            throw new RuntimeException(e.getMessage());
-        }
-        return true;
-    }
-
     public static boolean isValidJSON(byte[] json) {
         try {
-            new ObjectMapper().readTree(json);
+            return !new ObjectMapper().readTree(json).isNull();
         } catch(IOException e) {
             throw new RuntimeException(e.getMessage());
         }
-        return true;
     }
 
     public static JsonNode getJsonNode(byte[] json) {
