@@ -5,9 +5,11 @@ import java.util.List;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public interface HttpApi {
+public interface Api {
 
     int getVersion();
 
-    List<HttpRoute> getRoutes();
+    List<HttpRoute> getHttpRoutes();
+
+    List<WebSocketEvent> getWebSocketEvents();
 }

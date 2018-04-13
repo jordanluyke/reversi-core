@@ -1,7 +1,7 @@
 package com.jordanluyke.reversi.web.api.model;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.jordanluyke.reversi.web.model.ServerRequest;
+import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import rx.Observable;
 
 /**
@@ -9,6 +9,6 @@ import rx.Observable;
  */
 public interface HttpRouteHandler {
 
-//    Observable<?> handle(Observable<ServerRequest> o);
-    Observable<ObjectNode> handle(Observable<ServerRequest> o);
+//    Observable<?> handle(Observable<HttpServerRequest> o);
+    Observable<ObjectNode> handle(Observable<HttpServerRequest> o);
 }

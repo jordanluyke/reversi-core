@@ -11,13 +11,13 @@ import java.util.Map;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class ServerResponse {
+public class HttpServerResponse {
 
     private HttpResponseStatus status;
     private ObjectNode body = new ObjectMapper().createObjectNode();
     private Map<String, String> headers = new HashMap<>();
 
-    public ServerResponse() {
+    public HttpServerResponse() {
     }
 
     public HttpResponseStatus getStatus() {

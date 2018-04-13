@@ -1,6 +1,14 @@
 package com.jordanluyke.reversi.web.netty;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
+import com.jordanluyke.reversi.util.NodeUtil;
+import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
+import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
+import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -8,6 +16,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.websocketx.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import rx.Observable;
 
 import java.nio.charset.StandardCharsets;
 
@@ -17,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LogManager.getLogger(NettyWebSocketChannelInboundHandler.class);
 
-    private ByteBuf content = Unpooled.buffer();
+    private ByteBuf reqContent = Unpooled.buffer();
     private ApiManager apiManager;
     private WebSocketServerHandshaker handshaker;
 
@@ -39,14 +48,12 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
-        logger.info("channelReadComplete {} {}", content.toString(StandardCharsets.UTF_8), content.readableBytes());
-        content = Unpooled.buffer();
         ctx.flush();
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        logger.error(cause.getStackTrace());
+        logger.error("WebSocket exception: {}", cause.getMessage());
         ctx.close();
     }
 
@@ -58,10 +65,69 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
         } else if(frame instanceof TextWebSocketFrame ||
                 frame instanceof BinaryWebSocketFrame ||
                 frame instanceof ContinuationWebSocketFrame) {
-            content = Unpooled.copiedBuffer(content, frame.content());
+            reqContent = Unpooled.copiedBuffer(reqContent, frame.content());
+            if(frame.isFinalFragment()) {
+                handleRequest(reqContent)
+                        .doOnNext(res -> {
+                            writeResponse(ctx, res);
+                            reqContent = Unpooled.buffer();
+                        })
+                        .subscribe(new ErrorHandlingSubscriber<>());
+            }
         } else {
             logger.error("Frame not supported: {}", frame.getClass().getSimpleName());
             throw new RuntimeException("Frame not supported");
         }
+    }
+
+    private Observable<WebSocketServerResponse> handleRequest(ByteBuf content) {
+//        if(httpContent.decoderResult().isFailure()) {
+//            HttpServerResponse response = new HttpServerResponse();
+//            response.setStatus(HttpResponseStatus.BAD_REQUEST);
+//            ObjectNode body = new ObjectMapper().createObjectNode();
+//            body.put("exceptionType", "BadRequestException");
+//            body.put("message", "Unable to decode request");
+//            body.put("exceptionId", RandomUtil.generateRandom(8));
+//            response.setBody(body);
+//            return Observable.just(response);
+//        }
+
+        try {
+            NodeUtil.isValidJSON(content.array());
+        } catch(RuntimeException e) {
+            WebSocketServerResponse response = new WebSocketServerResponse();
+            ObjectNode body = new ObjectMapper().createObjectNode();
+            body.put("event", "ExceptionEvent");
+            body.put("exceptionType", "JsonProcessingException");
+            body.put("exceptionId", RandomUtil.generateRandom(8));
+            response.setBody(body);
+            return Observable.just(response);
+        }
+
+        JsonNode reqBody = NodeUtil.getJsonNode(content.array());
+        logger.info("body: {}", reqBody.toString());
+
+        if(reqBody.get("event").isNull()) {
+            WebSocketServerResponse response = new WebSocketServerResponse();
+            ObjectNode body = new ObjectMapper().createObjectNode();
+            body.put("event", "ExceptionEvent");
+            body.put("exceptionType", "InvalidEventException");
+            body.put("exceptionId", RandomUtil.generateRandom(8));
+            response.setBody(body);
+            return Observable.just(response);
+        }
+
+        WebSocketServerRequest request = new WebSocketServerRequest();
+
+        request.setBody(reqBody);
+
+        return apiManager.handleWebSocketRequest(request);
+    }
+
+    private void writeResponse(ChannelHandlerContext ctx, WebSocketServerResponse res) {
+//        BinaryWebSocketFrame
+        TextWebSocketFrame frame = new TextWebSocketFrame(Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(res.getBody())));
+        ctx.write(frame);
+        ctx.writeAndFlush(Unpooled.EMPTY_BUFFER);
     }
 }

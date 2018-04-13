@@ -2,14 +2,13 @@ package com.jordanluyke.reversi.web.netty;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.primitives.Bytes;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
-import com.jordanluyke.reversi.web.model.ServerRequest;
-import com.jordanluyke.reversi.web.model.ServerResponse;
+import com.jordanluyke.reversi.web.model.HttpServerRequest;
+import com.jordanluyke.reversi.web.model.HttpServerResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -34,7 +33,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
     private WebSocketServerHandshaker handshaker;
 
     private ByteBuf reqContent = Unpooled.buffer();
-    private ServerRequest serverRequest = new ServerRequest();
+    private HttpServerRequest httpServerRequest = new HttpServerRequest();
 
     public NettyHttpChannelInboundHandler(ApiManager apiManager) {
         this.apiManager = apiManager;
@@ -46,19 +45,19 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
             HttpRequest httpRequest = (HttpRequest) msg;
             URI uri = new URI(httpRequest.uri());
 
-            serverRequest.setPath(uri.getRawPath());
-            serverRequest.setMethod(httpRequest.method());
-            serverRequest.setHeaders(httpRequest.headers()
+            httpServerRequest.setPath(uri.getRawPath());
+            httpServerRequest.setMethod(httpRequest.method());
+            httpServerRequest.setHeaders(httpRequest.headers()
                     .entries()
                     .stream()
                     .collect(Collectors.toMap(key -> key.getKey().toLowerCase(), Map.Entry::getValue)));
-            serverRequest.setQueryParams(new QueryStringDecoder(httpRequest.uri())
+            httpServerRequest.setQueryParams(new QueryStringDecoder(httpRequest.uri())
                     .parameters()
                     .entrySet()
                     .stream()
                     .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get(0))));
 
-            if(WebSocketUtil.isHandshakeRequest(serverRequest))
+            if(WebSocketUtil.isHandshakeRequest(httpServerRequest))
                 handleHandshake(ctx, httpRequest);
         } else if(msg instanceof HttpContent) {
             HttpContent httpContent = (HttpContent) msg;
@@ -66,7 +65,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
 
             if(msg instanceof LastHttpContent) {
                 handleRequest(httpContent, reqContent)
-                        .doOnNext(serverResponse -> writeResponse(ctx, serverResponse))
+                        .doOnNext(httpServerResponse -> writeResponse(ctx, httpServerResponse))
                         .subscribe(new ErrorHandlingSubscriber<>());
             }
         }
@@ -79,13 +78,13 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        logger.error(cause.getStackTrace());
+        logger.error("Http exception: {}", cause.getMessage());
         ctx.close();
     }
 
-    private Observable<ServerResponse> handleRequest(HttpContent httpContent, ByteBuf content) {
+    private Observable<HttpServerResponse> handleRequest(HttpContent httpContent, ByteBuf content) {
         if(httpContent.decoderResult().isFailure()) {
-            ServerResponse response = new ServerResponse();
+            HttpServerResponse response = new HttpServerResponse();
             response.setStatus(HttpResponseStatus.BAD_REQUEST);
             ObjectNode body = new ObjectMapper().createObjectNode();
             body.put("exceptionType", "BadRequestException");
@@ -95,8 +94,10 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
             return Observable.just(response);
         }
 
-        if(!NodeUtil.isValidJSON(content.array())) {
-            ServerResponse response = new ServerResponse();
+        try {
+            NodeUtil.isValidJSON(content.array());
+        } catch(RuntimeException e) {
+            HttpServerResponse response = new HttpServerResponse();
             response.setStatus(HttpResponseStatus.BAD_REQUEST);
             ObjectNode body = new ObjectMapper().createObjectNode();
             body.put("exceptionType", "JsonProcessingException");
@@ -106,12 +107,12 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
             return Observable.just(response);
         }
 
-        serverRequest.setBody(NodeUtil.getJsonNode(content.array()));
+        httpServerRequest.setBody(NodeUtil.getJsonNode(content.array()));
 
-        return apiManager.handleHttpRequest(serverRequest);
+        return apiManager.handleHttpRequest(httpServerRequest);
     }
 
-    private void writeResponse(ChannelHandlerContext ctx, ServerResponse res) {
+    private void writeResponse(ChannelHandlerContext ctx, HttpServerResponse res) {
         ByteBuf content = Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(res.getBody()));
         FullHttpResponse httpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, res.getStatus(), content);
         httpResponse.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);

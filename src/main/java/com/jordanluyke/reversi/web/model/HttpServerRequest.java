@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class ServerRequest {
+public class HttpServerRequest {
 
     Map<String, String> queryParams = new HashMap<>();
     Map<String, String> headers = new HashMap<>();

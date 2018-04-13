@@ -1,6 +1,6 @@
 package com.jordanluyke.reversi.util;
 
-import com.jordanluyke.reversi.web.model.ServerRequest;
+import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpMethod;
@@ -10,7 +10,7 @@ import io.netty.handler.codec.http.HttpMethod;
  */
 public class WebSocketUtil {
 
-    public static boolean isHandshakeRequest(ServerRequest request) {
+    public static boolean isHandshakeRequest(HttpServerRequest request) {
         return request.getMethod() == HttpMethod.GET &&
                 request.getHeaders().containsKey(HttpHeaderNames.UPGRADE.toString()) &&
                 request.getHeaders().containsKey(HttpHeaderNames.CONNECTION.toString()) &&

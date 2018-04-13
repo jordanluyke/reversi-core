@@ -32,14 +32,11 @@ public class NodeUtil {
     }
 
     public static JsonNode getJsonNode(byte[] json) {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.createObjectNode();
         try {
-            new ObjectMapper().readTree(json);
+            return new ObjectMapper().readTree(json);
         } catch(IOException e) {
             throw new RuntimeException(e.getMessage());
         }
-        return node;
     }
 
     public static byte[] writeValueAsBytes(Object o) {

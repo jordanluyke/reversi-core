@@ -10,7 +10,6 @@ public class HttpRoute {
     private String path;
     private HttpMethod method;
     private Class<? extends HttpRouteHandler> handler;
-    private int version;
 
     public HttpRoute(String path, HttpMethod method, Class<? extends HttpRouteHandler> handler) {
         this.path = path;
@@ -36,17 +35,5 @@ public class HttpRoute {
 
     public Class<? extends HttpRouteHandler> getHandler() {
         return handler;
-    }
-
-    public void setHandler(Class<? extends HttpRouteHandler> handler) {
-        this.handler = handler;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
     }
 }

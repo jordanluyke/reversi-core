@@ -3,7 +3,7 @@ package com.jordanluyke.reversi.web.api.routes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
-import com.jordanluyke.reversi.web.model.ServerRequest;
+import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
@@ -16,7 +16,7 @@ public class AccountRoutes {
 
     public static class GetAccounts implements HttpRouteHandler {
         @Override
-        public Observable<ObjectNode> handle(Observable<ServerRequest> o) {
+        public Observable<ObjectNode> handle(Observable<HttpServerRequest> o) {
             return o.map(req -> {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
@@ -28,7 +28,7 @@ public class AccountRoutes {
 
     public static class CreateAccount implements HttpRouteHandler {
         @Override
-        public Observable<ObjectNode> handle(Observable<ServerRequest> o) {
+        public Observable<ObjectNode> handle(Observable<HttpServerRequest> o) {
             return o.map(req -> {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
@@ -40,7 +40,7 @@ public class AccountRoutes {
 
     public static class GetAccount implements HttpRouteHandler {
         @Override
-        public Observable<ObjectNode> handle(Observable<ServerRequest> o) {
+        public Observable<ObjectNode> handle(Observable<HttpServerRequest> o) {
             return o.map(req -> {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
@@ -52,7 +52,7 @@ public class AccountRoutes {
 
     public static class GetAccountProfile implements HttpRouteHandler {
         @Override
-        public Observable<ObjectNode> handle(Observable<ServerRequest> o) {
+        public Observable<ObjectNode> handle(Observable<HttpServerRequest> o) {
             return o.map(req -> {
                 logger.info("params {}", req.getQueryParams());
                 ObjectMapper mapper = new ObjectMapper();
