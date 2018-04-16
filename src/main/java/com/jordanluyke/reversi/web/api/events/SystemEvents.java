@@ -18,6 +18,7 @@ public class SystemEvents {
         @Override
         public Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o) {
             return o.map(req -> {
+                req.getAggregateContext().onKeepAlive.onNext(null);
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectNode node = mapper.createObjectNode();
                 node.put("time", System.currentTimeMillis());

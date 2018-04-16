@@ -4,13 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
-import com.jordanluyke.reversi.web.api.events.SystemEvents;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -18,11 +16,6 @@ import io.netty.handler.codec.http.websocketx.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
-import rx.Subscription;
-import rx.subjects.PublishSubject;
-import rx.subjects.Subject;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -30,15 +23,14 @@ import java.util.concurrent.TimeUnit;
 public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LogManager.getLogger(NettyWebSocketChannelInboundHandler.class);
 
-    private ByteBuf reqContent = Unpooled.buffer();
     private ApiManager apiManager;
 
-    private Subject<ChannelHandlerContext, ChannelHandlerContext> onKeepAlive = PublishSubject.create();
-    private Subscription keepAliveSubscription;
+    private WebSocketAggregateContext aggregateContext;
+    private ByteBuf reqContent = Unpooled.buffer();
 
     public NettyWebSocketChannelInboundHandler(ApiManager apiManager, ChannelHandlerContext ctx) {
         this.apiManager = apiManager;
-        startKeepAliveTimer(ctx);
+        this.aggregateContext = apiManager.registerWebSocketChannelHandlerContext(ctx);
     }
 
     @Override
@@ -58,21 +50,9 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
         ctx.close();
     }
 
-    private void startKeepAliveTimer(ChannelHandlerContext context) {
-        onKeepAlive.onNext(context);
-
-        keepAliveSubscription = onKeepAlive
-                .switchMap(ctx -> Observable.timer(5, TimeUnit.SECONDS).map(timer -> ctx))
-                .doOnNext(ctx -> {
-                    logger.info("KeepAlive timeout");
-                    closeChannel(ctx);
-                })
-                .subscribe(new ErrorHandlingSubscriber<>());
-    }
-
     private void handleWebsocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
         if(frame instanceof CloseWebSocketFrame) {
-            closeChannel(ctx);
+            apiManager.deregisterWebSocketChannelHandlerContext(ctx);
         } else if(frame instanceof PingWebSocketFrame) {
             ctx.channel().write(new PongWebSocketFrame(frame.content()));
         } else if(frame instanceof TextWebSocketFrame ||
@@ -80,12 +60,10 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
                 frame instanceof ContinuationWebSocketFrame) {
             reqContent = Unpooled.copiedBuffer(reqContent, frame.content());
             if(frame.isFinalFragment()) {
-                handleRequest(reqContent)
+                handleRequest(reqContent, ctx)
                         .doOnNext(res -> {
                             writeResponse(ctx, res);
                             reqContent = Unpooled.buffer();
-                            if(res.getBody().get("event").asText().equals(SystemEvents.KeepAlive.class.getSimpleName()))
-                                onKeepAlive.onNext(ctx);
                         })
                         .subscribe(new ErrorHandlingSubscriber<>());
             }
@@ -95,7 +73,7 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
         }
     }
 
-    private Observable<WebSocketServerResponse> handleRequest(ByteBuf content) {
+    private Observable<WebSocketServerResponse> handleRequest(ByteBuf content, ChannelHandlerContext ctx) {
         try {
             NodeUtil.isValidJSON(content.array());
         } catch(RuntimeException e) {
@@ -110,21 +88,14 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
 
         WebSocketServerRequest request = new WebSocketServerRequest();
         request.setBody(reqBody);
+        request.setAggregateContext(aggregateContext);
 
-        return apiManager.handleWebSocketRequest(request);
+        return apiManager.handleRequest(request);
     }
 
     private void writeResponse(ChannelHandlerContext ctx, WebSocketServerResponse res) {
         BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(res.getBody())));
         ctx.write(frame);
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER);
-    }
-
-    private void closeChannel(ChannelHandlerContext ctx) {
-        ctx.write(new CloseWebSocketFrame());
-        ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-        onKeepAlive.onCompleted();
-        keepAliveSubscription.unsubscribe();
-        logger.info("Socket closed: {}", ctx.channel().remoteAddress());
     }
 }
