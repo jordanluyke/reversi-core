@@ -45,7 +45,7 @@ public class WebException extends Exception {
     public WebSocketServerResponse toWebSocketServerResponse() {
         WebSocketServerResponse response = new WebSocketServerResponse();
         ObjectNode body = exceptionToBody();
-        body.put("event", "ExceptionEvent");
+        body.put("event", WebException.class.getSimpleName());
         response.setBody(body);
         return response;
     }

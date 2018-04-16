@@ -70,11 +70,6 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
     }
 
     @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-        ctx.flush();
-    }
-
-    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         logger.error("Error {}: {}", ctx.channel().remoteAddress(), cause.getMessage());
         ctx.close();
@@ -112,7 +107,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
         if(handshaker != null) {
             handshaker.handshake(ctx.channel(), req);
             ctx.pipeline().remove(this);
-            ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, handshaker));
+            ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, ctx));
             logger.info("Handshake accepted: {}", ctx.channel().remoteAddress());
         } else {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());

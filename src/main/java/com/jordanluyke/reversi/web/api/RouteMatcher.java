@@ -33,7 +33,7 @@ public class RouteMatcher {
         return Observable.just(request.getMethod())
                 .flatMap(method -> {
                     if(!Arrays.asList(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE).contains(method))
-                        return Observable.error(new WebException("Invalid HTTP method", HttpResponseStatus.METHOD_NOT_ALLOWED, "MethodNotAllowedException"));
+                        return Observable.error(new WebException(HttpResponseStatus.METHOD_NOT_ALLOWED));
                     return Observable.from(routes);
                 })
                 .filter(route -> request.getMethod() == route.getMethod())

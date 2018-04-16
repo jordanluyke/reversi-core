@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
+import com.jordanluyke.reversi.web.api.events.SystemEvents;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -16,6 +18,11 @@ import io.netty.handler.codec.http.websocketx.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
+import rx.Subscription;
+import rx.subjects.PublishSubject;
+import rx.subjects.Subject;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -25,16 +32,18 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
 
     private ByteBuf reqContent = Unpooled.buffer();
     private ApiManager apiManager;
-    private WebSocketServerHandshaker handshaker;
 
-    public NettyWebSocketChannelInboundHandler(ApiManager apiManager, WebSocketServerHandshaker handshaker) {
+    private Subject<ChannelHandlerContext, ChannelHandlerContext> onKeepAlive = PublishSubject.create();
+    private Subscription keepAliveSubscription;
+
+    public NettyWebSocketChannelInboundHandler(ApiManager apiManager, ChannelHandlerContext ctx) {
         this.apiManager = apiManager;
-        this.handshaker = handshaker;
+        startKeepAliveTimer(ctx);
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        logger.info("channelRead: {}", msg.getClass().getSimpleName());
+        logger.info("channelRead: {} {}", ctx.channel().remoteAddress(), msg.getClass().getSimpleName());
         if(msg instanceof WebSocketFrame) {
             handleWebsocketFrame(ctx, (WebSocketFrame) msg);
         } else {
@@ -44,20 +53,26 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
     }
 
     @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-        ctx.flush();
-    }
-
-    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         logger.error("Error {}: {}", ctx.channel().remoteAddress(), cause.getMessage());
         ctx.close();
     }
 
+    private void startKeepAliveTimer(ChannelHandlerContext context) {
+        onKeepAlive.onNext(context);
+
+        keepAliveSubscription = onKeepAlive
+                .switchMap(ctx -> Observable.timer(5, TimeUnit.SECONDS).map(timer -> ctx))
+                .doOnNext(ctx -> {
+                    logger.info("KeepAlive timeout");
+                    closeChannel(ctx);
+                })
+                .subscribe(new ErrorHandlingSubscriber<>());
+    }
+
     private void handleWebsocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
         if(frame instanceof CloseWebSocketFrame) {
-            handshaker.close(ctx.channel(), (CloseWebSocketFrame) frame);
-            logger.info("Socket closed: {}", ctx.channel().remoteAddress());
+            closeChannel(ctx);
         } else if(frame instanceof PingWebSocketFrame) {
             ctx.channel().write(new PongWebSocketFrame(frame.content()));
         } else if(frame instanceof TextWebSocketFrame ||
@@ -69,6 +84,8 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
                         .doOnNext(res -> {
                             writeResponse(ctx, res);
                             reqContent = Unpooled.buffer();
+                            if(res.getBody().get("event").asText().equals(SystemEvents.KeepAlive.class.getSimpleName()))
+                                onKeepAlive.onNext(ctx);
                         })
                         .subscribe(new ErrorHandlingSubscriber<>());
             }
@@ -101,5 +118,13 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
         BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(res.getBody())));
         ctx.write(frame);
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER);
+    }
+
+    private void closeChannel(ChannelHandlerContext ctx) {
+        ctx.write(new CloseWebSocketFrame());
+        ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+        onKeepAlive.onCompleted();
+        keepAliveSubscription.unsubscribe();
+        logger.info("Socket closed: {}", ctx.channel().remoteAddress());
     }
 }
