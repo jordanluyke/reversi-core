@@ -35,8 +35,8 @@ public class NettyHttpChannelInitializer extends ChannelInitializer<SocketChanne
         pipeline.addLast(new HttpRequestDecoder());
         pipeline.addLast(new HttpResponseEncoder());
         pipeline.addLast(new HttpContentCompressor());
-        pipeline.addLast(new WebSocket13FrameDecoder(true, false, 65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
+        pipeline.addLast(new WebSocket13FrameDecoder(true, false, 65536));
         pipeline.addLast(new NettyHttpChannelInboundHandler(apiManager));
     }
 }

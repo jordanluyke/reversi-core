@@ -47,6 +47,7 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         logger.error("Error {}: {}", ctx.channel().remoteAddress(), cause.getMessage());
+        apiManager.deregisterWebSocketChannelHandlerContext(ctx);
         ctx.close();
     }
 

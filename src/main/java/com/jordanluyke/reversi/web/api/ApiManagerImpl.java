@@ -40,7 +40,6 @@ public class ApiManagerImpl implements ApiManager {
 
     @Override
     public WebSocketAggregateContext registerWebSocketChannelHandlerContext(ChannelHandlerContext ctx) {
-        logger.info("{} {} {}", ctx.channel().id().asLongText(), ctx.channel().id().asShortText(), ctx.channel().remoteAddress().toString());
         WebSocketAggregateContext aggregateContext = new WebSocketAggregateContext(ctx);
         aggregateContexts.put(ctx.channel().remoteAddress().toString(), aggregateContext);
         return aggregateContext;
