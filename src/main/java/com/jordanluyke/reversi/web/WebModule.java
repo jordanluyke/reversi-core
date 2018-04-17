@@ -6,11 +6,11 @@ import com.jordanluyke.reversi.web.api.ApiModule;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class WebServerModule extends AbstractModule {
+public class WebModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(WebServer.class).to(WebServerImpl.class);
+        bind(WebManager.class).to(WebManagerImpl.class);
         install(new ApiModule());
     }
 }

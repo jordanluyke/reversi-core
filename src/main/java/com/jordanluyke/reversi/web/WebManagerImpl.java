@@ -7,12 +7,12 @@ import rx.Observable;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class WebServerImpl implements WebServer {
+public class WebManagerImpl implements WebManager {
 
     private NettyServerInitializer nettyServerInitializer;
 
     @Inject
-    public WebServerImpl(NettyServerInitializer nettyServerInitializer) {
+    public WebManagerImpl(NettyServerInitializer nettyServerInitializer) {
         this.nettyServerInitializer = nettyServerInitializer;
     }
 
