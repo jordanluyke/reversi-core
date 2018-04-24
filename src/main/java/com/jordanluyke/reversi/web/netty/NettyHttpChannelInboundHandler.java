@@ -1,5 +1,8 @@
 package com.jordanluyke.reversi.web.netty;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
@@ -19,6 +22,7 @@ import rx.Observable;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -63,15 +67,23 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
 
             if(msg instanceof LastHttpContent) {
                 handleRequest(httpContent, reqContent)
-                        .doOnNext(httpServerResponse -> writeResponse(ctx, httpServerResponse))
+                        .doOnNext(httpServerResponse -> {
+                            logger.info("{} {}", ctx.channel().remoteAddress(), httpServerResponse.getBody());
+                            writeResponse(ctx, httpServerResponse);
+                        })
                         .subscribe(new ErrorHandlingSubscriber<>());
             }
         }
     }
 
     @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        ctx.close();
+    }
+
+    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        logger.error("Error {}: {}", ctx.channel().remoteAddress(), cause.getMessage());
+        logger.error("Exception caught: {} | {}", ctx.channel().remoteAddress(), cause.getMessage());
         ctx.close();
     }
 
@@ -79,13 +91,15 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
         if(httpContent.decoderResult().isFailure())
             return Observable.just(new WebException(HttpResponseStatus.BAD_REQUEST).toHttpServerResponse());
 
-        try {
-            NodeUtil.isValidJSON(content.array());
-        } catch(RuntimeException e) {
-            return Observable.just(new WebException(HttpResponseStatus.BAD_REQUEST).toHttpServerResponse());
-        }
+        if(content.readableBytes() > 0) {
+            try {
+                NodeUtil.isValidJSON(content.array());
+            } catch(RuntimeException e) {
+                return Observable.just(new WebException(HttpResponseStatus.BAD_REQUEST).toHttpServerResponse());
+            }
 
-        httpServerRequest.setBody(NodeUtil.getJsonNode(content.array()));
+            httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(content.array())));
+        }
 
         return apiManager.handleRequest(httpServerRequest);
     }

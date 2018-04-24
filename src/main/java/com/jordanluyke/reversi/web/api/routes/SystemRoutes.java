@@ -2,6 +2,8 @@ package com.jordanluyke.reversi.web.api.routes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.inject.Inject;
+import com.jordanluyke.reversi.accounts.AccountsManager;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import org.apache.logging.log4j.LogManager;
@@ -18,11 +20,11 @@ public class SystemRoutes {
         @Override
         public Observable<ObjectNode> handle(Observable<HttpServerRequest> o) {
             return o.map(req -> {
-                ObjectMapper mapper = new ObjectMapper();
-                ObjectNode node = mapper.createObjectNode();
-                node.put("time", System.currentTimeMillis());
-                node.put("status", "OK");
-                return node;
+                ObjectNode body = new ObjectMapper().createObjectNode();
+                body.put("time", System.currentTimeMillis());
+                body.put("status", "OK");
+                return body;
+//                return node;
             });
         }
     }

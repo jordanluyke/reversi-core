@@ -1,6 +1,7 @@
 package com.jordanluyke.reversi;
 
 import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,9 +12,10 @@ public class Main {
     public static void main(String[] args) {
         logger.info("Initializing");
 
-        Guice.createInjector(new MainModule())
-                .getInstance(MainManager.class)
-                .start()
+        Injector injector = Guice.createInjector(new MainModule());
+
+        injector.getInstance(MainManager.class)
+                .start(injector)
                 .subscribe(new ErrorHandlingSubscriber<>());
     }
 }

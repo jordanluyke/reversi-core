@@ -20,24 +20,24 @@ public class Config {
     public int port = 8080;
     public boolean sslEnabled = false;
     public SslContext sslContext = null;
-    public String dbUrl;
-    public String dbUser;
-    public String dbPassword;
+    public String jdbcUrl;
+    public String jdbcUser;
+    public String jdbcPassword;
 
     public Config() {
         if(sslEnabled)
             this.sslContext = getSslCtx();
-        load();
+        loadConfig();
     }
 
-    private void load() {
+    private void loadConfig() {
         try {
             Properties p = new Properties();
             p.load(new FileInputStream("src/main/resources/config.properties"));
 
-            dbUrl = p.getProperty("db.url");
-            dbUser = p.getProperty("db.user");
-            dbPassword = p.getProperty("db.password");
+            jdbcUrl = p.getProperty("jdbc.url");
+            jdbcUser = p.getProperty("jdbc.user");
+            jdbcPassword = p.getProperty("jdbc.password");
         } catch(Exception e) {
             throw new RuntimeException(e);
         }

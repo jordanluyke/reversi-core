@@ -3,58 +3,23 @@ package com.jordanluyke.reversi.web.model;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.codec.http.HttpMethod;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
+@Getter
+@Setter
 public class HttpServerRequest {
 
-    Map<String, String> queryParams = new HashMap<>();
-    Map<String, String> headers = new HashMap<>();
-    JsonNode body = new ObjectMapper().createObjectNode();
-    String path;
-    HttpMethod method;
-
-    public Map<String, String> getQueryParams() {
-        return queryParams;
-    }
-
-    public void setQueryParams(Map<String, String> queryParams) {
-        this.queryParams = queryParams;
-    }
-
-    public Map<String, String> getHeaders() {
-        return headers;
-    }
-
-    public void setHeaders(Map<String, String> headers) {
-        this.headers = headers;
-    }
-
-    public JsonNode getBody() {
-        return body;
-    }
-
-    public void setBody(JsonNode body) {
-        this.body = body;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
-    }
-
-    public HttpMethod getMethod() {
-        return method;
-    }
-
-    public void setMethod(HttpMethod method) {
-        this.method = method;
-    }
+    private Map<String, String> queryParams = new HashMap<>();
+    private Map<String, String> headers = new HashMap<>();
+    private Optional<JsonNode> body = Optional.empty();
+    private String path;
+    private HttpMethod method;
 }

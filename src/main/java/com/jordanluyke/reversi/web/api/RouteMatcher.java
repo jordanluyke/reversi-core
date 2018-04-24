@@ -1,8 +1,8 @@
 package com.jordanluyke.reversi.web.api;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
+import com.google.inject.Inject;
+import com.jordanluyke.reversi.MainManager;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketEvent;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
@@ -22,10 +22,16 @@ import java.util.stream.IntStream;
 public class RouteMatcher {
     private static final Logger logger = LogManager.getLogger(RouteMatcher.class);
 
-    private Injector injector = Guice.createInjector(new ApiModule());
+    private MainManager mainManager;
+
     private ApiV1 apiV1 = new ApiV1();
     private List<HttpRoute> routes = apiV1.getHttpRoutes();
     private List<WebSocketEvent> events = apiV1.getWebSocketEvents();
+
+    @Inject
+    public RouteMatcher(MainManager mainManager) {
+        this.mainManager = mainManager;
+    }
 
     public Observable<HttpServerResponse> handle(HttpServerRequest request) {
         logger.info("{} {}", request.getMethod(), request.getPath());
@@ -80,7 +86,7 @@ public class RouteMatcher {
 
                     return Observable.just(route.getHandler());
                 })
-                .map(injector::getInstance)
+                .map(clazz -> mainManager.getInjector().getInstance(clazz))
                 .flatMap(instance -> instance.handle(Observable.just(request)))
 //                .map(object -> {
 //                    if(object instanceof ObjectNode) {
@@ -114,7 +120,7 @@ public class RouteMatcher {
                 .flatMap(event -> {
                     if(event == null)
                         return Observable.error(new WebException(HttpResponseStatus.NOT_FOUND));
-                    return Observable.just(injector.getInstance(event.getType()));
+                    return Observable.just(mainManager.getInjector().getInstance(event.getType()));
                 })
                 .flatMap(instance -> ((WebSocketEventHandler) instance).handle(Observable.just(request)))
                 .map(node -> {

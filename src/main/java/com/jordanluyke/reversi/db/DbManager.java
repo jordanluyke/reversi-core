@@ -1,5 +1,6 @@
 package com.jordanluyke.reversi.db;
 
+import org.jooq.DSLContext;
 import rx.Observable;
 
 /**
@@ -8,4 +9,6 @@ import rx.Observable;
 public interface DbManager {
 
     Observable<Void> start();
+
+    public DSLContext getDslContext();
 }

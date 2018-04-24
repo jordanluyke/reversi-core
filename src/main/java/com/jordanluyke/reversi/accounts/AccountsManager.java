@@ -1,6 +1,7 @@
 package com.jordanluyke.reversi.accounts;
 
 import com.jordanluyke.reversi.accounts.model.Account;
+import com.jordanluyke.reversi.accounts.model.AccountCreationRequest;
 import rx.Observable;
 
 /**
@@ -9,4 +10,6 @@ import rx.Observable;
 public interface AccountsManager {
 
     Observable<Account> getAccounts();
+
+    Observable<Account> createAccount(AccountCreationRequest account);
 }
