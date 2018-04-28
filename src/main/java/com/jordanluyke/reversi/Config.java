@@ -44,7 +44,6 @@ public class Config {
     }
 
     private SslContext getSslCtx() {
-        SslContext sslCtx;
         try {
             SelfSignedCertificate ssc;
             try {
@@ -52,11 +51,9 @@ public class Config {
             } catch(CertificateException e) {
                 throw new RuntimeException(e.getMessage());
             }
-            sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
+            return SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
         } catch(SSLException e) {
             throw new RuntimeException(e.getMessage());
         }
-
-        return sslCtx;
     }
 }
