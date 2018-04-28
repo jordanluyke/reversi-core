@@ -11,7 +11,6 @@ import rx.Observable;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.util.Properties;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -20,7 +19,7 @@ public class DbManagerImpl implements DbManager {
     private static final Logger logger = LogManager.getLogger(DbManager.class);
 
     private Config config;
-    private DSLContext dslContext;
+    private DSLContext dsl;
 
     @Inject
     public DbManagerImpl(Config config) {
@@ -30,13 +29,8 @@ public class DbManagerImpl implements DbManager {
     @Override
     public Observable<Void> start() {
         try {
-            Properties properties = new Properties();
-            properties.setProperty("user", config.jdbcUser);
-            properties.setProperty("password", config.jdbcPassword);
-
             Connection connection = DriverManager.getConnection(config.jdbcUrl, config.jdbcUser, config.jdbcPassword);
-            DSLContext dslContext = DSL.using(connection, SQLDialect.MYSQL);
-            this.dslContext = dslContext;
+            this.dsl = DSL.using(connection, SQLDialect.MYSQL);;
             logger.info("Connected to mysql");
         } catch(Exception e) {
             throw new RuntimeException(e.getMessage());
@@ -45,7 +39,7 @@ public class DbManagerImpl implements DbManager {
         return Observable.empty();
     }
 
-    public DSLContext getDslContext() {
-        return dslContext;
+    public DSLContext getDsl() {
+        return dsl;
     }
 }

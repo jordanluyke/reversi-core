@@ -35,7 +35,7 @@ public class AccountsDAO {
         try {
 //            logger.info("createAccount");
             String id = RandomUtil.generateRandom(12);
-            return Observable.just(dbManager.getDslContext().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.EMAIL, ACCOUNT.PASSWORD)
+            return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.EMAIL, ACCOUNT.PASSWORD)
                     .values(id, req.getEmail(), req.getPassword())
                     .execute())
                     .map(Void -> {
