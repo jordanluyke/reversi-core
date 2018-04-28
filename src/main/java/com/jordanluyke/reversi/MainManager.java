@@ -9,6 +9,4 @@ import rx.Observable;
 public interface MainManager {
 
     Observable<Void> start(Injector injector);
-
-    Injector getInjector();
 }

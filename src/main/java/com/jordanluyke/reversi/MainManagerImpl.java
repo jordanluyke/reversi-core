@@ -13,24 +13,21 @@ public class MainManagerImpl implements MainManager {
 
     private WebManager webManager;
     private DbManager dbManager;
-    private Injector injector;
+    private Config config;
 
     @Inject
-    public MainManagerImpl(WebManager webManager, DbManager dbManager) {
+    public MainManagerImpl(WebManager webManager, DbManager dbManager, Config config) {
         this.webManager = webManager;
         this.dbManager = dbManager;
+        this.config = config;
     }
 
     @Override
     public Observable<Void> start(Injector injector) {
-        this.injector = injector;
+        config.injector = injector;
         return Observable.zip(
                 webManager.start(),
                 dbManager.start(),
                 (V1, V2) -> null);
-    }
-
-    public Injector getInjector() {
-        return injector;
     }
 }

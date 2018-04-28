@@ -1,7 +1,9 @@
 package com.jordanluyke.reversi.web.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
+import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.MainManager;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketEvent;
@@ -22,15 +24,15 @@ import java.util.stream.IntStream;
 public class RouteMatcher {
     private static final Logger logger = LogManager.getLogger(RouteMatcher.class);
 
-    private MainManager mainManager;
+    private Config config;
 
     private ApiV1 apiV1 = new ApiV1();
     private List<HttpRoute> routes = apiV1.getHttpRoutes();
     private List<WebSocketEvent> events = apiV1.getWebSocketEvents();
 
     @Inject
-    public RouteMatcher(MainManager mainManager) {
-        this.mainManager = mainManager;
+    public RouteMatcher(Config config) {
+        this.config = config;
     }
 
     public Observable<HttpServerResponse> handle(HttpServerRequest request) {
@@ -86,25 +88,28 @@ public class RouteMatcher {
 
                     return Observable.just(route.getHandler());
                 })
-                .map(clazz -> mainManager.getInjector().getInstance(clazz))
+                .map(clazz -> config.injector.getInstance(clazz))
                 .flatMap(instance -> instance.handle(Observable.just(request)))
-//                .map(object -> {
-//                    if(object instanceof ObjectNode) {
-//                        ObjectNode node = (ObjectNode) object;
-//                        HttpServerResponse res = new HttpServerResponse();
-//                        res.setStatus(HttpResponseStatus.OK);
-//                        res.setBody(node);
-//                        return res;
-//                    } else if(object instanceof HttpServerResponse) {
-//                        return (HttpServerResponse) object;
-//                    } else
-//                        throw new RuntimeException("Invalid handler object");
-//                })
-                .map(node -> {
+                .flatMap(object -> {
+                    if(object instanceof HttpServerResponse)
+                        return Observable.just((HttpServerResponse) object);
+
                     HttpServerResponse res = new HttpServerResponse();
                     res.setStatus(HttpResponseStatus.OK);
-                    res.setBody(node);
-                    return res;
+
+                    if(object instanceof ObjectNode) {
+                        res.setBody((ObjectNode) object);
+                    } else {
+                        try {
+                            res.setBody(new ObjectMapper().valueToTree(object));
+                        } catch(Exception err) {
+                            logger.error("Json serialize fail");
+                            err.printStackTrace();
+                            return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                        }
+                    }
+
+                    return Observable.just(res);
                 })
                 .onErrorResumeNext(err -> {
                     WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
@@ -120,7 +125,7 @@ public class RouteMatcher {
                 .flatMap(event -> {
                     if(event == null)
                         return Observable.error(new WebException(HttpResponseStatus.NOT_FOUND));
-                    return Observable.just(mainManager.getInjector().getInstance(event.getType()));
+                    return Observable.just(config.injector.getInstance(event.getType()));
                 })
                 .flatMap(instance -> ((WebSocketEventHandler) instance).handle(Observable.just(request)))
                 .map(node -> {

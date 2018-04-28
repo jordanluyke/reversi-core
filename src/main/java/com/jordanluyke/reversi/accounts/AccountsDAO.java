@@ -50,4 +50,11 @@ public class AccountsDAO {
             throw new RuntimeException(e);
         }
     }
+
+    public Observable<Account> getAccountById(String accountId) {
+        return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
+                .where(ACCOUNT.ID.eq(accountId))
+                .fetchOne())
+                .map(record -> new Account(record.getId(), record.getEmail(), record.getPassword()));
+    }
 }

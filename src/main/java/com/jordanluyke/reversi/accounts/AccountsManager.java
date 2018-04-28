@@ -12,4 +12,6 @@ public interface AccountsManager {
     Observable<Account> getAccounts();
 
     Observable<Account> createAccount(AccountCreationRequest account);
+
+    Observable<Account> getAccountById(String id);
 }

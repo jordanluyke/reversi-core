@@ -47,13 +47,13 @@ public class AccountRoutes {
     }
 
     public static class GetAccount implements HttpRouteHandler {
+        @Inject protected AccountsManager accountsManager;
         @Override
-        public Observable<ObjectNode> handle(Observable<HttpServerRequest> o) {
-            return o.map(req -> {
-                ObjectMapper mapper = new ObjectMapper();
-                ObjectNode node = mapper.createObjectNode();
-                node.put("class", this.getClass().getCanonicalName());
-                return node;
+        public Observable<Account> handle(Observable<HttpServerRequest> o) {
+            return o.flatMap(req -> {
+                String accountId = req.getQueryParams().get("accountId");
+                logger.info("accountId {}", accountId);
+                return accountsManager.getAccountById(accountId);
             });
         }
     }

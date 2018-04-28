@@ -1,5 +1,6 @@
 package com.jordanluyke.reversi;
 
+import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -23,6 +24,7 @@ public class Config {
     public String jdbcUrl;
     public String jdbcUser;
     public String jdbcPassword;
+    public Injector injector;
 
     public Config() {
         if(sslEnabled)

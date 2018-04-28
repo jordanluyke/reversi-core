@@ -26,4 +26,9 @@ public class AccountsManagerImpl implements AccountsManager {
     public Observable<Account> createAccount(AccountCreationRequest account) {
         return accountsDAO.createAccount(account);
     }
+
+    @Override
+    public Observable<Account> getAccountById(String id) {
+        return accountsDAO.getAccountById(id);
+    }
 }
