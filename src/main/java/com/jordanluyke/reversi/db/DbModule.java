@@ -9,6 +9,6 @@ public class DbModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(DbManager.class).to(DbManagerImpl.class);
+        bind(DbManager.class).to(DbManagerImpl.class).asEagerSingleton();
     }
 }
