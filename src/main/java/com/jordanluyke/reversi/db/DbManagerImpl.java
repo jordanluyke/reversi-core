@@ -30,7 +30,7 @@ public class DbManagerImpl implements DbManager {
     public Observable<Void> start() {
         try {
             Connection connection = DriverManager.getConnection(config.jdbcUrl, config.jdbcUser, config.jdbcPassword);
-            this.dsl = DSL.using(connection, SQLDialect.MYSQL);;
+            this.dsl = DSL.using(connection, SQLDialect.MYSQL);
             logger.info("Connected to mysql");
         } catch(Exception e) {
             throw new RuntimeException(e.getMessage());

@@ -10,5 +10,5 @@ public interface DbManager {
 
     Observable<Void> start();
 
-    public DSLContext getDsl();
+    DSLContext getDsl();
 }

@@ -52,6 +52,7 @@ public class AccountsDAO {
     }
 
     public Observable<Account> getAccountById(String accountId) {
+        logger.info("dsl {}", dbManager.getDsl());
         return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
                 .where(ACCOUNT.ID.eq(accountId))
                 .fetchOne())
