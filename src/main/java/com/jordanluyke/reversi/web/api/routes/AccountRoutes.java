@@ -8,10 +8,13 @@ import com.jordanluyke.reversi.accounts.model.Account;
 import com.jordanluyke.reversi.accounts.model.AccountCreationRequest;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
+import com.jordanluyke.reversi.web.api.model.PagingResponse;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
+
+import java.util.List;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -20,14 +23,12 @@ public class AccountRoutes {
     private static final Logger logger = LogManager.getLogger(AccountRoutes.class);
 
     public static class GetAccounts implements HttpRouteHandler {
+        @Inject protected AccountsManager accountsManager;
         @Override
-        public Observable<ObjectNode> handle(Observable<HttpServerRequest> o) {
-            return o.map(req -> {
-                ObjectMapper mapper = new ObjectMapper();
-                ObjectNode node = mapper.createObjectNode();
-                node.put("class", this.getClass().getCanonicalName());
-                return node;
-            });
+        public Observable<PagingResponse<Account>> handle(Observable<HttpServerRequest> o) {
+            return o.flatMap(req -> accountsManager.getAccounts())
+                    .toList()
+                    .map(accounts -> new PagingResponse<>(accounts, 0, accounts.size()));
         }
     }
 
@@ -52,7 +53,6 @@ public class AccountRoutes {
         public Observable<Account> handle(Observable<HttpServerRequest> o) {
             return o.flatMap(req -> {
                 String accountId = req.getQueryParams().get("accountId");
-                logger.info("accountId {}", accountId);
                 return accountsManager.getAccountById(accountId);
             });
         }

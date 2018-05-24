@@ -28,18 +28,17 @@ public class AccountsDAO {
     }
 
     public Observable<Account> getAccounts() {
-        return Observable.empty();
+        return Observable.from(dbManager.getDsl().selectFrom(ACCOUNT).fetch())
+                .map(Account::fromRecord);
     }
 
     public Observable<Account> createAccount(AccountCreationRequest req) {
         try {
-//            logger.info("createAccount");
             String id = RandomUtil.generateRandom(12);
             return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.EMAIL, ACCOUNT.PASSWORD)
                     .values(id, req.getEmail(), req.getPassword())
                     .execute())
                     .map(Void -> {
-//                        logger.info("createAccount2");
                         Account account = new Account();
                         account.setId(id);
                         account.setEmail(req.getEmail());
@@ -52,10 +51,9 @@ public class AccountsDAO {
     }
 
     public Observable<Account> getAccountById(String accountId) {
-        logger.info("dsl {}", dbManager.getDsl());
         return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
                 .where(ACCOUNT.ID.eq(accountId))
                 .fetchOne())
-                .map(record -> new Account(record.getId(), record.getEmail(), record.getPassword()));
+                .map(Account::fromRecord);
     }
 }

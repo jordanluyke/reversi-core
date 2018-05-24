@@ -42,17 +42,17 @@
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
-            <version>3.10.6</version>
+            <version>3.10.7</version>
         </dependency>
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq-meta</artifactId>
-            <version>3.10.6</version>
+            <version>3.10.7</version>
         </dependency>
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq-codegen</artifactId>
-            <version>3.10.6</version>
+            <version>3.10.7</version>
         </dependency>
         <dependency>
         <groupId>mysql</groupId>
@@ -143,6 +143,7 @@
                             <directory>target/generated-sources/jooq</directory>
                         </target>
                     </generator>
+                    <logging>WARN</logging>
                 </configuration>
             </plugin>
         </plugins>

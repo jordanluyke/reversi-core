@@ -11,7 +11,6 @@ public class Main {
 
     public static void main(String[] args) {
         logger.info("Initializing");
-
         Injector injector = Guice.createInjector(new MainModule());
 
         injector.getInstance(MainManager.class)

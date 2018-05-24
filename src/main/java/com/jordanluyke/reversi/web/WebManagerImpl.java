@@ -18,6 +18,6 @@ public class WebManagerImpl implements WebManager {
 
     @Override
     public Observable<Void> start() {
-        return this.nettyServerInitializer.initialize();
+        return nettyServerInitializer.initialize();
     }
 }
