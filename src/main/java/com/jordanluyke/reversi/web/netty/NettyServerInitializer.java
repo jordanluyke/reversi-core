@@ -36,8 +36,8 @@ public class NettyServerInitializer {
                 .channel(NioServerSocketChannel.class)
                 .childHandler(nettyHttpChannelInitializer);
 
-        return channelFutureToObservable(bootstrap.bind(config.port))
-                .doOnNext(Void -> logger.info("Listening on port {}", config.port))
+        return channelFutureToObservable(bootstrap.bind(config.getPort()))
+                .doOnNext(Void -> logger.info("Listening on port {}", config.getPort()))
                 .flatMap(channel -> channelFutureToObservable(channel.closeFuture()))
                 .ignoreElements()
                 .cast(Void.class);

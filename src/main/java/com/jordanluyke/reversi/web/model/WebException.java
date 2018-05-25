@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.util.RandomUtil;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import lombok.Getter;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
+@Getter
 public class WebException extends Exception {
 
     private HttpResponseStatus status;
@@ -25,14 +27,6 @@ public class WebException extends Exception {
         super(message);
         this.status = status;
         this.exceptionType = exceptionType;
-    }
-
-    public HttpResponseStatus getStatus() {
-        return status;
-    }
-
-    public String getExceptionType() {
-        return exceptionType;
     }
 
     public HttpServerResponse toHttpServerResponse() {

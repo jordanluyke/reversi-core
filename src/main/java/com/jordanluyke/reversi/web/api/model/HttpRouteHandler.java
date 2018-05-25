@@ -1,6 +1,5 @@
 package com.jordanluyke.reversi.web.api.model;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import rx.Observable;
 

@@ -24,7 +24,7 @@ public class MainManagerImpl implements MainManager {
 
     @Override
     public Observable<Void> start(Injector injector) {
-        config.injector = injector;
+        config.setInjector(injector);
         return Observable.zip(
                 webManager.start(),
                 dbManager.start(),

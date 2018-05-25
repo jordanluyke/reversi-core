@@ -88,7 +88,7 @@ public class RouteMatcher {
 
                     return Observable.just(route.getHandler());
                 })
-                .map(clazz -> config.injector.getInstance(clazz))
+                .map(clazz -> config.getInjector().getInstance(clazz))
                 .flatMap(instance -> instance.handle(Observable.just(request)))
                 .flatMap(object -> {
                     if(object instanceof HttpServerResponse)
@@ -125,7 +125,7 @@ public class RouteMatcher {
                 .flatMap(event -> {
                     if(event == null)
                         return Observable.error(new WebException(HttpResponseStatus.NOT_FOUND));
-                    return Observable.just(config.injector.getInstance(event.getType()));
+                    return Observable.just(config.getInjector().getInstance(event.getType()));
                 })
                 .flatMap(instance -> ((WebSocketEventHandler) instance).handle(Observable.just(request)))
                 .map(node -> {

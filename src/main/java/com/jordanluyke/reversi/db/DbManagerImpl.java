@@ -30,7 +30,7 @@ public class DbManagerImpl implements DbManager {
     @Override
     public Observable<Void> start() {
         try {
-            Connection connection = DriverManager.getConnection(config.jdbcUrl, config.jdbcUser, config.jdbcPassword);
+            Connection connection = DriverManager.getConnection(config.getJdbcUrl(), config.getJdbcUser(), config.getJdbcPassword());
             System.getProperties().setProperty("org.jooq.no-logo", "true");
             Settings settings = new Settings()
                     .withExecuteLogging(false);

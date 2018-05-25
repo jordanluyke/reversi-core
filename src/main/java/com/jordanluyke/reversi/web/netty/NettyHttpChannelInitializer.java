@@ -31,8 +31,8 @@ public class NettyHttpChannelInitializer extends ChannelInitializer<SocketChanne
     @Override
     protected void initChannel(SocketChannel channel) {
         ChannelPipeline pipeline = channel.pipeline();
-        if(config.sslContext != null)
-            pipeline.addLast(config.sslContext.newHandler(channel.alloc()));
+        if(config.getSslContext() != null)
+            pipeline.addLast(config.getSslContext().newHandler(channel.alloc()));
         pipeline.addLast(new HttpRequestDecoder());
         pipeline.addLast(new HttpResponseEncoder());
         pipeline.addLast(new HttpContentCompressor());

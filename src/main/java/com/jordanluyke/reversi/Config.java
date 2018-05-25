@@ -5,6 +5,8 @@ import com.google.inject.Singleton;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.net.ssl.SSLException;
 import java.io.FileInputStream;
@@ -15,16 +17,18 @@ import java.util.Properties;
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
 
+@Getter
+@Setter
 @Singleton
 public class Config {
 
-    public int port = 8080;
-    public boolean sslEnabled = false;
-    public SslContext sslContext = null;
-    public String jdbcUrl;
-    public String jdbcUser;
-    public String jdbcPassword;
-    public Injector injector;
+    private int port = 8080;
+    private boolean sslEnabled = false;
+    private SslContext sslContext = null;
+    private String jdbcUrl;
+    private String jdbcUser;
+    private String jdbcPassword;
+    private Injector injector;
 
     public Config() {
         if(sslEnabled)

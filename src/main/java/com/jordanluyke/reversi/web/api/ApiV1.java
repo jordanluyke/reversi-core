@@ -35,7 +35,8 @@ public class ApiV1 implements Api {
     @Override
     public List<WebSocketEvent> getWebSocketEvents() {
         return Arrays.asList(
-                new WebSocketEvent<>(SystemEvents.KeepAlive.class)
+                new WebSocketEvent<>(SystemEvents.KeepAlive.class),
+                new WebSocketEvent<>(SystemEvents.MessageReceipt.class)
         );
     }
 }
