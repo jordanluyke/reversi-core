@@ -1,4 +1,4 @@
-package com.jordanluyke.reversi.accounts.model;
+package com.jordanluyke.reversi.account.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
@@ -20,7 +20,12 @@ public class Account {
     private String email;
     @JsonIgnore private String password;
 
+    public Account(String id, String email) {
+        this.id = id;
+        this.email = email;
+    }
+
     public static Account fromRecord(AccountRecord record) {
-        return new Account(record.getId(), record.getEmail(), record.getPassword());
+        return new Account(record.getId(), record.getEmail());
     }
 }

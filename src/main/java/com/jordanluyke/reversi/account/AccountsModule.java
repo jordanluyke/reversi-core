@@ -1,4 +1,4 @@
-package com.jordanluyke.reversi.accounts;
+package com.jordanluyke.reversi.account;
 
 import com.google.inject.AbstractModule;
 

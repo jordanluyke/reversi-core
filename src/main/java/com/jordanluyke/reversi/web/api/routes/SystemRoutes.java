@@ -2,8 +2,6 @@ package com.jordanluyke.reversi.web.api.routes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.inject.Inject;
-import com.jordanluyke.reversi.accounts.AccountsManager;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import org.apache.logging.log4j.LogManager;

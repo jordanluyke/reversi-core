@@ -1,7 +1,7 @@
 package com.jordanluyke.reversi;
 
 import com.google.inject.AbstractModule;
-import com.jordanluyke.reversi.accounts.AccountsModule;
+import com.jordanluyke.reversi.account.AccountsModule;
 import com.jordanluyke.reversi.db.DbModule;
 import com.jordanluyke.reversi.web.WebModule;
 

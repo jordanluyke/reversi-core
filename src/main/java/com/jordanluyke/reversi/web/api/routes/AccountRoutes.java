@@ -3,9 +3,9 @@ package com.jordanluyke.reversi.web.api.routes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
-import com.jordanluyke.reversi.accounts.AccountsManager;
-import com.jordanluyke.reversi.accounts.model.Account;
-import com.jordanluyke.reversi.accounts.model.AccountCreationRequest;
+import com.jordanluyke.reversi.account.AccountsManager;
+import com.jordanluyke.reversi.account.model.Account;
+import com.jordanluyke.reversi.account.model.AccountCreationRequest;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.api.model.PagingResponse;
@@ -13,8 +13,6 @@ import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
-
-import java.util.List;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>

@@ -1,9 +1,9 @@
-package com.jordanluyke.reversi.accounts;
+package com.jordanluyke.reversi.account;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.jordanluyke.reversi.accounts.model.Account;
-import com.jordanluyke.reversi.accounts.model.AccountCreationRequest;
+import com.jordanluyke.reversi.account.model.Account;
+import com.jordanluyke.reversi.account.model.AccountCreationRequest;
 import com.jordanluyke.reversi.db.DbManager;
 import com.jordanluyke.reversi.util.RandomUtil;
 import org.apache.logging.log4j.LogManager;
