@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
@@ -14,22 +17,39 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Board {
 
-    private Side[] squares = new Side[64];
+    private Side[] squares;
+    private String transcript;
 
-    public String getLocation(int index) {
-        if(index < 0 || index >= 64)
-            throw new Error("Index out of bounds");
-        String[] horizontalLocations = "ABCDEFGH".split("");
-        String[] verticalLocations = "12345678".split("");
-        String h = horizontalLocations[Math.floorDiv(index, 8)];
-        String v = verticalLocations[index % 8];
-        return h + v;
+    public static Board create() {
+        Side[] squares = new Side[64];
+        squares[25] = Side.LIGHT;
+        squares[26] = Side.DARK;
+        squares[32] = Side.DARK;
+        squares[33] = Side.LIGHT;
+        return new Board(squares, "");
     }
 
-    public int getIndexRelativeTo(int index, Direction direction) {
-        int i = index + (8 * direction.getVerticalShift()) + direction.getHorizontalShift();
-        if(i < 0 || i >= 64)
-            throw new Error("Index out of bounds");
-        return i;
+    public void setSquare(Position position, Side side) {
+        squares[position.getIndex()] = side;
+        transcript += position.getCoordinates();
     }
+
+    public int getAmount(Side side) {
+        return Arrays.stream(squares)
+                .filter(square -> square == side)
+                .collect(Collectors.toList())
+                .size();
+    }
+
+    public void placePiece(Side side, Position position) {
+//        if(!isValidMove(side, position))
+//            throw new IllegalMoveException()
+    }
+
+    private boolean isValidMove(Side side, Position position) {
+        if(squares[position.getIndex()] != null)
+            return false;
+        return true;
+    }
+    // check for available legal moves (backtrack from open spaces next to pieces)
 }

@@ -17,6 +17,6 @@ public class Match {
     private String id;
     private String playerLightId;
     private String playerDarkId;
-    private Side turn = Side.LIGHT;
-    private Board board = new Board();
+    private Side turn = Side.DARK;
+    private Board board = Board.create();
 }
