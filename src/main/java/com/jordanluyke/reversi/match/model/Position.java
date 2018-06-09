@@ -1,6 +1,7 @@
 package com.jordanluyke.reversi.match.model;
 
 import lombok.Getter;
+import rx.Observable;
 
 import java.util.Arrays;
 import java.util.List;
@@ -44,10 +45,23 @@ public class Position {
         return h + v;
     }
 
-    public Position getPositionOfDirection(Direction direction) {
-        int i = index + (8 * direction.getVerticalShift()) + direction.getHorizontalShift();
-        if(i < 0 || i >= 64)
-            throw new Error("Index out of bounds");
+    public Position getPosition(Direction direction) {
+        int i = getNewIndexPosition(direction);
+        if(isIndexInBounds(i))
+            throw new RuntimeException("Index out of bounds");
         return new Position(i);
+    }
+
+    public boolean isPositionValid(Direction direction) {
+        int i = getNewIndexPosition(direction);
+        return isIndexInBounds(i);
+    }
+
+    private boolean isIndexInBounds(int index) {
+        return index < 0 || index >= 64;
+    }
+
+    private int getNewIndexPosition(Direction direction) {
+        return index + (8 * direction.getVerticalShift()) + direction.getHorizontalShift();
     }
 }

@@ -5,5 +5,9 @@ package com.jordanluyke.reversi.match.model;
  */
 public enum Side {
     LIGHT,
-    DARK
+    DARK;
+
+    public Side getOpposite() {
+        return this == LIGHT ? DARK : LIGHT;
+    }
 }
