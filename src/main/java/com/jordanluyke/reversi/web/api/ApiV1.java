@@ -27,12 +27,12 @@ public class ApiV1 implements Api {
         return Arrays.asList(
                 new HttpRoute("/status", HttpMethod.GET, SystemRoutes.GetStatus.class),
 //                new HttpRoute("/account", HttpMethod.GET, AccountRoutes.GetAccounts.class),
-                new HttpRoute("/account", HttpMethod.POST, AccountRoutes.CreateAccount.class),
-                new HttpRoute("/account/:accountId", HttpMethod.GET, AccountRoutes.GetAccount.class),
-                new HttpRoute("/account/:accountId/messages/:messageId", HttpMethod.GET, AccountRoutes.GetAccountProfile.class),
-                new HttpRoute("/match", HttpMethod.POST, MatchRoutes.CreateMatch.class),
-                new HttpRoute("/match/:matchId", HttpMethod.GET, MatchRoutes.GetMatch.class),
-                new HttpRoute("/match/:matchId/move", HttpMethod.POST, MatchRoutes.Move.class)
+                new HttpRoute("/accounts", HttpMethod.POST, AccountRoutes.CreateAccount.class),
+                new HttpRoute("/accounts/:accountId", HttpMethod.GET, AccountRoutes.GetAccount.class),
+                new HttpRoute("/accounts/:accountId/messages/:messageId", HttpMethod.GET, AccountRoutes.GetAccountProfile.class),
+                new HttpRoute("/matches", HttpMethod.POST, MatchRoutes.CreateMatch.class),
+                new HttpRoute("/matches/:matchId", HttpMethod.GET, MatchRoutes.GetMatch.class),
+                new HttpRoute("/matches/:matchId/move", HttpMethod.POST, MatchRoutes.Move.class)
         );
     }
 
