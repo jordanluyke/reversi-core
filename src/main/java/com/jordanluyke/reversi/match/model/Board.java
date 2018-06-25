@@ -11,6 +11,7 @@ import rx.Observable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -45,8 +46,8 @@ public class Board {
         if(squares[position.getIndex()] != null)
             return Observable.error(new IllegalMoveException());
         return Observable.from(Direction.class.getEnumConstants())
-                .filter(direction -> position.isPositionValid(direction) && squares[position.getPosition(direction).getIndex()] == side.getOpposite())
-                .flatMap(direction -> getConnectingPositions(side, Arrays.asList(position), direction))
+                .filter(direction -> position.isWithinBounds(direction) && squares[position.getNewPosition(direction).getIndex()] == side.getOpposite())
+                .flatMap(direction -> getConnectingPositions(side, position, direction))
                 .defaultIfEmpty(null)
                 .flatMap(pos -> {
                     if(pos == null)
@@ -59,14 +60,30 @@ public class Board {
                 .map(Void -> this);
     }
 
+    public Observable<Boolean> canPlacePiece(Side side) {
+        return Observable.range(0, squares.length)
+                .filter(index -> squares[index] == null)
+                .flatMap(index -> Observable.from(Direction.class.getEnumConstants())
+                        .filter(direction -> Position.fromIndex(index).isWithinBounds(direction) && squares[Position.fromIndex(index).getNewPosition(direction).getIndex()] == side.getOpposite())
+                        .flatMap(direction -> getConnectingPositions(side, Position.fromIndex(index), direction)))
+                .take(1)
+                .toList()
+                .defaultIfEmpty(null)
+                .map(Objects::nonNull);
+    }
+
+    private Observable<Position> getConnectingPositions(Side side, Position startPosition, Direction direction) {
+        return getConnectingPositions(side, Arrays.asList(startPosition), direction);
+    }
+
     private Observable<Position> getConnectingPositions(Side side, List<Position> positions, Direction direction) {
         positions = new ArrayList<>(positions);
         Position lastPosition = positions.get(positions.size() - 1);
 
-        if(!lastPosition.isPositionValid(direction))
+        if(!lastPosition.isWithinBounds(direction))
             return Observable.empty();
 
-        Position currentPosition = lastPosition.getPosition(direction);
+        Position currentPosition = lastPosition.getNewPosition(direction);
         Side square = squares[currentPosition.getIndex()];
 
         if(square == null)

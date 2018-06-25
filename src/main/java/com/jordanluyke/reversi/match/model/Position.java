@@ -47,16 +47,15 @@ public class Position {
         return h + v;
     }
 
-    public Position getPosition(Direction direction) {
+    public Position getNewPosition(Direction direction) {
         int i = getNewIndexPosition(direction);
         if(!isIndexInBounds(i))
             throw new RuntimeException("Index out of bounds");
         return new Position(i);
     }
 
-    public boolean isPositionValid(Direction direction) {
-        int i = getNewIndexPosition(direction);
-        return isIndexInBounds(i);
+    public boolean isWithinBounds(Direction direction) {
+        return isIndexInBounds(getNewIndexPosition(direction));
     }
 
     private boolean isIndexInBounds(int index) {
