@@ -2,6 +2,7 @@ package com.jordanluyke.reversi.web.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.MainManager;
@@ -101,7 +102,9 @@ public class RouteMatcher {
                         res.setBody((ObjectNode) object);
                     } else {
                         try {
-                            res.setBody(new ObjectMapper().valueToTree(object));
+                            ObjectMapper mapper = new ObjectMapper()
+                                    .registerModule(new Jdk8Module());
+                            res.setBody(mapper.valueToTree(object));
                         } catch(Exception err) {
                             logger.error("Json serialize fail");
                             err.printStackTrace();
