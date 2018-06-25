@@ -34,17 +34,18 @@ public class Match {
         if(side != turn)
             return Observable.error(new IllegalMoveException());
         return board.placePiece(side, position)
-                .flatMap(board1 -> Observable.zip(
-                        board1.canPlacePiece(side.getOpposite()),
-                        board1.canPlacePiece(side),
-                        (opposingSideCanPlacePiece, sameSideCanPlacePiece) -> {
-                            if(opposingSideCanPlacePiece)
+                .flatMap(board1 -> board1.canPlacePiece(side.getOpposite())
+                        .flatMap(opposingSideCanPlacePiece -> {
+                            if(opposingSideCanPlacePiece) {
                                 turn = turn.getOpposite();
-                            else if(!opposingSideCanPlacePiece && !sameSideCanPlacePiece)
-                                completedAt = Optional.of(new Date());
-                            return null;
-                        })
-                )
-                .map(Void -> this);
+                                return Observable.just(this);
+                            }
+                            return board1.canPlacePiece(side)
+                                    .map(sameSideCanPlacePiece -> {
+                                        if(!sameSideCanPlacePiece)
+                                            completedAt = Optional.of(new Date());
+                                        return this;
+                                    });
+                        }));
     }
 }
