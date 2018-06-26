@@ -22,7 +22,7 @@ public class MatchManagerImpl implements MatchManager {
     private static final Logger logger = LogManager.getLogger(MatchManager.class);
 
 //    private List<Match> matches = new ArrayList<>();
-    private List<Match> matches = Arrays.asList(new Match("match1", "light1", "dark2", Side.DARK, Board.create(), new Date(), Optional.empty()));
+    private List<Match> matches = Arrays.asList(new Match("match1", Optional.of("light1"), Optional.of("dark2"), Side.DARK, Board.create(), new Date(), Optional.empty(), Optional.empty(), Optional.empty()));
 
     @Override
     public Observable<Match> createMatch() {
