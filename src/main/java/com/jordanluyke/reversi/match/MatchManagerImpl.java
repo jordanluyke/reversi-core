@@ -1,6 +1,5 @@
 package com.jordanluyke.reversi.match;
 
-import com.jordanluyke.reversi.match.model.Board;
 import com.jordanluyke.reversi.match.model.Match;
 import com.jordanluyke.reversi.match.model.Position;
 import com.jordanluyke.reversi.match.model.Side;
@@ -11,7 +10,6 @@ import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,7 +20,11 @@ public class MatchManagerImpl implements MatchManager {
     private static final Logger logger = LogManager.getLogger(MatchManager.class);
 
 //    private List<Match> matches = new ArrayList<>();
-    private List<Match> matches = Arrays.asList(new Match("match1", Optional.of("light1"), Optional.of("dark2"), Side.DARK, Board.create(), new Date(), Optional.empty(), Optional.empty(), Optional.empty(), true));
+    private List<Match> matches = Arrays.asList(Match.builder()
+        .id("match1")
+        .playerLightId(Optional.of("light1"))
+        .playerDarkId(Optional.of("dark2"))
+        .build());
 
     @Override
     public Observable<Match> createMatch() {

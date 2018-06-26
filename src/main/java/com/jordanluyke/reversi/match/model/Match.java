@@ -1,10 +1,7 @@
 package com.jordanluyke.reversi.match.model;
 
 import com.jordanluyke.reversi.util.RandomUtil;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
@@ -19,6 +16,7 @@ import java.util.Optional;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class Match {
     private static final Logger logger = LogManager.getLogger(Match.class);
 
