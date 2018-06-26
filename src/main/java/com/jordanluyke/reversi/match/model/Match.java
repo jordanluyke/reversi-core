@@ -31,6 +31,7 @@ public class Match {
     private Optional<Date> completedAt = Optional.empty();
     private Optional<Date> disabledAt = Optional.empty();
     private Optional<String> winnerId = Optional.empty();
+    private boolean isPrivate = false;
 
     public Observable<Match> placePiece(Side side, Position position) {
         if(side != turn || !playerLightId.isPresent() || !playerDarkId.isPresent())
