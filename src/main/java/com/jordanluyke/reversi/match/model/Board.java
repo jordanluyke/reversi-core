@@ -67,7 +67,6 @@ public class Board {
                         .filter(direction -> Position.fromIndex(index).isWithinBounds(direction) && squares[Position.fromIndex(index).getNewPosition(direction).getIndex()] == side.getOpposite())
                         .flatMap(direction -> getConnectingPositions(side, Position.fromIndex(index), direction)))
                 .take(1)
-                .toList()
                 .defaultIfEmpty(null)
                 .map(Objects::nonNull);
     }

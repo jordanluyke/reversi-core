@@ -36,17 +36,17 @@ public class NettyHttpClient {
         return get(url, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> get(String url, Map<String, ?> params) {
+    public Observable<ClientResponse> get(String url, Map<String, Object> params) {
         return get(url, params, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> get(String url, Map<String, ?> params, Map<String, String> headers) {
+    public Observable<ClientResponse> get(String url, Map<String, Object> params, Map<String, String> headers) {
         return get(url, params, headers, HttpHeaderValues.APPLICATION_JSON.toString());
     }
 
-    public Observable<ClientResponse> get(String url, Map<String, ?> params, Map<String, String> headers, String contentType) {
+    public Observable<ClientResponse> get(String url, Map<String, Object> params, Map<String, String> headers, String contentType) {
         if(params.size() > 0)
-            url += (url.contains("?") ? "&" : "?") + HttpUtil.toQuerystring(params);
+            url += "?" + HttpUtil.toQuerystring(params);
         return request(url, HttpMethod.GET, new byte[0], headers, contentType);
     }
 
@@ -54,15 +54,15 @@ public class NettyHttpClient {
         return post(url, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> post(String url, Map<String, ?> body) {
+    public Observable<ClientResponse> post(String url, Map<String, Object> body) {
         return post(url, body, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> post(String url, Map<String, ?> body, Map<String, String> headers) {
+    public Observable<ClientResponse> post(String url, Map<String, Object> body, Map<String, String> headers) {
         return post(url, body, headers, HttpHeaderValues.APPLICATION_JSON.toString());
     }
 
-    public Observable<ClientResponse> post(String url, Map<String, ?> body, Map<String, String> headers, String contentType) {
+    public Observable<ClientResponse> post(String url, Map<String, Object> body, Map<String, String> headers, String contentType) {
         return request(url, HttpMethod.POST, bodyToBytes(body, contentType), headers, contentType);
     }
 
@@ -70,15 +70,15 @@ public class NettyHttpClient {
         return put(url, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> put(String url, Map<String, ?> body) {
+    public Observable<ClientResponse> put(String url, Map<String, Object> body) {
         return put(url, body, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> put(String url, Map<String, ?> body, Map<String, String> headers) {
+    public Observable<ClientResponse> put(String url, Map<String, Object> body, Map<String, String> headers) {
         return put(url, body, headers, HttpHeaderValues.APPLICATION_JSON.toString());
     }
 
-    public Observable<ClientResponse> put(String url, Map<String, ?> body, Map<String, String> headers, String contentType) {
+    public Observable<ClientResponse> put(String url, Map<String, Object> body, Map<String, String> headers, String contentType) {
         return request(url, HttpMethod.PUT, bodyToBytes(body, contentType), headers, contentType);
     }
 
@@ -86,15 +86,15 @@ public class NettyHttpClient {
         return delete(url, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> delete(String url, Map<String, ?> body) {
+    public Observable<ClientResponse> delete(String url, Map<String, Object> body) {
         return delete(url, body, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> delete(String url, Map<String, ?> body, Map<String, String> headers) {
+    public Observable<ClientResponse> delete(String url, Map<String, Object> body, Map<String, String> headers) {
         return delete(url, body, headers, HttpHeaderValues.APPLICATION_JSON.toString());
     }
 
-    public Observable<ClientResponse> delete(String url, Map<String, ?> body, Map<String, String> headers, String contentType) {
+    public Observable<ClientResponse> delete(String url, Map<String, Object> body, Map<String, String> headers, String contentType) {
         return request(url, HttpMethod.DELETE, bodyToBytes(body, contentType), headers, contentType);
     }
 
@@ -202,7 +202,7 @@ public class NettyHttpClient {
         }, Emitter.BackpressureMode.BUFFER);
     }
 
-    private byte[] bodyToBytes(Map<String, ?> body, String contentType) {
+    private byte[] bodyToBytes(Map<String, Object> body, String contentType) {
         if(body.size() == 0)
             return new byte[0];
         if(contentType.equals(HttpHeaderValues.APPLICATION_JSON.toString())) {

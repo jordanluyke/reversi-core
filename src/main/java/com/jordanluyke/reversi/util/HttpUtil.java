@@ -11,10 +11,10 @@ import java.util.stream.Collectors;
  */
 public class HttpUtil {
 
-    public static String toQuerystring(Map<?, ?> params) {
+    public static String toQuerystring(Map<String, Object> params) {
         return params.entrySet()
                 .stream()
-                .map(entry -> encode(entry.getKey().toString()) + "=" + encode(entry.getValue().toString()))
+                .map(entry -> encode(entry.getKey()) + "=" + encode(entry.getValue().toString()))
                 .collect(Collectors.joining("&"));
     }
 
