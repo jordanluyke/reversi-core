@@ -17,13 +17,13 @@ import static org.jooq.sources.tables.Account.ACCOUNT;
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
 @Singleton
-public class AccountsDAO {
-    private static final Logger logger = LogManager.getLogger(AccountsDAO.class);
+public class AccountDAO {
+    private static final Logger logger = LogManager.getLogger(AccountDAO.class);
 
     private DbManager dbManager;
 
     @Inject
-    public AccountsDAO(DbManager dbManager) {
+    public AccountDAO(DbManager dbManager) {
         this.dbManager = dbManager;
     }
 

@@ -9,9 +9,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -19,12 +18,7 @@ import java.util.Optional;
 public class MatchManagerImpl implements MatchManager {
     private static final Logger logger = LogManager.getLogger(MatchManager.class);
 
-//    private List<Match> matches = new ArrayList<>();
-    private List<Match> matches = Arrays.asList(Match.builder()
-        .id("match1")
-        .playerLightId(Optional.of("light1"))
-        .playerDarkId(Optional.of("dark2"))
-        .build());
+    private List<Match> matches = new ArrayList<>();
 
     @Override
     public Observable<Match> createMatch() {
@@ -39,7 +33,7 @@ public class MatchManagerImpl implements MatchManager {
                 .filter(match -> match.getId().equals(matchId))
                 .flatMap(match -> {
                     if(match == null)
-                        return Observable.error(new WebException("Match ID not found", HttpResponseStatus.NOT_FOUND));
+                        return Observable.error(new WebException("Match not found", HttpResponseStatus.NOT_FOUND));
                     return Observable.just(match);
                 });
     }

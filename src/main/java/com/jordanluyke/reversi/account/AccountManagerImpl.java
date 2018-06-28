@@ -8,27 +8,27 @@ import rx.Observable;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class AccountsManagerImpl implements AccountsManager {
+public class AccountManagerImpl implements AccountManager {
 
-    private AccountsDAO accountsDAO;
+    private AccountDAO accountDAO;
 
     @Inject
-    public AccountsManagerImpl(AccountsDAO accountsDAO) {
-        this.accountsDAO = accountsDAO;
+    public AccountManagerImpl(AccountDAO accountDAO) {
+        this.accountDAO = accountDAO;
     }
 
     @Override
     public Observable<Account> getAccounts() {
-        return accountsDAO.getAccounts();
+        return accountDAO.getAccounts();
     }
 
     @Override
     public Observable<Account> createAccount(AccountCreationRequest account) {
-        return accountsDAO.createAccount(account);
+        return accountDAO.createAccount(account);
     }
 
     @Override
     public Observable<Account> getAccountById(String id) {
-        return accountsDAO.getAccountById(id);
+        return accountDAO.getAccountById(id);
     }
 }

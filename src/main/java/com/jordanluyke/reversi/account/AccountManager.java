@@ -7,7 +7,7 @@ import rx.Observable;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public interface AccountsManager {
+public interface AccountManager {
 
     Observable<Account> getAccounts();
 
