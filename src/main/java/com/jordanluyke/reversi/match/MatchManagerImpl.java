@@ -49,9 +49,9 @@ public class MatchManagerImpl implements MatchManager {
         return getMatch(matchId)
                 .flatMap(match -> {
                     Side side;
-                    if(match.getPlayerLightId().equals(accountId))
+                    if(match.getPlayerLightId().isPresent() && match.getPlayerLightId().get().equals(accountId))
                         side = Side.LIGHT;
-                    else if(match.getPlayerDarkId().equals(accountId))
+                    else if(match.getPlayerDarkId().isPresent() && match.getPlayerDarkId().get().equals(accountId))
                         side = Side.DARK;
                     else
                         return Observable.error(new WebException(HttpResponseStatus.FORBIDDEN));
