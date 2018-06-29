@@ -6,7 +6,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
-public class Hasher {
+public class HashUtil {
     private static final MessageDigest sha1;
     private static final MessageDigest sha256;
     private static final MessageDigest md5;
@@ -23,11 +23,11 @@ public class Hasher {
             sha1hmac = Mac.getInstance("HmacSHA1");
             md5hmac = Mac.getInstance("HmacMD5");
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to initialize Hasher", e);
+            throw new RuntimeException("Failed to initialize HashUtil: " + e.getMessage());
         }
     }
 
-    private Hasher() {
+    private HashUtil() {
     }
 
     static public String sha1base64(String data) {
