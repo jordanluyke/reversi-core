@@ -29,9 +29,10 @@
     <orderEntry type="library" name="Maven: io.netty:netty-all:4.1.25.Final" level="project" />
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-core:2.11.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-api:2.11.0" level="project" />
-    <orderEntry type="library" name="Maven: org.jooq:jooq:3.10.7" level="project" />
-    <orderEntry type="library" name="Maven: org.jooq:jooq-meta:3.10.7" level="project" />
-    <orderEntry type="library" name="Maven: org.jooq:jooq-codegen:3.10.7" level="project" />
+    <orderEntry type="library" name="Maven: org.jooq:jooq:3.11.2" level="project" />
+    <orderEntry type="library" name="Maven: javax.xml.bind:jaxb-api:2.3.0" level="project" />
+    <orderEntry type="library" name="Maven: org.jooq:jooq-meta:3.11.2" level="project" />
+    <orderEntry type="library" name="Maven: org.jooq:jooq-codegen:3.11.2" level="project" />
     <orderEntry type="library" name="Maven: mysql:mysql-connector-java:6.0.6" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.projectlombok:lombok:1.16.20" level="project" />
     <orderEntry type="library" name="Maven: org.codehaus.mojo:properties-maven-plugin:1.0.0" level="project" />

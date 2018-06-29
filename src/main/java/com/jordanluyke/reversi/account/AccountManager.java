@@ -1,7 +1,7 @@
 package com.jordanluyke.reversi.account;
 
 import com.jordanluyke.reversi.account.model.Account;
-import com.jordanluyke.reversi.account.model.AccountCreationRequest;
+import com.jordanluyke.reversi.account.dto.AccountCreationRequest;
 import rx.Observable;
 
 /**
@@ -14,4 +14,6 @@ public interface AccountManager {
     Observable<Account> createAccount(AccountCreationRequest account);
 
     Observable<Account> getAccountById(String id);
+
+    Observable<Account> getAccountByEmail(String email);
 }

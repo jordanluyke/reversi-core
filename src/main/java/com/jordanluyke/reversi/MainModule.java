@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.jordanluyke.reversi.account.AccountModule;
 import com.jordanluyke.reversi.db.DbModule;
 import com.jordanluyke.reversi.match.MatchModule;
+import com.jordanluyke.reversi.session.SessionModule;
 import com.jordanluyke.reversi.web.WebModule;
 
 /**
@@ -18,5 +19,6 @@ public class MainModule extends AbstractModule {
         install(new DbModule());
         install(new AccountModule());
         install(new MatchModule());
+        install(new SessionModule());
     }
 }

@@ -7,8 +7,12 @@ import java.util.Random;
  */
 public class RandomUtil {
 
-    private static String eligibleCharacters = "2346789ABCDEFGHJLMNPQRTUVWXYZ";
+    private static String eligibleCharacters = "123456789ABCDEFGHJLMNPQRTUVWXYZ";
     private static final Random random = new Random();
+
+    public static String generateId() {
+        return generateRandom(16);
+    }
 
     public static String generateRandom(int characters) {
         StringBuilder r = new StringBuilder();

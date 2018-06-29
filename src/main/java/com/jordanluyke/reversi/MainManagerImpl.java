@@ -4,23 +4,18 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.jordanluyke.reversi.db.DbManager;
 import com.jordanluyke.reversi.web.WebManager;
+import lombok.AllArgsConstructor;
 import rx.Observable;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
+@AllArgsConstructor(onConstructor = @__(@Inject))
 public class MainManagerImpl implements MainManager {
 
     private WebManager webManager;
     private DbManager dbManager;
     private Config config;
-
-    @Inject
-    public MainManagerImpl(WebManager webManager, DbManager dbManager, Config config) {
-        this.webManager = webManager;
-        this.dbManager = dbManager;
-        this.config = config;
-    }
 
     @Override
     public Observable<Void> start(Injector injector) {

@@ -1,4 +1,4 @@
-package com.jordanluyke.reversi.account.model;
+package com.jordanluyke.reversi.session.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,8 +12,6 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class AccountCreationRequest {
-
+public class SessionCreationRequest {
     private String email;
-    private String password;
 }

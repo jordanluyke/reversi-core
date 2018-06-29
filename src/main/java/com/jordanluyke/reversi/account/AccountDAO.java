@@ -3,13 +3,17 @@ package com.jordanluyke.reversi.account;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.jordanluyke.reversi.account.model.Account;
-import com.jordanluyke.reversi.account.model.AccountCreationRequest;
+import com.jordanluyke.reversi.account.dto.AccountCreationRequest;
 import com.jordanluyke.reversi.db.DbManager;
 import com.jordanluyke.reversi.util.RandomUtil;
+import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.exception.DataAccessException;
 import rx.Observable;
+
+import java.sql.Timestamp;
+import java.util.Date;
 
 import static org.jooq.sources.tables.Account.ACCOUNT;
 
@@ -17,15 +21,11 @@ import static org.jooq.sources.tables.Account.ACCOUNT;
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
 @Singleton
+@AllArgsConstructor(onConstructor = @__(@Inject))
 public class AccountDAO {
     private static final Logger logger = LogManager.getLogger(AccountDAO.class);
 
     private DbManager dbManager;
-
-    @Inject
-    public AccountDAO(DbManager dbManager) {
-        this.dbManager = dbManager;
-    }
 
     public Observable<Account> getAccounts() {
         return Observable.from(dbManager.getDsl().selectFrom(ACCOUNT).fetch())
@@ -34,17 +34,16 @@ public class AccountDAO {
 
     public Observable<Account> createAccount(AccountCreationRequest req) {
         try {
-            String id = RandomUtil.generateRandom(12);
-            return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.EMAIL, ACCOUNT.PASSWORD)
-                    .values(id, req.getEmail(), req.getPassword())
+            String id = RandomUtil.generateId();
+            Date date = new Date();
+            return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.CREATEDAT, ACCOUNT.EMAIL)
+                    .values(id, new Timestamp(date.getTime()), req.getEmail())
                     .execute())
-                    .map(Void -> {
-                        Account account = new Account();
-                        account.setId(id);
-                        account.setEmail(req.getEmail());
-                        account.setPassword(req.getPassword());
-                        return account;
-                    });
+                    .map(Void -> Account.builder()
+                            .id(id)
+                            .createdAt(date)
+                            .email(req.getEmail())
+                            .build());
         } catch(DataAccessException e) {
             throw new RuntimeException(e);
         }
@@ -53,6 +52,13 @@ public class AccountDAO {
     public Observable<Account> getAccountById(String accountId) {
         return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
                 .where(ACCOUNT.ID.eq(accountId))
+                .fetchOne())
+                .map(Account::fromRecord);
+    }
+
+    public Observable<Account> getAccountByEmail(String email) {
+        return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
+                .where(ACCOUNT.EMAIL.eq(email))
                 .fetchOne())
                 .map(Account::fromRecord);
     }

@@ -20,7 +20,7 @@ import java.util.Optional;
 public class Match {
     private static final Logger logger = LogManager.getLogger(Match.class);
 
-    private String id = RandomUtil.generateRandom(12);
+    private String id = RandomUtil.generateId();
     private Optional<String> playerDarkId = Optional.empty();
     private Optional<String> playerLightId = Optional.empty();
     private Side turn = Side.DARK;

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.account.model.Account;
-import com.jordanluyke.reversi.account.model.AccountCreationRequest;
+import com.jordanluyke.reversi.account.dto.AccountCreationRequest;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.api.model.PagingResponse;
@@ -34,7 +34,7 @@ public class AccountRoutes {
         @Inject protected AccountManager accountManager;
         @Override
         public Observable<ObjectNode> handle(Observable<HttpServerRequest> o) {
-            return o.map(req -> NodeUtil.parseObjectNodeInto(req.getBody(), AccountCreationRequest.class))
+            return o.flatMap(req -> NodeUtil.parseObjectNodeInto(req.getBody(), AccountCreationRequest.class))
                     .doOnNext(Void -> logger.info("attemping to create account"))
                     .flatMap(accountManager::createAccount)
                     .map(account -> {
