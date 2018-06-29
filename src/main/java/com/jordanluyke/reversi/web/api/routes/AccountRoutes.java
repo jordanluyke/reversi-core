@@ -6,6 +6,7 @@ import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.dto.AccountCreationRequest;
+import com.jordanluyke.reversi.session.model.Session;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.api.model.PagingResponse;
@@ -33,15 +34,10 @@ public class AccountRoutes {
     public static class CreateAccount implements HttpRouteHandler {
         @Inject protected AccountManager accountManager;
         @Override
-        public Observable<ObjectNode> handle(Observable<HttpServerRequest> o) {
+        public Observable<Session> handle(Observable<HttpServerRequest> o) {
             return o.flatMap(req -> NodeUtil.parseObjectNodeInto(req.getBody(), AccountCreationRequest.class))
                     .doOnNext(Void -> logger.info("attemping to create account"))
-                    .flatMap(accountManager::createAccount)
-                    .map(account -> {
-                        ObjectNode body = new ObjectMapper().createObjectNode();
-                        body.put("email", account.getEmail());
-                        return body;
-                    });
+                    .flatMap(accountManager::createAccount);
         }
     }
 

@@ -21,4 +21,9 @@ public class SessionManagerImpl implements SessionManager {
         return accountManager.getAccountByEmail(sessionCreationRequest.getEmail())
                 .flatMap(account -> sessionDAO.createSession(account.getId()));
     }
+
+    @Override
+    public Observable<Session> createSession(String accountId) {
+        return sessionDAO.createSession(accountId);
+    }
 }
