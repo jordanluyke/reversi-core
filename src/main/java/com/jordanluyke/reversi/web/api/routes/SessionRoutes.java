@@ -22,7 +22,6 @@ public class SessionRoutes {
         @Override
         public Observable<Session> handle(Observable<HttpServerRequest> o) {
             return o.flatMap(req -> NodeUtil.parseObjectNodeInto(req.getBody(), SessionCreationRequest.class))
-                    .doOnNext(Void -> logger.info("attemping to create session"))
                     .flatMap(sessionManager::createSession);
         }
     }

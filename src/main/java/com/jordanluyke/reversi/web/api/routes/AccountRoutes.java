@@ -36,7 +36,6 @@ public class AccountRoutes {
         @Override
         public Observable<Session> handle(Observable<HttpServerRequest> o) {
             return o.flatMap(req -> NodeUtil.parseObjectNodeInto(req.getBody(), AccountCreationRequest.class))
-                    .doOnNext(Void -> logger.info("attemping to create account"))
                     .flatMap(accountManager::createAccount);
         }
     }
