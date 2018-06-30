@@ -20,7 +20,6 @@ import static org.jooq.sources.Tables.SESSION;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-@Singleton
 @AllArgsConstructor(onConstructor = @__(@Inject))
 public class SessionDAO {
     private static final Logger logger = LogManager.getLogger(SessionDAO.class);

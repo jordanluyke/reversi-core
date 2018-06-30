@@ -20,7 +20,6 @@ import static org.jooq.sources.tables.Account.ACCOUNT;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-@Singleton
 @AllArgsConstructor(onConstructor = @__(@Inject))
 public class AccountDAO {
     private static final Logger logger = LogManager.getLogger(AccountDAO.class);
