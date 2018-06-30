@@ -5,6 +5,8 @@ import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.session.model.Session;
 import lombok.AllArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
 /**
@@ -12,6 +14,7 @@ import rx.Observable;
  */
 @AllArgsConstructor(onConstructor = @__(@Inject))
 public class SessionManagerImpl implements SessionManager {
+    private static final Logger logger = LogManager.getLogger(SessionManager.class);
 
     private SessionDAO sessionDAO;
     private AccountManager accountManager;

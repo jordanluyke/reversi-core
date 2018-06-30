@@ -7,6 +7,8 @@ import com.jordanluyke.reversi.session.model.Session;
 import com.jordanluyke.reversi.util.DateUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
 import lombok.AllArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
 import java.util.Date;
@@ -21,6 +23,7 @@ import static org.jooq.sources.Tables.SESSION;
 @Singleton
 @AllArgsConstructor(onConstructor = @__(@Inject))
 public class SessionDAO {
+    private static final Logger logger = LogManager.getLogger(SessionDAO.class);
 
     private DbManager dbManager;
 

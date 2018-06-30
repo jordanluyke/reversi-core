@@ -41,7 +41,7 @@ public class MatchRoutes {
     public static class Move implements HttpRouteHandler {
         @Inject protected MatchManager matchManager;
         @Override
-        public Observable<?> handle(Observable<HttpServerRequest> o) {
+        public Observable<Match> handle(Observable<HttpServerRequest> o) {
             return o.flatMap(req -> {
                 String matchId = req.getQueryParams().get("matchId");
                 if(!req.getBody().isPresent())

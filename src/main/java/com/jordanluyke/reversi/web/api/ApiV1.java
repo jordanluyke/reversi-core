@@ -6,6 +6,7 @@ import com.jordanluyke.reversi.web.api.model.HttpRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketEvent;
 import com.jordanluyke.reversi.web.api.routes.AccountRoutes;
 import com.jordanluyke.reversi.web.api.routes.MatchRoutes;
+import com.jordanluyke.reversi.web.api.routes.SessionRoutes;
 import com.jordanluyke.reversi.web.api.routes.SystemRoutes;
 import io.netty.handler.codec.http.HttpMethod;
 
@@ -33,7 +34,7 @@ public class ApiV1 implements Api {
                 new HttpRoute("/matches", HttpMethod.POST, MatchRoutes.CreateMatch.class),
                 new HttpRoute("/matches/:matchId", HttpMethod.GET, MatchRoutes.GetMatch.class),
                 new HttpRoute("/matches/:matchId/move", HttpMethod.POST, MatchRoutes.Move.class),
-                new HttpRoute("/sessions", HttpMethod.POST, MatchRoutes.Move.class)
+                new HttpRoute("/sessions", HttpMethod.POST, SessionRoutes.CreateSession.class)
         );
     }
 

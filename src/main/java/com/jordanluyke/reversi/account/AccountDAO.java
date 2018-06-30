@@ -52,14 +52,14 @@ public class AccountDAO {
     public Observable<Account> getAccountById(String accountId) {
         return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
                 .where(ACCOUNT.ID.eq(accountId))
-                .fetchOne())
+                .fetchAny())
                 .map(Account::fromRecord);
     }
 
     public Observable<Account> getAccountByEmail(String email) {
         return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
                 .where(ACCOUNT.EMAIL.eq(email))
-                .fetchOne())
+                .fetchAny())
                 .map(Account::fromRecord);
     }
 }
