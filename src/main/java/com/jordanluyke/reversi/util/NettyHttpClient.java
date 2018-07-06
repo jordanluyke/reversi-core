@@ -2,8 +2,6 @@ package com.jordanluyke.reversi.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.primitives.Bytes;
-import com.google.inject.Singleton;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -19,8 +17,10 @@ import rx.Emitter;
 import rx.Observable;
 
 import javax.net.ssl.SSLException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-@Singleton
 public class NettyHttpClient {
 
     public Observable<ClientResponse> get(String url) {
@@ -47,7 +46,7 @@ public class NettyHttpClient {
 
     public Observable<ClientResponse> get(String url, Map<String, Object> params, Map<String, String> headers, String contentType) {
         if(params.size() > 0)
-            url += "?" + HttpUtil.toQuerystring(params);
+            url += "?" + toQuerystring(params);
         return request(url, HttpMethod.GET, new byte[0], headers, contentType);
     }
 
@@ -132,17 +131,17 @@ public class NettyHttpClient {
                 .channel(NioSocketChannel.class)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
-                    protected void initChannel(SocketChannel channel) throws Exception {
+                    protected void initChannel(SocketChannel channel) {
                         ChannelPipeline pipeline = channel.pipeline();
                         if(sslCtx != null)
                             pipeline.addLast(sslCtx.newHandler(channel.alloc()));
                         pipeline.addLast(new HttpClientCodec());
                         pipeline.addLast(new HttpContentDecompressor());
-                        pipeline.addLast(new SimpleChannelInboundHandler<Object>() {
-                            private byte[] data = new byte[0];
+                        pipeline.addLast(new ChannelInboundHandlerAdapter() {
+                            ByteBuf data = Unpooled.buffer();
 
                             @Override
-                            protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+                            public void channelRead(ChannelHandlerContext ctx, Object msg) {
                                 if(msg instanceof HttpResponse) {
                                     HttpResponse response = (HttpResponse) msg;
 
@@ -153,13 +152,10 @@ public class NettyHttpClient {
                                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
                                 } else if(msg instanceof HttpContent) {
                                     HttpContent content = (HttpContent) msg;
-
-                                    byte[] chunk = new byte[content.content().readableBytes()];
-                                    content.content().readBytes(chunk);
-                                    data = Bytes.concat(data, chunk);
+                                    data = Unpooled.copiedBuffer(data, content.content());
 
                                     if(content instanceof LastHttpContent) {
-                                        res.setRawBody(data);
+                                        res.setRawBody(data.array());
                                         ctx.close();
                                     }
                                 }
@@ -213,10 +209,25 @@ public class NettyHttpClient {
                 throw new RuntimeException(e.getMessage());
             }
         }
-        return HttpUtil.toQuerystring(body).getBytes();
+        return toQuerystring(body).getBytes();
     }
 
-    public class ClientResponse {
+    private String toQuerystring(Map<String, Object> params) {
+        return params.entrySet()
+                .stream()
+                .map(entry -> encode(entry.getKey()) + "=" + encode(entry.getValue().toString()))
+                .collect(Collectors.joining("&"));
+    }
+
+    private String encode(String s) {
+        try {
+            return URLEncoder.encode(s, StandardCharsets.UTF_8.name());
+        } catch(UnsupportedEncodingException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    class ClientResponse {
 
         private int statusCode;
         private byte[] rawBody;
