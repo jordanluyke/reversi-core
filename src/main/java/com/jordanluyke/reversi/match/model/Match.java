@@ -1,6 +1,8 @@
 package com.jordanluyke.reversi.match.model;
 
 import com.jordanluyke.reversi.util.RandomUtil;
+import com.jordanluyke.reversi.web.model.WebException;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,6 +34,8 @@ public class Match {
     private boolean isPrivate = false;
 
     public Observable<Match> placePiece(Side side, Position position) {
+        if(completedAt.isPresent())
+            return Observable.error(new WebException("Game completed", HttpResponseStatus.BAD_REQUEST));
         if(side != turn || !playerLightId.isPresent() || !playerDarkId.isPresent())
             return Observable.error(new IllegalMoveException());
         return board.placePiece(side, position)
@@ -54,7 +58,7 @@ public class Match {
                                                         winnerId = playerLightId;
                                                     else if(darkAmount > lightAmount)
                                                         winnerId = playerDarkId;
-                                                    // +1 win amount on account
+                                                    // +1 win amount on player_stats
                                                     return null;
                                                 }
                                         );
