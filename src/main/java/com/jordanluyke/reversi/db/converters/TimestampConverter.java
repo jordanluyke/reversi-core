@@ -17,7 +17,7 @@ public class TimestampConverter implements Converter<Timestamp, Instant> {
 
     @Override
     public Timestamp to(Instant instant) {
-        return instant == null ? null : new Timestamp(instant.toEpochMilli());
+        return instant == null ? null : Timestamp.from(instant);
     }
 
     @Override
