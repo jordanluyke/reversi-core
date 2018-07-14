@@ -26,7 +26,7 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
     private ApiManager apiManager;
 
     private WebSocketAggregateContext aggregateContext;
-    private ByteBuf reqContent = Unpooled.buffer();
+    private ByteBuf reqBuf = Unpooled.buffer();
 
     public NettyWebSocketChannelInboundHandler(ApiManager apiManager, ChannelHandlerContext ctx) {
         this.apiManager = apiManager;
@@ -60,12 +60,12 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
         } else if(frame instanceof TextWebSocketFrame ||
                 frame instanceof BinaryWebSocketFrame ||
                 frame instanceof ContinuationWebSocketFrame) {
-            reqContent = Unpooled.copiedBuffer(reqContent, frame.content());
+            reqBuf = Unpooled.copiedBuffer(reqBuf, frame.content());
             if(frame.isFinalFragment()) {
-                handleRequest(reqContent, ctx)
+                handleRequest(reqBuf, ctx)
                         .doOnNext(res -> {
                             writeResponse(ctx, res);
-                            reqContent = Unpooled.buffer();
+                            reqBuf = Unpooled.buffer();
                         })
                         .subscribe(new ErrorHandlingSubscriber<>());
             }

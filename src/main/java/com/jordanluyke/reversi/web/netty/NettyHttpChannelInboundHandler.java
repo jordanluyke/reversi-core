@@ -28,6 +28,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
     private static final Logger logger = LogManager.getLogger(NettyHttpChannelInboundHandler.class);
 
     private ApiManager apiManager;
+
     private ByteBuf reqBuf = Unpooled.buffer();
     private HttpServerRequest httpServerRequest = new HttpServerRequest();
 
