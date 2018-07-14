@@ -2,7 +2,6 @@ package com.jordanluyke.reversi.web.netty;
 
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
-import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.HttpServerResponse;
@@ -29,9 +28,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
     private static final Logger logger = LogManager.getLogger(NettyHttpChannelInboundHandler.class);
 
     private ApiManager apiManager;
-    private WebSocketServerHandshaker handshaker;
-
-    private ByteBuf reqContent = Unpooled.buffer();
+    private ByteBuf reqBuf = Unpooled.buffer();
     private HttpServerRequest httpServerRequest = new HttpServerRequest();
 
     public NettyHttpChannelInboundHandler(ApiManager apiManager) {
@@ -56,14 +53,14 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
                     .stream()
                     .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get(0))));
 
-            if(WebSocketUtil.isHandshakeRequest(httpServerRequest))
+            if(isHandshakeRequest(httpServerRequest))
                 handleHandshake(ctx, httpRequest);
         } else if(msg instanceof HttpContent) {
             HttpContent httpContent = (HttpContent) msg;
-            reqContent = Unpooled.copiedBuffer(reqContent, httpContent.content());
+            reqBuf = Unpooled.copiedBuffer(reqBuf, httpContent.content());
 
             if(msg instanceof LastHttpContent) {
-                handleRequest(httpContent, reqContent)
+                handleRequest(httpContent, reqBuf)
                         .doOnNext(httpServerResponse -> {
                             logger.info("{} {}", ctx.channel().remoteAddress(), httpServerResponse.getBody());
                             writeResponse(ctx, httpServerResponse);
@@ -107,7 +104,6 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
         FullHttpResponse httpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, res.getStatus(), content);
         httpResponse.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
         httpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, httpResponse.content().readableBytes());
-//        res.getHeaders().forEach((key, value) -> httpResponse.headers().set(key, value));
         ctx.write(httpResponse);
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
     }
@@ -115,7 +111,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
     private void handleHandshake(ChannelHandlerContext ctx, HttpRequest req) {
         String webSocketUrl = "ws://" + req.headers().get(HttpHeaderNames.HOST) + req.uri();
         WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(webSocketUrl, null, true);
-        handshaker = wsFactory.newHandshaker(req);
+        WebSocketServerHandshaker handshaker = wsFactory.newHandshaker(req);
         if(handshaker != null) {
             handshaker.handshake(ctx.channel(), req);
             ctx.pipeline().remove(this);
@@ -125,5 +121,15 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
             logger.error("Handshaker detected supported version");
         }
+    }
+
+    public boolean isHandshakeRequest(HttpServerRequest request) {
+        return request.getMethod() == HttpMethod.GET &&
+                request.getHeaders().containsKey(HttpHeaderNames.UPGRADE.toString()) &&
+                request.getHeaders().containsKey(HttpHeaderNames.CONNECTION.toString()) &&
+                request.getHeaders().containsKey(HttpHeaderNames.SEC_WEBSOCKET_KEY.toString()) &&
+                request.getHeaders().containsKey(HttpHeaderNames.SEC_WEBSOCKET_VERSION.toString()) &&
+                request.getHeaders().get(HttpHeaderNames.UPGRADE.toString()).equalsIgnoreCase(HttpHeaderValues.WEBSOCKET.toString()) &&
+                request.getHeaders().get(HttpHeaderNames.CONNECTION.toString()).equalsIgnoreCase(HttpHeaderValues.UPGRADE.toString());
     }
 }
