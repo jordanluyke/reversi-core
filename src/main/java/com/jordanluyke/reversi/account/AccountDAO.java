@@ -32,15 +32,10 @@ public class AccountDAO {
     public Observable<Account> createAccount(AccountCreationRequest req) {
         try {
             String id = RandomUtil.generateId();
-            Instant createdAt = Instant.now();
-            return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.CREATEDAT, ACCOUNT.EMAIL)
-                    .values(id, createdAt, req.getEmail())
+            return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.EMAIL)
+                    .values(id, req.getEmail())
                     .execute())
-                    .map(Void -> Account.builder()
-                            .id(id)
-                            .createdAt(createdAt)
-                            .email(req.getEmail())
-                            .build());
+                    .flatMap(Void -> getAccountById(id));
         } catch(DataAccessException e) {
             throw new RuntimeException(e);
         }

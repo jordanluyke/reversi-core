@@ -11,7 +11,6 @@ import rx.Observable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -52,13 +51,13 @@ public class MatchManagerImpl implements MatchManager {
                     else
                         return Observable.error(new WebException(HttpResponseStatus.FORBIDDEN));
                     return match.placePiece(side, Position.fromCoordinates(coordinates));
-                })
-                .doOnNext(match -> {
-                    if(match.getCompletedAt().isPresent()) {
-                        matches = matches.stream()
-                                .filter(m -> m.getCompletedAt().isPresent())
-                                .collect(Collectors.toList());
-                    }
                 });
+//                .doOnNext(match -> {
+//                    if(match.getCompletedAt().isPresent()) {
+//                        matches = matches.stream()
+//                                .filter(m -> m.getCompletedAt().isPresent())
+//                                .collect(Collectors.toList());
+//                    }
+//                });
     }
 }

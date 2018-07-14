@@ -1,8 +1,10 @@
 package com.jordanluyke.reversi.web.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.MainManager;
@@ -103,7 +105,13 @@ public class RouteMatcher {
                     } else {
                         try {
                             ObjectMapper mapper = new ObjectMapper()
-                                    .registerModule(new Jdk8Module());
+                                    .registerModule(new Jdk8Module())
+                                    .registerModule(new JavaTimeModule())
+                                    .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
+//                                    .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+//                                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+//                                    .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
+//                                    .setSerializationInclusion(Include.NON_NULL);
                             res.setBody(mapper.valueToTree(object));
                         } catch(Exception err) {
                             logger.error("Json serialize fail");

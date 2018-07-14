@@ -17,9 +17,10 @@ public class Account {
 
     private String id;
     private Instant createdAt;
+    private Instant updatedAt;
     private String email;
 
     public static Account fromRecord(AccountRecord record) {
-        return new Account(record.getId(), record.getCreatedat(), record.getEmail());
+        return new Account(record.getId(), record.getCreatedat(), record.getUpdatedat(), record.getEmail());
     }
 }

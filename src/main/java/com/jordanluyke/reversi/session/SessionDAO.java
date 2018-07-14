@@ -11,7 +11,6 @@ import rx.Observable;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Optional;
 
 import static org.jooq.sources.Tables.SESSION;
 
@@ -26,16 +25,17 @@ public class SessionDAO {
 
     public Observable<Session> createSession(String ownerId) {
         String id = RandomUtil.generateId();
-        Instant createdAt = Instant.now();
-        Instant expiresAt = createdAt.plus(1, ChronoUnit.DAYS);
-        return Observable.just(dbManager.getDsl().insertInto(SESSION, SESSION.ID, SESSION.CREATEDAT, SESSION.OWNERID, SESSION.EXPIRESAT)
-                .values(id, createdAt, ownerId, expiresAt)
+        Instant expiresAt = Instant.now().plus(1, ChronoUnit.DAYS);
+        return Observable.just(dbManager.getDsl().insertInto(SESSION, SESSION.ID, SESSION.OWNERID, SESSION.EXPIRESAT)
+                .values(id, ownerId, expiresAt)
                 .execute())
-                .map(Void -> Session.builder()
-                        .id(id)
-                        .createdAt(createdAt)
-                        .ownerId(ownerId)
-                        .expiresAt(Optional.of(expiresAt))
-                        .build());
+                .flatMap(Void -> getSessionById(id));
+    }
+
+    public Observable<Session> getSessionById(String sessionId) {
+        return Observable.just(dbManager.getDsl().selectFrom(SESSION)
+                .where(SESSION.ID.eq(sessionId))
+                .fetchAny())
+                .map(Session::fromRecord);
     }
 }
