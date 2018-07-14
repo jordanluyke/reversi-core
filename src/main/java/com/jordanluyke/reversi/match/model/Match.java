@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
 
@@ -27,9 +28,9 @@ public class Match {
     private Optional<String> playerLightId = Optional.empty();
     private Side turn = Side.DARK;
     private Board board = Board.create();
-    private Date createdAt = new Date();
-    private Optional<Date> completedAt = Optional.empty();
-    private Optional<Date> disabledAt = Optional.empty();
+    private Instant createdAt = Instant.now();
+    private Optional<Instant> completedAt = Optional.empty();
+    private Optional<Instant> disabledAt = Optional.empty();
     private Optional<String> winnerId = Optional.empty();
     private boolean isPrivate = false;
 
@@ -49,7 +50,7 @@ public class Match {
                                     .flatMap(sameSideCanPlacePiece -> {
                                         if(sameSideCanPlacePiece)
                                             return Observable.empty();
-                                        completedAt = Optional.of(new Date());
+                                        completedAt = Optional.of(Instant.now());
                                         return Observable.zip(
                                                 board1.getAmount(Side.LIGHT),
                                                 board1.getAmount(Side.DARK),
@@ -58,7 +59,6 @@ public class Match {
                                                         winnerId = playerLightId;
                                                     else if(darkAmount > lightAmount)
                                                         winnerId = playerDarkId;
-                                                    // +1 win amount on player_stats
                                                     return null;
                                                 }
                                         );
