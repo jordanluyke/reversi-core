@@ -1,11 +1,9 @@
 package com.jordanluyke.reversi.account;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.dto.AccountCreationRequest;
 import com.jordanluyke.reversi.db.DbManager;
-import com.jordanluyke.reversi.util.DateUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -13,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 import org.jooq.exception.DataAccessException;
 import rx.Observable;
 
-import java.util.Date;
+import java.time.Instant;
 
 import static org.jooq.sources.tables.Account.ACCOUNT;
 
@@ -34,9 +32,9 @@ public class AccountDAO {
     public Observable<Account> createAccount(AccountCreationRequest req) {
         try {
             String id = RandomUtil.generateId();
-            Date createdAt = new Date();
+            Instant createdAt = Instant.now();
             return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.CREATEDAT, ACCOUNT.EMAIL)
-                    .values(id, DateUtil.getTimestamp(createdAt), req.getEmail())
+                    .values(id, createdAt, req.getEmail())
                     .execute())
                     .map(Void -> Account.builder()
                             .id(id)

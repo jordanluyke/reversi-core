@@ -1,19 +1,17 @@
 package com.jordanluyke.reversi.session;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.jordanluyke.reversi.db.DbManager;
 import com.jordanluyke.reversi.session.model.Session;
-import com.jordanluyke.reversi.util.DateUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
-import java.util.Date;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import static org.jooq.sources.Tables.SESSION;
 
@@ -28,10 +26,10 @@ public class SessionDAO {
 
     public Observable<Session> createSession(String ownerId) {
         String id = RandomUtil.generateId();
-        Date createdAt = new Date();
-        Date expiresAt = DateUtil.addTime(createdAt, 1, TimeUnit.DAYS);
+        Instant createdAt = Instant.now();
+        Instant expiresAt = createdAt.plus(1, ChronoUnit.DAYS);
         return Observable.just(dbManager.getDsl().insertInto(SESSION, SESSION.ID, SESSION.CREATEDAT, SESSION.OWNERID, SESSION.EXPIRESAT)
-                .values(id, DateUtil.getTimestamp(createdAt), ownerId, DateUtil.getTimestamp(expiresAt))
+                .values(id, createdAt, ownerId, expiresAt)
                 .execute())
                 .map(Void -> Session.builder()
                         .id(id)

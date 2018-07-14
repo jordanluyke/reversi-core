@@ -166,6 +166,13 @@
                             <includes>.*</includes>
                             <excludes></excludes>
                             <inputSchema>reversi</inputSchema>
+                            <forcedTypes>
+                                <forcedType>
+                                    <userType>java.time.Instant</userType>
+                                    <converter>com.jordanluyke.reversi.db.converters.TimestampConverter</converter>
+                                    <types>timestamp</types>
+                                </forcedType>
+                            </forcedTypes>
                         </database>
                         <target>
                             <packageName>org.jooq.sources</packageName>

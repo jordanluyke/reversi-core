@@ -3,7 +3,7 @@ package com.jordanluyke.reversi.account.model;
 import lombok.*;
 import org.jooq.sources.tables.records.AccountRecord;
 
-import java.util.Date;
+import java.time.Instant;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -16,7 +16,7 @@ import java.util.Date;
 public class Account {
 
     private String id;
-    private Date createdAt;
+    private Instant createdAt;
     private String email;
 
     public static Account fromRecord(AccountRecord record) {

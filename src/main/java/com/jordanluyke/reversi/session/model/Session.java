@@ -2,7 +2,7 @@ package com.jordanluyke.reversi.session.model;
 
 import lombok.*;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -16,7 +16,7 @@ import java.util.Optional;
 public class Session {
 
     private String id;
-    private Date createdAt;
+    private Instant createdAt;
     private String ownerId;
-    private Optional<Date> expiresAt;
+    private Optional<Instant> expiresAt;
 }
