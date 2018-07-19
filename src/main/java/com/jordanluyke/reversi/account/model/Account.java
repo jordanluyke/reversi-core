@@ -1,5 +1,6 @@
 package com.jordanluyke.reversi.account.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.jooq.sources.tables.records.AccountRecord;
 
@@ -17,7 +18,7 @@ public class Account {
 
     private String id;
     private Instant createdAt;
-    private Instant updatedAt;
+    @JsonIgnore private Instant updatedAt;
     private String email;
 
     public static Account fromRecord(AccountRecord record) {

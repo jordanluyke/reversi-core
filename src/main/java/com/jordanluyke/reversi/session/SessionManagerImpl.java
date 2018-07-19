@@ -22,11 +22,12 @@ public class SessionManagerImpl implements SessionManager {
     @Override
     public Observable<Session> createSession(SessionCreationRequest sessionCreationRequest) {
         return accountManager.getAccountByEmail(sessionCreationRequest.getEmail())
+                .defaultIfEmpty(null)
+                .flatMap(account -> {
+                    if(account == null)
+                        return accountManager.createAccount(sessionCreationRequest);
+                    return Observable.just(account);
+                })
                 .flatMap(account -> sessionDAO.createSession(account.getId()));
-    }
-
-    @Override
-    public Observable<Session> createSession(String accountId) {
-        return sessionDAO.createSession(accountId);
     }
 }

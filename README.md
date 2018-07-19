@@ -1,4 +1,4 @@
-## Reversi Server
+## Reversi
 
 - Create database
 

@@ -28,9 +28,9 @@ public class ApiV1 implements Api {
         return Arrays.asList(
                 new HttpRoute("/status", HttpMethod.GET, SystemRoutes.GetStatus.class),
 //                new HttpRoute("/accounts", HttpMethod.GET, AccountRoutes.GetAccounts.class),
-                new HttpRoute("/accounts", HttpMethod.POST, AccountRoutes.CreateAccount.class),
+//                new HttpRoute("/accounts", HttpMethod.POST, AccountRoutes.CreateAccount.class),
                 new HttpRoute("/accounts/:accountId", HttpMethod.GET, AccountRoutes.GetAccount.class),
-                new HttpRoute("/accounts/:accountId/messages/:messageId", HttpMethod.GET, AccountRoutes.GetAccountProfile.class),
+                new HttpRoute("/accounts/:accountId/stats", HttpMethod.GET, AccountRoutes.GetPlayerStats.class),
                 new HttpRoute("/matches", HttpMethod.POST, MatchRoutes.CreateMatch.class),
                 new HttpRoute("/matches/:matchId", HttpMethod.GET, MatchRoutes.GetMatch.class),
                 new HttpRoute("/matches/:matchId/move", HttpMethod.POST, MatchRoutes.Move.class),

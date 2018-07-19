@@ -1,6 +1,5 @@
 package com.jordanluyke.reversi.session;
 
-import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.session.model.Session;
 import rx.Observable;
@@ -11,6 +10,4 @@ import rx.Observable;
 public interface SessionManager {
 
     Observable<Session> createSession(SessionCreationRequest sessionCreationRequest);
-
-    Observable<Session> createSession(String accountId);
 }

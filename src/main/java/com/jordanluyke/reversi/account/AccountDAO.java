@@ -1,8 +1,8 @@
 package com.jordanluyke.reversi.account;
 
 import com.google.inject.Inject;
+import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.account.model.Account;
-import com.jordanluyke.reversi.account.dto.AccountCreationRequest;
 import com.jordanluyke.reversi.account.model.PlayerStats;
 import com.jordanluyke.reversi.db.DbManager;
 import com.jordanluyke.reversi.util.RandomUtil;
@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.exception.DataAccessException;
+import org.jooq.sources.tables.records.AccountRecord;
 import rx.Observable;
 
 import static org.jooq.sources.tables.Account.ACCOUNT;
@@ -29,7 +30,7 @@ public class AccountDAO {
                 .map(Account::fromRecord);
     }
 
-    public Observable<Account> createAccount(AccountCreationRequest req) {
+    public Observable<Account> createAccount(SessionCreationRequest req) {
         try {
             String id = RandomUtil.generateId();
             return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.EMAIL)
@@ -52,7 +53,11 @@ public class AccountDAO {
         return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
                 .where(ACCOUNT.EMAIL.eq(email))
                 .fetchAny())
-                .map(Account::fromRecord);
+                .flatMap(record -> {
+                    if(record == null)
+                        return Observable.empty();
+                    return Observable.just(Account.fromRecord(record));
+                });
     }
 
     public Observable<PlayerStats> createPlayerStats(String ownerId) {

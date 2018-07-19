@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.account.model.Account;
-import com.jordanluyke.reversi.account.dto.AccountCreationRequest;
 import com.jordanluyke.reversi.session.model.Session;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
@@ -31,15 +30,6 @@ public class AccountRoutes {
         }
     }
 
-    public static class CreateAccount implements HttpRouteHandler {
-        @Inject protected AccountManager accountManager;
-        @Override
-        public Observable<Session> handle(Observable<HttpServerRequest> o) {
-            return o.flatMap(req -> NodeUtil.parseObjectNodeInto(req.getBody(), AccountCreationRequest.class))
-                    .flatMap(accountManager::createAccount);
-        }
-    }
-
     public static class GetAccount implements HttpRouteHandler {
         @Inject protected AccountManager accountManager;
         @Override
@@ -51,7 +41,7 @@ public class AccountRoutes {
         }
     }
 
-    public static class GetAccountProfile implements HttpRouteHandler {
+    public static class GetPlayerStats implements HttpRouteHandler {
         @Override
         public Observable<ObjectNode> handle(Observable<HttpServerRequest> o) {
             return o.map(req -> {

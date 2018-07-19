@@ -1,11 +1,9 @@
 package com.jordanluyke.reversi.account;
 
 import com.google.inject.Inject;
+import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.account.model.Account;
-import com.jordanluyke.reversi.account.dto.AccountCreationRequest;
 import com.jordanluyke.reversi.account.model.PlayerStats;
-import com.jordanluyke.reversi.session.SessionManager;
-import com.jordanluyke.reversi.session.model.Session;
 import lombok.AllArgsConstructor;
 import rx.Observable;
 
@@ -16,7 +14,6 @@ import rx.Observable;
 public class AccountManagerImpl implements AccountManager {
 
     private AccountDAO accountDAO;
-    private SessionManager sessionManager;
 
     @Override
     public Observable<Account> getAccounts() {
@@ -24,12 +21,10 @@ public class AccountManagerImpl implements AccountManager {
     }
 
     @Override
-    public Observable<Session> createAccount(AccountCreationRequest req) {
+    public Observable<Account> createAccount(SessionCreationRequest req) {
         return accountDAO.createAccount(req)
-                .flatMap(account -> Observable.zip(
-                        sessionManager.createSession(account.getId()),
-                        accountDAO.createPlayerStats(account.getId()),
-                        (session, stats) -> session));
+                .flatMap(account -> accountDAO.createPlayerStats(account.getId())
+                        .map(stats -> account));
     }
 
     @Override

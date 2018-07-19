@@ -18,7 +18,7 @@ import java.util.Optional;
 public class Session {
 
     private String id;
-    private String ownerId;
+    @JsonIgnore private String ownerId;
     private Instant createdAt;
     @JsonIgnore private Instant updatedAt;
     private Optional<Instant> expiresAt;
