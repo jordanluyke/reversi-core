@@ -10,8 +10,9 @@ import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.exception.DataAccessException;
-import org.jooq.sources.tables.records.AccountRecord;
 import rx.Observable;
+
+import java.util.Optional;
 
 import static org.jooq.sources.tables.Account.ACCOUNT;
 import static org.jooq.sources.tables.PlayerStats.PLAYER_STATS;
@@ -33,8 +34,8 @@ public class AccountDAO {
     public Observable<Account> createAccount(SessionCreationRequest req) {
         try {
             String id = RandomUtil.generateId();
-            return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.EMAIL)
-                    .values(id, req.getEmail())
+            return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.EMAIL, ACCOUNT.NAME, ACCOUNT.GUEST)
+                    .values(id, req.getEmail().orElse(null), req.getName().orElse(null), !req.getEmail().isPresent())
                     .execute())
                     .flatMap(Void -> getAccountById(id));
         } catch(DataAccessException e) {

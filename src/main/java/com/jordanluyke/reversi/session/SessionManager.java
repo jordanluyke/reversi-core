@@ -2,6 +2,7 @@ package com.jordanluyke.reversi.session;
 
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.session.model.Session;
+import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import rx.Observable;
 
 /**
@@ -10,4 +11,6 @@ import rx.Observable;
 public interface SessionManager {
 
     Observable<Session> createSession(SessionCreationRequest sessionCreationRequest);
+
+    Observable<Session> validate(HttpServerRequest request);
 }

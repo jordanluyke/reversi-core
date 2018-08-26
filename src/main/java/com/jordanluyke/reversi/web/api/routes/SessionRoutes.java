@@ -3,7 +3,6 @@ package com.jordanluyke.reversi.web.api.routes;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.session.SessionManager;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
-import com.jordanluyke.reversi.session.dto.SessionResponse;
 import com.jordanluyke.reversi.session.model.Session;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
@@ -21,12 +20,9 @@ public class SessionRoutes {
     public static class CreateSession implements HttpRouteHandler {
         @Inject protected SessionManager sessionManager;
         @Override
-        public Observable<SessionResponse> handle(Observable<HttpServerRequest> o) {
+        public Observable<Session> handle(Observable<HttpServerRequest> o) {
             return o.flatMap(req -> NodeUtil.parseObjectNodeInto(req.getBody(), SessionCreationRequest.class))
-                    .doOnNext(req -> logger.info("{}", req))
-                    .flatMap(sessionManager::createSession)
-                    .doOnNext(session -> logger.info("{}", session))
-                    .map(session -> new SessionResponse(session.getOwnerId(), session.getId(), session.getExpiresAt()));
+                    .flatMap(sessionManager::createSession);
         }
     }
 }

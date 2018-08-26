@@ -16,6 +16,7 @@ import rx.Observable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -29,8 +30,9 @@ public class MatchManagerImpl implements MatchManager {
     private final List<Match> matches = new ArrayList<>();
 
     @Override
-    public Observable<Match> createMatch() {
+    public Observable<Match> createMatch(String accountId) {
         Match match = new Match();
+        match.setPlayerDarkId(Optional.of(accountId));
         matches.add(match);
         return Observable.just(match);
     }

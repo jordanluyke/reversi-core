@@ -4,11 +4,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.util.CharsetUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import rx.Observable;
 import rx.functions.Func1;
 
@@ -21,10 +26,20 @@ import java.util.Optional;
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
 public class NodeUtil {
+    private static final Logger logger = LogManager.getLogger(NodeUtil.class);
+
+    public static ObjectMapper mapper = new ObjectMapper()
+            .registerModule(new Jdk8Module())
+            .registerModule(new JavaTimeModule())
+            .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
+//            .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+//            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+//            .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
+//            .setSerializationInclusion(Include.NON_NULL);
 
     public static boolean isValidJSON(byte[] json) {
         try {
-            return !new ObjectMapper().readTree(json).isNull();
+            return !mapper.readTree(json).isNull();
         } catch(IOException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -32,7 +47,7 @@ public class NodeUtil {
 
     public static JsonNode getJsonNode(byte[] json) {
         try {
-            return new ObjectMapper().readTree(json);
+            return mapper.readTree(json);
         } catch(IOException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -40,7 +55,7 @@ public class NodeUtil {
 
     public static byte[] writeValueAsBytes(Object o) {
         try {
-            return new ObjectMapper().writeValueAsBytes(o);
+            return mapper.writeValueAsBytes(o);
         } catch(JsonProcessingException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -48,15 +63,17 @@ public class NodeUtil {
 
     public static <T> Observable<T> parseObjectNodeInto(JsonNode body, Class<T> clazz) {
         try {
-            return Observable.just(new ObjectMapper().treeToValue(body, clazz));
-        } catch (JsonProcessingException e) {
+            return Observable.just(mapper.treeToValue(body, clazz));
+        } catch (Exception e) {
+            logger.error("Json serialize fail: {}", e.getMessage());
+            e.printStackTrace();
             for(Field field : clazz.getFields()) {
                 field.setAccessible(true);
                 String name = field.getName();
                 if(body.get(name).isNull())
                     return Observable.error(new FieldRequiredException(name));
             }
-            throw new RuntimeException(e.getMessage());
+            return Observable.error(new RuntimeException(e.getMessage()));
         }
     }
 

@@ -29,10 +29,11 @@ public class ApiV1 implements Api {
                 new HttpRoute("/status", HttpMethod.GET, SystemRoutes.GetStatus.class),
 //                new HttpRoute("/accounts", HttpMethod.GET, AccountRoutes.GetAccounts.class),
 //                new HttpRoute("/accounts", HttpMethod.POST, AccountRoutes.CreateAccount.class),
-                new HttpRoute("/accounts/:accountId", HttpMethod.GET, AccountRoutes.GetAccount.class),
-                new HttpRoute("/accounts/:accountId/stats", HttpMethod.GET, AccountRoutes.GetPlayerStats.class),
+                new HttpRoute("/accounts/:ownerId", HttpMethod.GET, AccountRoutes.GetAccount.class),
+                new HttpRoute("/accounts/:ownerId/stats", HttpMethod.GET, AccountRoutes.GetPlayerStats.class),
                 new HttpRoute("/matches", HttpMethod.POST, MatchRoutes.CreateMatch.class),
                 new HttpRoute("/matches/:matchId", HttpMethod.GET, MatchRoutes.GetMatch.class),
+//                new HttpRoute("/matches/:matchId/join", HttpMethod.POST, MatchRoutes.Move.class),
                 new HttpRoute("/matches/:matchId/move", HttpMethod.POST, MatchRoutes.Move.class),
                 new HttpRoute("/sessions", HttpMethod.POST, SessionRoutes.CreateSession.class)
         );
@@ -43,6 +44,8 @@ public class ApiV1 implements Api {
         return Arrays.asList(
                 new WebSocketEvent<>(SystemEvents.KeepAlive.class),
                 new WebSocketEvent<>(SystemEvents.MessageReceipt.class)
+//                new WebSocketEvent<>(MatchEvents.SubscribeMatch.class)
+//                new WebSocketEvent<>(MatchEvents.UnsubscribeMatch.class)
         );
     }
 }

@@ -5,11 +5,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.account.model.Account;
-import com.jordanluyke.reversi.session.model.Session;
-import com.jordanluyke.reversi.util.NodeUtil;
+import com.jordanluyke.reversi.session.SessionManager;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.api.model.PagingResponse;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
+import com.jordanluyke.reversi.web.model.WebException;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
@@ -32,12 +33,16 @@ public class AccountRoutes {
 
     public static class GetAccount implements HttpRouteHandler {
         @Inject protected AccountManager accountManager;
+        @Inject protected SessionManager sessionManager;
         @Override
         public Observable<Account> handle(Observable<HttpServerRequest> o) {
-            return o.flatMap(req -> {
-                String accountId = req.getQueryParams().get("accountId");
-                return accountManager.getAccountById(accountId);
-            });
+            return o.flatMap(req -> sessionManager.validate(req)
+                    .flatMap(session -> {
+                        String accountId = req.getQueryParams().get("ownerId");
+                        if(!session.getOwnerId().equals(accountId))
+                            return Observable.error(new WebException(HttpResponseStatus.FORBIDDEN));
+                        return accountManager.getAccountById(accountId);
+                    }));
         }
     }
 

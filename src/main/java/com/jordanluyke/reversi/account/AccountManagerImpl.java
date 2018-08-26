@@ -5,6 +5,8 @@ import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.model.PlayerStats;
 import lombok.AllArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
 /**
@@ -12,6 +14,7 @@ import rx.Observable;
  */
 @AllArgsConstructor(onConstructor = @__(@Inject))
 public class AccountManagerImpl implements AccountManager {
+    private static final Logger logger = LogManager.getLogger(AccountManagerImpl.class);
 
     private AccountDAO accountDAO;
 
@@ -23,8 +26,12 @@ public class AccountManagerImpl implements AccountManager {
     @Override
     public Observable<Account> createAccount(SessionCreationRequest req) {
         return accountDAO.createAccount(req)
-                .flatMap(account -> accountDAO.createPlayerStats(account.getId())
-                        .map(stats -> account));
+                .flatMap(account -> {
+                    if(account.isGuest())
+                        return Observable.just(account);
+                    return accountDAO.createPlayerStats(account.getId())
+                            .map(stats -> account);
+                });
     }
 
     @Override

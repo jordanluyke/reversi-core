@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.match.MatchManager;
 import com.jordanluyke.reversi.match.model.Match;
+import com.jordanluyke.reversi.session.SessionManager;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
@@ -21,9 +22,11 @@ public class MatchRoutes {
 
     public static class CreateMatch implements HttpRouteHandler {
         @Inject protected MatchManager matchManager;
+        @Inject protected SessionManager sessionManager;
         @Override
         public Observable<Match> handle(Observable<HttpServerRequest> o) {
-            return o.flatMap(req -> matchManager.createMatch());
+            return o.flatMap(req -> sessionManager.validate(req))
+                    .flatMap(session -> matchManager.createMatch(session.getOwnerId()));
         }
     }
 
@@ -35,6 +38,9 @@ public class MatchRoutes {
                 String matchId = req.getQueryParams().get("matchId");
                 return matchManager.getMatch(matchId);
             });
+//                    .flatMap(match -> {
+//                        if(match.isPrivate())
+//                    })
         }
     }
 
@@ -47,10 +53,10 @@ public class MatchRoutes {
                 if(!req.getBody().isPresent())
                     return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
                 JsonNode body = req.getBody().get();
-                String accountId = body.get("accountId").asText();
+                String accountId = body.get("ownerId").asText();
                 String coordinates = body.get("coordinates").asText();
                 if(accountId == null)
-                    return Observable.error(new FieldRequiredException("accountId"));
+                    return Observable.error(new FieldRequiredException("ownerId"));
                 if(coordinates == null)
                     return Observable.error(new FieldRequiredException("coordinates"));
                 return matchManager.placePiece(matchId, accountId, coordinates);

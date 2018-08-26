@@ -8,6 +8,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.MainManager;
+import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketEvent;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
@@ -103,21 +104,11 @@ public class RouteMatcher {
                     if(object instanceof ObjectNode) {
                         res.setBody((ObjectNode) object);
                     } else {
-                        try {
-                            ObjectMapper mapper = new ObjectMapper()
-                                    .registerModule(new Jdk8Module())
-                                    .registerModule(new JavaTimeModule())
-                                    .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
-//                                    .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-//                                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-//                                    .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
-//                                    .setSerializationInclusion(Include.NON_NULL);
-                            res.setBody(mapper.valueToTree(object));
-                        } catch(Exception err) {
-                            logger.error("Json serialize fail");
-                            err.printStackTrace();
-                            return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
-                        }
+                        res.setBody(NodeUtil.mapper.valueToTree(object));
+//                            logger.error("Json serialize fail");
+//                            err.printStackTrace();
+//                            return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+//                        }
                     }
 
                     return Observable.just(res);

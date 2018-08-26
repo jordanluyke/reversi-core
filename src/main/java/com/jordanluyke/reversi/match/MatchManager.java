@@ -1,6 +1,7 @@
 package com.jordanluyke.reversi.match;
 
 import com.jordanluyke.reversi.match.model.Match;
+import com.jordanluyke.reversi.session.model.Session;
 import rx.Observable;
 
 /**
@@ -8,7 +9,7 @@ import rx.Observable;
  */
 public interface MatchManager {
 
-    Observable<Match> createMatch();
+    Observable<Match> createMatch(String accountId);
 
     Observable<Match> getMatch(String matchId);
 

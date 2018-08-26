@@ -1,6 +1,7 @@
 package com.jordanluyke.reversi.session.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import org.jooq.sources.tables.records.SessionRecord;
 
@@ -17,9 +18,9 @@ import java.util.Optional;
 @Builder
 public class Session {
 
-    private String id;
-    @JsonIgnore private String ownerId;
-    private Instant createdAt;
+    @JsonProperty("sessionId") private String id;
+    @JsonProperty("accountId") private String ownerId;
+    @JsonIgnore private Instant createdAt;
     @JsonIgnore private Instant updatedAt;
     private Optional<Instant> expiresAt;
 
