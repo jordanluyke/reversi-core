@@ -49,7 +49,7 @@ public class MatchManagerImpl implements MatchManager {
     }
 
     @Override
-    public Observable<Match> placePiece(String matchId, String accountId, String coordinates) {
+    public Observable<Match> placePiece(String matchId, String accountId, int index) {
         return getMatch(matchId)
                 .flatMap(match -> {
                     Side side;
@@ -59,7 +59,8 @@ public class MatchManagerImpl implements MatchManager {
                         side = Side.LIGHT;
                     else
                         return Observable.error(new WebException(HttpResponseStatus.FORBIDDEN));
-                    return match.placePiece(side, Position.fromCoordinates(coordinates));
+//                    return match.placePiece(side, Position.fromCoordinates(coordinates));
+                    return match.placePiece(side, Position.fromIndex(index));
                 })
                 .doOnNext(match -> {
                     if(match.getCompletedAt().isPresent() && match.getPlayerDarkId().isPresent() && match.getPlayerLightId().isPresent()) {
@@ -73,5 +74,11 @@ public class MatchManagerImpl implements MatchManager {
                         // then remove from list
                     }
                 });
+    }
+
+    @Override
+    public Observable<Match> join(String matchId, String accountId) {
+        return getMatch(matchId)
+                .flatMap(match -> match.join(accountId));
     }
 }

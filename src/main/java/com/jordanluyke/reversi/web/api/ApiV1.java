@@ -33,8 +33,8 @@ public class ApiV1 implements Api {
                 new HttpRoute("/accounts/:ownerId/stats", HttpMethod.GET, AccountRoutes.GetPlayerStats.class),
                 new HttpRoute("/matches", HttpMethod.POST, MatchRoutes.CreateMatch.class),
                 new HttpRoute("/matches/:matchId", HttpMethod.GET, MatchRoutes.GetMatch.class),
-//                new HttpRoute("/matches/:matchId/join", HttpMethod.POST, MatchRoutes.Move.class),
                 new HttpRoute("/matches/:matchId/move", HttpMethod.POST, MatchRoutes.Move.class),
+                new HttpRoute("/matches/:matchId/join", HttpMethod.POST, MatchRoutes.Join.class),
                 new HttpRoute("/sessions", HttpMethod.POST, SessionRoutes.CreateSession.class)
         );
     }

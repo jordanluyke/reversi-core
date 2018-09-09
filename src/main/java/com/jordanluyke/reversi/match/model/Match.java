@@ -36,9 +36,11 @@ public class Match {
 
     public Observable<Match> placePiece(Side side, Position position) {
         if(completedAt.isPresent())
-            return Observable.error(new WebException("Game completed", HttpResponseStatus.BAD_REQUEST));
-        if(side != turn || !playerLightId.isPresent() || !playerDarkId.isPresent())
-            return Observable.error(new IllegalMoveException());
+            return Observable.error(new WebException("Game completed", HttpResponseStatus.INTERNAL_SERVER_ERROR));
+        if(side != turn)
+            return Observable.error(new WebException("Not your turn", HttpResponseStatus.INTERNAL_SERVER_ERROR));
+        if(!playerLightId.isPresent() || !playerDarkId.isPresent())
+            return Observable.error(new WebException("Two players required", HttpResponseStatus.INTERNAL_SERVER_ERROR));
         return board.placePiece(side, position)
                 .flatMap(board1 -> board1.canPlacePiece(side.getOpposite())
                         .flatMap(opposingSideCanPlacePiece -> {
@@ -68,5 +70,13 @@ public class Match {
                 .map(Void -> this);
     }
 
-    // join
+    public Observable<Match> join(String accountId) {
+        if(!playerDarkId.isPresent())
+            playerDarkId = Optional.of(accountId);
+        else if(!playerLightId.isPresent())
+            playerLightId = Optional.of(accountId);
+        else
+            return Observable.error(new WebException("Too many players", HttpResponseStatus.INTERNAL_SERVER_ERROR));
+        return Observable.just(this);
+    }
 }

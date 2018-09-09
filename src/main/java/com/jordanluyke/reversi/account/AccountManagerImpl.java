@@ -46,7 +46,7 @@ public class AccountManagerImpl implements AccountManager {
 
     @Override
     public Observable<PlayerStats> getPlayerStats(String ownerId) {
-        return accountDAO.createPlayerStats(ownerId);
+        return accountDAO.getPlayerStatsById(ownerId);
     }
 
     @Override

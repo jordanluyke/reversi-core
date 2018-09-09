@@ -37,30 +37,41 @@ public class MatchRoutes {
             return o.flatMap(req -> {
                 String matchId = req.getQueryParams().get("matchId");
                 return matchManager.getMatch(matchId);
+//                if(match.isPrivate())
             });
-//                    .flatMap(match -> {
-//                        if(match.isPrivate())
-//                    })
         }
     }
 
     public static class Move implements HttpRouteHandler {
         @Inject protected MatchManager matchManager;
+        @Inject protected SessionManager sessionManager;
         @Override
         public Observable<Match> handle(Observable<HttpServerRequest> o) {
-            return o.flatMap(req -> {
-                String matchId = req.getQueryParams().get("matchId");
-                if(!req.getBody().isPresent())
-                    return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
-                JsonNode body = req.getBody().get();
-                String accountId = body.get("ownerId").asText();
-                String coordinates = body.get("coordinates").asText();
-                if(accountId == null)
-                    return Observable.error(new FieldRequiredException("ownerId"));
-                if(coordinates == null)
-                    return Observable.error(new FieldRequiredException("coordinates"));
-                return matchManager.placePiece(matchId, accountId, coordinates);
-            });
+            return o.flatMap(req -> sessionManager.validate(req)
+                    .flatMap(session -> {
+                        String matchId = req.getQueryParams().get("matchId");
+                        if(!req.getBody().isPresent())
+                            return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
+                        JsonNode body = req.getBody().get();
+                        if(body.get("index").isNull())
+                            return Observable.error(new FieldRequiredException("index"));
+                        int index = body.get("index").asInt();
+//                        String coordinates = body.get("coordinates").asText();
+                        return matchManager.placePiece(matchId, session.getOwnerId(), index);
+                    }));
+        }
+    }
+
+    public static class Join implements HttpRouteHandler {
+        @Inject protected MatchManager matchManager;
+        @Inject protected SessionManager sessionManager;
+        @Override
+        public Observable<Match> handle(Observable<HttpServerRequest> o) {
+            return o.flatMap(req -> sessionManager.validate(req)
+                    .flatMap(session -> {
+                        String matchId = req.getQueryParams().get("matchId");
+                        return matchManager.join(matchId, session.getOwnerId());
+                    }));
         }
     }
 }
