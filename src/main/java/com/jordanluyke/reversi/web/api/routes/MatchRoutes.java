@@ -57,9 +57,9 @@ public class MatchRoutes {
                         JsonNode index = body.get("index");
                         JsonNode coordinates = body.get("coordinates");
                         Position position;
-                        if(!index.isNull())
+                        if(index != null)
                             position = Position.fromIndex(index.asInt());
-                        else if(!coordinates.isNull())
+                        else if(coordinates != null)
                             position = Position.fromCoordinates(coordinates.asText());
                         else
                             return Observable.error(new FieldRequiredException("coordinates or index"));

@@ -112,10 +112,6 @@ public class RouteMatcher {
                     }
 
                     return Observable.just(res);
-                })
-                .onErrorResumeNext(err -> {
-                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    return Observable.just(e.toHttpServerResponse());
                 });
     }
 
@@ -136,10 +132,6 @@ public class RouteMatcher {
                     WebSocketServerResponse res = new WebSocketServerResponse();
                     res.setBody(n);
                     return res;
-                })
-                .onErrorResumeNext(err -> {
-                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    return Observable.just(e.toWebSocketServerResponse());
                 });
     }
 }

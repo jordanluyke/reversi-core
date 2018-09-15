@@ -5,5 +5,7 @@ package com.jordanluyke.reversi.web.api.events;
  */
 public enum OutgoingEvents {
     KeepAlive,
-    Match
+    Account,
+    Match,
+    WebException
 }

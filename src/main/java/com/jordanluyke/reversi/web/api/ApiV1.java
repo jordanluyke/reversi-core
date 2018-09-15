@@ -42,9 +42,10 @@ public class ApiV1 implements Api {
     @Override
     public List<WebSocketEvent> getWebSocketEvents() {
         return Arrays.asList(
-//                new WebSocketEvent<>(IncomingEvents.KeepAlive.class),
-                new WebSocketEvent<>(IncomingEvents.MessageReceipt.class),
-                new WebSocketEvent<>(IncomingEvents.Authenticate.class)
+                new WebSocketEvent<>(IncomingEvents.KeepAlive.class),
+                new WebSocketEvent<>(IncomingEvents.Account.class),
+                new WebSocketEvent<>(IncomingEvents.Match.class),
+                new WebSocketEvent<>(IncomingEvents.Receipt.class)
 //                new WebSocketEvent<>(MatchEvents.SubscribeMatch.class)
 //                new WebSocketEvent<>(MatchEvents.UnsubscribeMatch.class)
         );

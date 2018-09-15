@@ -7,11 +7,10 @@ import com.jordanluyke.reversi.match.model.Position;
 import com.jordanluyke.reversi.match.model.Side;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.WebSocketUtil;
-import com.jordanluyke.reversi.web.api.WebSocketManager;
+import com.jordanluyke.reversi.web.api.ApiManager;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.model.WebException;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
-import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -30,7 +29,7 @@ public class MatchManagerImpl implements MatchManager {
     private static final Logger logger = LogManager.getLogger(MatchManager.class);
 
     private AccountManager accountManager;
-    private WebSocketManager webSocketManager;
+    private ApiManager apiManager;
 
     private final List<Match> matches = new ArrayList<>();
 
@@ -67,12 +66,9 @@ public class MatchManagerImpl implements MatchManager {
                     return match.placePiece(side, position);
                 })
                 .doOnNext(match -> {
-                    // update all subscribers to match
-                    Stream.of(match.getPlayerDarkId().get(), match.getPlayerLightId().get())
-                            .map(id -> webSocketManager.getConnections(id))
-                            .flatMap(Collection::stream)
-                            .collect(Collectors.toList())
-                            .forEach(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(OutgoingEvents.Match)));
+                    apiManager.getConnections(OutgoingEvents.Match, matchId)
+                            .doOnNext(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(OutgoingEvents.Match)))
+                            .subscribe(new ErrorHandlingSubscriber<>());
 
                     if(match.getCompletedAt().isPresent() && match.getPlayerDarkId().isPresent() && match.getPlayerLightId().isPresent()) {
                         Observable.from(Arrays.asList(match.getPlayerDarkId().get(), match.getPlayerLightId().get()))

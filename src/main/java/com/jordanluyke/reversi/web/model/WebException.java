@@ -1,8 +1,9 @@
 package com.jordanluyke.reversi.web.model;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
+import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.Getter;
 
@@ -37,15 +38,11 @@ public class WebException extends Exception {
     }
 
     public WebSocketServerResponse toWebSocketServerResponse() {
-        WebSocketServerResponse response = new WebSocketServerResponse();
-        ObjectNode body = exceptionToBody();
-        body.put("event", WebException.class.getSimpleName());
-        response.setBody(body);
-        return response;
+        return new WebSocketServerResponse(OutgoingEvents.WebException, exceptionToBody());
     }
 
     private ObjectNode exceptionToBody() {
-        ObjectNode body = new ObjectMapper().createObjectNode();
+        ObjectNode body = NodeUtil.mapper.createObjectNode();
         body.put("exceptionId", RandomUtil.generateRandom(6));
         body.put("message", getMessage());
         body.put("exceptionType", getExceptionType());

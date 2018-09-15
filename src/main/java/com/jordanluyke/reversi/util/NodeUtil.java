@@ -70,7 +70,7 @@ public class NodeUtil {
             for(Field field : clazz.getFields()) {
                 field.setAccessible(true);
                 String name = field.getName();
-                if(body.get(name).isNull())
+                if(body.get(name) == null)
                     return Observable.error(new FieldRequiredException(name));
             }
             return Observable.error(new RuntimeException(e.getMessage()));

@@ -1,5 +1,7 @@
 package com.jordanluyke.reversi.web.netty;
 
+import com.google.inject.Inject;
+import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
@@ -28,12 +30,15 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
     private static final Logger logger = LogManager.getLogger(NettyHttpChannelInboundHandler.class);
 
     private ApiManager apiManager;
+    private Config config;
 
     private ByteBuf reqBuf = Unpooled.buffer();
     private HttpServerRequest httpServerRequest = new HttpServerRequest();
 
-    public NettyHttpChannelInboundHandler(ApiManager apiManager) {
+    @Inject
+    public NettyHttpChannelInboundHandler(ApiManager apiManager, Config config) {
         this.apiManager = apiManager;
+        this.config = config;
     }
 
     @Override
@@ -59,7 +64,6 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
         } else if(msg instanceof HttpContent) {
             HttpContent httpContent = (HttpContent) msg;
             reqBuf = Unpooled.copiedBuffer(reqBuf, httpContent.content());
-
             if(msg instanceof LastHttpContent) {
                 handleRequest(httpContent, reqBuf)
                         .doOnNext(httpServerResponse -> {
@@ -84,20 +88,26 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
     }
 
     private Observable<HttpServerResponse> handleRequest(HttpContent httpContent, ByteBuf content) {
-        if(httpContent.decoderResult().isFailure())
-            return Observable.just(new WebException(HttpResponseStatus.BAD_REQUEST).toHttpServerResponse());
+        return Observable.defer(() -> {
+            if(httpContent.decoderResult().isFailure())
+                return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
 
-        if(content.readableBytes() > 0) {
-            try {
-                NodeUtil.isValidJSON(content.array());
-            } catch(RuntimeException e) {
-                return Observable.just(new WebException(HttpResponseStatus.BAD_REQUEST).toHttpServerResponse());
+            if(content.readableBytes() > 0) {
+                try {
+                    NodeUtil.isValidJSON(content.array());
+                } catch(RuntimeException e) {
+                    return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
+                }
+
+                httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(content.array())));
             }
 
-            httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(content.array())));
-        }
-
-        return apiManager.handleRequest(httpServerRequest);
+            return apiManager.handleRequest(httpServerRequest);
+        })
+                .onErrorResumeNext(err -> {
+                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    return Observable.just(e.toHttpServerResponse());
+                });
     }
 
     private void writeResponse(ChannelHandlerContext ctx, HttpServerResponse res) {
@@ -116,7 +126,11 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
         if(handshaker != null) {
             handshaker.handshake(ctx.channel(), req);
             ctx.pipeline().remove(this);
-            AggregateWebSocketChannelHandlerContext aggregateContext = new AggregateWebSocketChannelHandlerContext(ctx);
+
+            AggregateWebSocketChannelHandlerContext aggregateContext = new AggregateWebSocketChannelHandlerContext(apiManager);
+            aggregateContext.setCtx(ctx);
+            aggregateContext.init();
+
             ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, aggregateContext));
             logger.info("Handshake accepted: {}", ctx.channel().remoteAddress());
         } else {

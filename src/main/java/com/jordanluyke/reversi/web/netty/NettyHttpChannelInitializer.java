@@ -9,24 +9,22 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.WebSocket13FrameDecoder;
 import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketServerCompressionHandler;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
+@AllArgsConstructor(onConstructor = @__(@Inject))
 public class NettyHttpChannelInitializer extends ChannelInitializer<SocketChannel> {
     private static final Logger logger = LogManager.getLogger(NettyHttpChannelInitializer.class);
 
     private Config config;
-    private ApiManager apiManager;
-
-    @Inject
-    public NettyHttpChannelInitializer(Config config, ApiManager apiManager) {
-        this.config = config;
-        this.apiManager = apiManager;
-    }
 
     @Override
     protected void initChannel(SocketChannel channel) {
@@ -38,6 +36,7 @@ public class NettyHttpChannelInitializer extends ChannelInitializer<SocketChanne
         pipeline.addLast(new HttpContentCompressor());
         pipeline.addLast(new WebSocketServerCompressionHandler());
         pipeline.addLast(new WebSocket13FrameDecoder(true, false, 65536));
-        pipeline.addLast(new NettyHttpChannelInboundHandler(apiManager));
+        pipeline.addLast(new ReadTimeoutHandler(20, TimeUnit.SECONDS));
+        pipeline.addLast(config.getInjector().getInstance(NettyHttpChannelInboundHandler.class));
     }
 }

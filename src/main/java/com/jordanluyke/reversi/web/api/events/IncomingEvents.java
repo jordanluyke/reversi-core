@@ -1,13 +1,12 @@
 package com.jordanluyke.reversi.web.api.events;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.inject.Inject;
-import com.jordanluyke.reversi.web.WebManager;
-import com.jordanluyke.reversi.web.api.WebSocketManager;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
+import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
@@ -18,11 +17,11 @@ import rx.Observable;
 public class IncomingEvents {
     private static final Logger logger = LogManager.getLogger(IncomingEvents.class);
 
-    public static class MessageReceipt implements WebSocketEventHandler {
+    public static class Receipt implements WebSocketEventHandler {
         @Override
         public Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o) {
             return o.flatMap(req -> {
-                if(req.getBody().get("id").isNull())
+                if(req.getBody().get("id") == null)
                     return Observable.error(new FieldRequiredException("id"));
 
                 req.getAggregateContext().unsubscribeMessageReceipt(req.getBody().get("id").asText());
@@ -34,19 +33,42 @@ public class IncomingEvents {
         }
     }
 
-    public static class Authenticate implements WebSocketEventHandler {
-        @Inject protected WebSocketManager webSocketManager;
+    public static class Account implements WebSocketEventHandler {
         @Override
         public Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o) {
             return o.flatMap(req -> {
-                if(req.getBody().get("accountId").isNull())
-                    return Observable.error(new FieldRequiredException("accountId"));
+                JsonNode channel = req.getBody().get("channel");
+                if(channel == null)
+                    return Observable.error(new FieldRequiredException("channel"));
 
-                String accountId = req.getBody().get("accountId").asText();
-                webSocketManager.addConnection(accountId, req.getAggregateContext());
+                AggregateWebSocketChannelHandlerContext aggregateContext = req.getAggregateContext();
+                aggregateContext.addEventSubscription(OutgoingEvents.valueOf(req.getBody().get("event").asText()), channel.asText());
 
                 return Observable.empty();
             });
+        }
+    }
+
+    public static class Match implements WebSocketEventHandler {
+        @Override
+        public Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o) {
+            return o.flatMap(req -> {
+                JsonNode channel = req.getBody().get("channel");
+                if(channel == null)
+                    return Observable.error(new FieldRequiredException("channel"));
+
+                AggregateWebSocketChannelHandlerContext aggregateContext = req.getAggregateContext();
+                aggregateContext.addEventSubscription(OutgoingEvents.valueOf(req.getBody().get("event").asText()), channel.asText());
+
+                return Observable.empty();
+            });
+        }
+    }
+
+    public static class KeepAlive implements WebSocketEventHandler {
+        @Override
+        public Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o) {
+            return o.flatMap(req -> Observable.empty());
         }
     }
 }

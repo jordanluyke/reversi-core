@@ -5,6 +5,7 @@ import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
+import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import com.jordanluyke.reversi.web.model.WebException;
@@ -62,11 +63,10 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
                 frame instanceof ContinuationWebSocketFrame) {
             reqBuf = Unpooled.copiedBuffer(reqBuf, frame.content());
             if(frame.isFinalFragment()) {
-                handleRequest(reqBuf, ctx)
-                        .doOnNext(res -> {
-                            WebSocketUtil.writeResponse(ctx, res);
-                            reqBuf = Unpooled.buffer();
-                        })
+                ByteBuf b = Unpooled.copiedBuffer(reqBuf);
+                reqBuf = Unpooled.buffer();
+                handleRequest(b, ctx)
+                        .doOnNext(res -> WebSocketUtil.writeResponse(ctx, res))
                         .subscribe(new ErrorHandlingSubscriber<>());
             }
         } else {
@@ -76,22 +76,29 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
     }
 
     private Observable<WebSocketServerResponse> handleRequest(ByteBuf content, ChannelHandlerContext ctx) {
-        try {
-            NodeUtil.isValidJSON(content.array());
-        } catch(RuntimeException e) {
-            return Observable.just(new WebException(HttpResponseStatus.BAD_REQUEST).toWebSocketServerResponse());
-        }
+        return Observable.defer(() -> {
+            try {
+                NodeUtil.isValidJSON(content.array());
+            } catch(RuntimeException e) {
+                return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
+            }
 
-        JsonNode reqBody = NodeUtil.getJsonNode(content.array());
-        logger.info("body: {}", reqBody.toString());
+            JsonNode reqBody = NodeUtil.getJsonNode(content.array());
+            logger.info("received: {}", reqBody.toString());
 
-        if(reqBody.get("event").isNull())
-            return Observable.just(new WebException(HttpResponseStatus.NOT_FOUND).toWebSocketServerResponse());
+            if(reqBody.get("event") == null)
+                return Observable.error(new FieldRequiredException("event"));
 
-        WebSocketServerRequest request = new WebSocketServerRequest();
-        request.setBody(reqBody);
-        request.setAggregateContext(aggregateContext);
+            WebSocketServerRequest request = new WebSocketServerRequest();
+            request.setBody(reqBody);
+            request.setAggregateContext(aggregateContext);
 
-        return apiManager.handleRequest(request);
+            return apiManager.handleRequest(request);
+        })
+                .onErrorResumeNext(err -> {
+                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    logger.error("{}", e.toWebSocketServerResponse().toNode());
+                    return Observable.just(e.toWebSocketServerResponse());
+                });
     }
 }
