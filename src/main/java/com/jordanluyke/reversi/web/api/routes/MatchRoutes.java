@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.match.MatchManager;
 import com.jordanluyke.reversi.match.model.Match;
+import com.jordanluyke.reversi.match.model.Position;
 import com.jordanluyke.reversi.session.SessionManager;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
@@ -53,11 +54,16 @@ public class MatchRoutes {
                         if(!req.getBody().isPresent())
                             return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
                         JsonNode body = req.getBody().get();
-                        if(body.get("index").isNull())
-                            return Observable.error(new FieldRequiredException("index"));
-                        int index = body.get("index").asInt();
-//                        String coordinates = body.get("coordinates").asText();
-                        return matchManager.placePiece(matchId, session.getOwnerId(), index);
+                        JsonNode index = body.get("index");
+                        JsonNode coordinates = body.get("coordinates");
+                        Position position;
+                        if(!index.isNull())
+                            position = Position.fromIndex(index.asInt());
+                        else if(!coordinates.isNull())
+                            position = Position.fromCoordinates(coordinates.asText());
+                        else
+                            return Observable.error(new FieldRequiredException("coordinates or index"));
+                        return matchManager.placePiece(matchId, session.getOwnerId(), position);
                     }));
         }
     }

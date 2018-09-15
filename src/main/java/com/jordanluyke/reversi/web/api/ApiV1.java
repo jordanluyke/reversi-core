@@ -1,6 +1,6 @@
 package com.jordanluyke.reversi.web.api;
 
-import com.jordanluyke.reversi.web.api.events.SystemEvents;
+import com.jordanluyke.reversi.web.api.events.IncomingEvents;
 import com.jordanluyke.reversi.web.api.model.Api;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketEvent;
@@ -42,8 +42,9 @@ public class ApiV1 implements Api {
     @Override
     public List<WebSocketEvent> getWebSocketEvents() {
         return Arrays.asList(
-                new WebSocketEvent<>(SystemEvents.KeepAlive.class),
-                new WebSocketEvent<>(SystemEvents.MessageReceipt.class)
+//                new WebSocketEvent<>(IncomingEvents.KeepAlive.class),
+                new WebSocketEvent<>(IncomingEvents.MessageReceipt.class),
+                new WebSocketEvent<>(IncomingEvents.Authenticate.class)
 //                new WebSocketEvent<>(MatchEvents.SubscribeMatch.class)
 //                new WebSocketEvent<>(MatchEvents.UnsubscribeMatch.class)
         );

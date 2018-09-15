@@ -6,7 +6,12 @@ import com.jordanluyke.reversi.match.model.Match;
 import com.jordanluyke.reversi.match.model.Position;
 import com.jordanluyke.reversi.match.model.Side;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
+import com.jordanluyke.reversi.util.WebSocketUtil;
+import com.jordanluyke.reversi.web.WebManager;
+import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.model.WebException;
+import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
+import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -26,6 +31,7 @@ public class MatchManagerImpl implements MatchManager {
     private static final Logger logger = LogManager.getLogger(MatchManager.class);
 
     private AccountManager accountManager;
+    private WebManager webManager;
 
     private final List<Match> matches = new ArrayList<>();
 
@@ -49,7 +55,7 @@ public class MatchManagerImpl implements MatchManager {
     }
 
     @Override
-    public Observable<Match> placePiece(String matchId, String accountId, int index) {
+    public Observable<Match> placePiece(String matchId, String accountId, Position position) {
         return getMatch(matchId)
                 .flatMap(match -> {
                     Side side;
@@ -59,10 +65,13 @@ public class MatchManagerImpl implements MatchManager {
                         side = Side.LIGHT;
                     else
                         return Observable.error(new WebException(HttpResponseStatus.FORBIDDEN));
-//                    return match.placePiece(side, Position.fromCoordinates(coordinates));
-                    return match.placePiece(side, Position.fromIndex(index));
+                    return match.placePiece(side, position);
                 })
                 .doOnNext(match -> {
+                    List<AggregateWebSocketChannelHandlerContext> connections = webManager.getConnections(match.getPlayerDarkId().get());
+                    connections.addAll(webManager.getConnections(match.getPlayerLightId().get()));
+                    connections.forEach(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(OutgoingEvents.Match)));
+
                     if(match.getCompletedAt().isPresent() && match.getPlayerDarkId().isPresent() && match.getPlayerLightId().isPresent()) {
                         Observable.from(Arrays.asList(match.getPlayerDarkId().get(), match.getPlayerLightId().get()))
                                 .flatMap(id -> accountManager.getPlayerStats(id))

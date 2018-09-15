@@ -5,7 +5,7 @@ import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.HttpServerResponse;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
-import com.jordanluyke.reversi.web.netty.WebSocketAggregateContext;
+import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,7 +21,7 @@ public class ApiManagerImpl implements ApiManager {
     private static final Logger logger = LogManager.getLogger(ApiManager.class);
 
     private RouteMatcher routeMatcher;
-    private Map<String, WebSocketAggregateContext> aggregateContexts = new HashMap<>();
+    private Map<String, AggregateWebSocketChannelHandlerContext> aggregateContexts = new HashMap<>();
 
     @Inject
     public ApiManagerImpl(RouteMatcher routeMatcher) {
@@ -39,15 +39,15 @@ public class ApiManagerImpl implements ApiManager {
     }
 
     @Override
-    public WebSocketAggregateContext registerWebSocketChannelHandlerContext(ChannelHandlerContext ctx) {
-        WebSocketAggregateContext aggregateContext = new WebSocketAggregateContext(ctx);
+    public AggregateWebSocketChannelHandlerContext registerWebSocketChannelHandlerContext(ChannelHandlerContext ctx) {
+        AggregateWebSocketChannelHandlerContext aggregateContext = new AggregateWebSocketChannelHandlerContext(ctx);
         aggregateContexts.put(ctx.channel().remoteAddress().toString(), aggregateContext);
         return aggregateContext;
     }
 
     @Override
     public void deregisterWebSocketChannelHandlerContext(ChannelHandlerContext ctx) {
-        WebSocketAggregateContext aggregateContext = aggregateContexts.get(ctx.channel().remoteAddress().toString());
+        AggregateWebSocketChannelHandlerContext aggregateContext = aggregateContexts.get(ctx.channel().remoteAddress().toString());
         aggregateContext.close();
         aggregateContexts.remove(ctx.channel().remoteAddress().toString());
     }

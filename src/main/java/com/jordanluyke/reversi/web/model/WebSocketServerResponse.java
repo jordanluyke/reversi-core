@@ -1,12 +1,12 @@
 package com.jordanluyke.reversi.web.model;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.jordanluyke.reversi.util.NodeUtil;
+import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
+import lombok.*;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -15,7 +15,19 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class WebSocketServerResponse {
 
-    private ObjectNode body = new ObjectMapper().createObjectNode();
+    private OutgoingEvents event;
+    private ObjectNode body = NodeUtil.mapper.createObjectNode();
+
+    public WebSocketServerResponse(OutgoingEvents event) {
+        this.event = event;
+    }
+
+    public JsonNode toNode() {
+        ObjectNode node = NodeUtil.mapper.createObjectNode();
+        node.put("event", event.toString());
+        return node.setAll(body);
+    }
 }

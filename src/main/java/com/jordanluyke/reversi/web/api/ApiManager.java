@@ -4,7 +4,7 @@ import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.HttpServerResponse;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
-import com.jordanluyke.reversi.web.netty.WebSocketAggregateContext;
+import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
 import io.netty.channel.ChannelHandlerContext;
 import rx.Observable;
 
@@ -17,7 +17,7 @@ public interface ApiManager {
 
     Observable<WebSocketServerResponse> handleRequest(WebSocketServerRequest request);
 
-    WebSocketAggregateContext registerWebSocketChannelHandlerContext(ChannelHandlerContext ctx);
+    AggregateWebSocketChannelHandlerContext registerWebSocketChannelHandlerContext(ChannelHandlerContext ctx);
 
     void deregisterWebSocketChannelHandlerContext(ChannelHandlerContext ctx);
 }

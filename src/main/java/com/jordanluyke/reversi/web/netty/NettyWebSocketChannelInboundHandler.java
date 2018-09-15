@@ -3,6 +3,7 @@ package com.jordanluyke.reversi.web.netty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
+import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
@@ -25,7 +26,7 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
 
     private ApiManager apiManager;
 
-    private WebSocketAggregateContext aggregateContext;
+    private AggregateWebSocketChannelHandlerContext aggregateContext;
     private ByteBuf reqBuf = Unpooled.buffer();
 
     public NettyWebSocketChannelInboundHandler(ApiManager apiManager, ChannelHandlerContext ctx) {
@@ -64,7 +65,7 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
             if(frame.isFinalFragment()) {
                 handleRequest(reqBuf, ctx)
                         .doOnNext(res -> {
-                            writeResponse(ctx, res);
+                            WebSocketUtil.writeResponse(ctx, res);
                             reqBuf = Unpooled.buffer();
                         })
                         .subscribe(new ErrorHandlingSubscriber<>());
@@ -93,11 +94,5 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
         request.setAggregateContext(aggregateContext);
 
         return apiManager.handleRequest(request);
-    }
-
-    private void writeResponse(ChannelHandlerContext ctx, WebSocketServerResponse res) {
-        BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(res.getBody())));
-        ctx.write(frame);
-        ctx.writeAndFlush(Unpooled.EMPTY_BUFFER);
     }
 }
