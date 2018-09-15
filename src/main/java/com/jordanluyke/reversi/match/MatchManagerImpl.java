@@ -7,7 +7,7 @@ import com.jordanluyke.reversi.match.model.Position;
 import com.jordanluyke.reversi.match.model.Side;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.WebSocketUtil;
-import com.jordanluyke.reversi.web.WebManager;
+import com.jordanluyke.reversi.web.api.WebSocketManager;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.model.WebException;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
@@ -18,10 +18,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -31,7 +30,7 @@ public class MatchManagerImpl implements MatchManager {
     private static final Logger logger = LogManager.getLogger(MatchManager.class);
 
     private AccountManager accountManager;
-    private WebManager webManager;
+    private WebSocketManager webSocketManager;
 
     private final List<Match> matches = new ArrayList<>();
 
@@ -68,9 +67,12 @@ public class MatchManagerImpl implements MatchManager {
                     return match.placePiece(side, position);
                 })
                 .doOnNext(match -> {
-                    List<AggregateWebSocketChannelHandlerContext> connections = webManager.getConnections(match.getPlayerDarkId().get());
-                    connections.addAll(webManager.getConnections(match.getPlayerLightId().get()));
-                    connections.forEach(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(OutgoingEvents.Match)));
+                    // update all subscribers to match
+                    Stream.of(match.getPlayerDarkId().get(), match.getPlayerLightId().get())
+                            .map(id -> webSocketManager.getConnections(id))
+                            .flatMap(Collection::stream)
+                            .collect(Collectors.toList())
+                            .forEach(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(OutgoingEvents.Match)));
 
                     if(match.getCompletedAt().isPresent() && match.getPlayerDarkId().isPresent() && match.getPlayerLightId().isPresent()) {
                         Observable.from(Arrays.asList(match.getPlayerDarkId().get(), match.getPlayerLightId().get()))

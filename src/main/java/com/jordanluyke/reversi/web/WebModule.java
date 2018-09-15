@@ -10,7 +10,7 @@ public class WebModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(WebManager.class).to(WebManagerImpl.class).asEagerSingleton();
+        bind(WebManager.class).to(WebManagerImpl.class);
         install(new ApiModule());
     }
 }

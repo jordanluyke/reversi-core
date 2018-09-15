@@ -25,13 +25,12 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
     private static final Logger logger = LogManager.getLogger(NettyWebSocketChannelInboundHandler.class);
 
     private ApiManager apiManager;
-
     private AggregateWebSocketChannelHandlerContext aggregateContext;
     private ByteBuf reqBuf = Unpooled.buffer();
 
-    public NettyWebSocketChannelInboundHandler(ApiManager apiManager, ChannelHandlerContext ctx) {
+    public NettyWebSocketChannelInboundHandler(ApiManager apiManager, AggregateWebSocketChannelHandlerContext aggregateContext) {
         this.apiManager = apiManager;
-        this.aggregateContext = apiManager.registerWebSocketChannelHandlerContext(ctx);
+        this.aggregateContext = aggregateContext;
     }
 
     @Override
@@ -48,14 +47,14 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         logger.error("Exception caught on {}", ctx.channel().remoteAddress());
-        apiManager.deregisterWebSocketChannelHandlerContext(ctx);
+        aggregateContext.close();
         cause.printStackTrace();
         ctx.close();
     }
 
     private void handleWebsocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
         if(frame instanceof CloseWebSocketFrame) {
-            apiManager.deregisterWebSocketChannelHandlerContext(ctx);
+            aggregateContext.close();
         } else if(frame instanceof PingWebSocketFrame) {
             ctx.channel().write(new PongWebSocketFrame(frame.content()));
         } else if(frame instanceof TextWebSocketFrame ||

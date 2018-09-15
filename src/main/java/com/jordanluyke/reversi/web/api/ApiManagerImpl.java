@@ -37,18 +37,4 @@ public class ApiManagerImpl implements ApiManager {
     public Observable<WebSocketServerResponse> handleRequest(WebSocketServerRequest request) {
         return routeMatcher.handle(request);
     }
-
-    @Override
-    public AggregateWebSocketChannelHandlerContext registerWebSocketChannelHandlerContext(ChannelHandlerContext ctx) {
-        AggregateWebSocketChannelHandlerContext aggregateContext = new AggregateWebSocketChannelHandlerContext(ctx);
-        aggregateContexts.put(ctx.channel().remoteAddress().toString(), aggregateContext);
-        return aggregateContext;
-    }
-
-    @Override
-    public void deregisterWebSocketChannelHandlerContext(ChannelHandlerContext ctx) {
-        AggregateWebSocketChannelHandlerContext aggregateContext = aggregateContexts.get(ctx.channel().remoteAddress().toString());
-        aggregateContext.close();
-        aggregateContexts.remove(ctx.channel().remoteAddress().toString());
-    }
 }

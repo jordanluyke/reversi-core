@@ -16,8 +16,4 @@ public interface ApiManager {
     Observable<HttpServerResponse> handleRequest(HttpServerRequest request);
 
     Observable<WebSocketServerResponse> handleRequest(WebSocketServerRequest request);
-
-    AggregateWebSocketChannelHandlerContext registerWebSocketChannelHandlerContext(ChannelHandlerContext ctx);
-
-    void deregisterWebSocketChannelHandlerContext(ChannelHandlerContext ctx);
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.web.WebManager;
+import com.jordanluyke.reversi.web.api.WebSocketManager;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
@@ -34,7 +35,7 @@ public class IncomingEvents {
     }
 
     public static class Authenticate implements WebSocketEventHandler {
-        @Inject protected WebManager webManager;
+        @Inject protected WebSocketManager webSocketManager;
         @Override
         public Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o) {
             return o.flatMap(req -> {
@@ -42,8 +43,7 @@ public class IncomingEvents {
                     return Observable.error(new FieldRequiredException("accountId"));
 
                 String accountId = req.getBody().get("accountId").asText();
-                webManager.addConnection(accountId, req.getAggregateContext());
-                logger.info("added! {}", accountId);
+                webSocketManager.addConnection(accountId, req.getAggregateContext());
 
                 return Observable.empty();
             });

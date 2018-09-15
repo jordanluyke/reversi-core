@@ -116,7 +116,8 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
         if(handshaker != null) {
             handshaker.handshake(ctx.channel(), req);
             ctx.pipeline().remove(this);
-            ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, ctx));
+            AggregateWebSocketChannelHandlerContext aggregateContext = new AggregateWebSocketChannelHandlerContext(ctx);
+            ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, aggregateContext));
             logger.info("Handshake accepted: {}", ctx.channel().remoteAddress());
         } else {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());

@@ -10,5 +10,6 @@ public class ApiModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(ApiManager.class).to(ApiManagerImpl.class);
+        bind(WebSocketManager.class).to(WebSocketManagerImpl.class).asEagerSingleton();
     }
 }
