@@ -41,8 +41,7 @@ public class IncomingEvents {
                 if(channel == null)
                     return Observable.error(new FieldRequiredException("channel"));
 
-                AggregateWebSocketChannelHandlerContext aggregateContext = req.getAggregateContext();
-                aggregateContext.addEventSubscription(OutgoingEvents.valueOf(req.getBody().get("event").asText()), channel.asText());
+                req.getAggregateContext().addEventSubscription(OutgoingEvents.valueOf(req.getBody().get("event").asText()), channel.asText());
 
                 return Observable.empty();
             });
@@ -57,8 +56,7 @@ public class IncomingEvents {
                 if(channel == null)
                     return Observable.error(new FieldRequiredException("channel"));
 
-                AggregateWebSocketChannelHandlerContext aggregateContext = req.getAggregateContext();
-                aggregateContext.addEventSubscription(OutgoingEvents.valueOf(req.getBody().get("event").asText()), channel.asText());
+                req.getAggregateContext().addEventSubscription(OutgoingEvents.valueOf(req.getBody().get("event").asText()), channel.asText());
 
                 return Observable.empty();
             });

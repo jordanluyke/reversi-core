@@ -5,7 +5,6 @@ import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
-import com.jordanluyke.reversi.web.api.ApiManager;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.api.model.EventSubscription;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
@@ -13,12 +12,12 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
 import rx.Subscription;
+import rx.subjects.PublishSubject;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -33,30 +32,21 @@ import java.util.stream.Collectors;
  */
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class AggregateWebSocketChannelHandlerContext {
     private static final Logger logger = LogManager.getLogger(AggregateWebSocketChannelHandlerContext.class);
 
-    ApiManager apiManager;
-
     private ChannelHandlerContext ctx;
-    private Subscription keepAliveSubscription;
     private Map<String, Subscription> responsesAwaitingReceipt = new HashMap<>();
     private List<EventSubscription> eventSubscriptions = new ArrayList<>();
-
-    public AggregateWebSocketChannelHandlerContext(ApiManager apiManager) {
-        this.apiManager = apiManager;
-    }
-
-    public void init() {
-        startKeepAliveTimer();
-        apiManager.addConnection(this);
-    }
+    private PublishSubject<Void> onClose = PublishSubject.create();
 
     public void close() {
         ctx.write(new CloseWebSocketFrame());
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-        keepAliveSubscription.unsubscribe();
-        apiManager.removeConnection(this);
+        onClose.onCompleted();
+        ctx.close();
         logger.info("Socket closed: {}", ctx.channel().remoteAddress());
     }
 
@@ -84,13 +74,18 @@ public class AggregateWebSocketChannelHandlerContext {
     }
 
     public void startKeepAliveTimer() {
-        keepAliveSubscription = Observable.interval(10, TimeUnit.SECONDS)
+        Subscription keepAliveSub = Observable.interval(10, TimeUnit.SECONDS)
                 .doOnNext(Void -> {
                     ObjectNode body = NodeUtil.mapper.createObjectNode()
                             .put("time", Instant.now().toEpochMilli());
                     WebSocketUtil.writeResponse(ctx, new WebSocketServerResponse(OutgoingEvents.KeepAlive, body));
                 })
                 .subscribe(new ErrorHandlingSubscriber<>());
+
+        onClose
+                .doOnCompleted(keepAliveSub::unsubscribe)
+                .subscribe(new ErrorHandlingSubscriber<>());
+
     }
 
     public void addEventSubscription(OutgoingEvents event, String channel) {

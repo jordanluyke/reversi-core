@@ -1,6 +1,7 @@
 package com.jordanluyke.reversi.web.netty;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.inject.Inject;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
@@ -27,6 +28,7 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
 
     private ApiManager apiManager;
     private AggregateWebSocketChannelHandlerContext aggregateContext;
+
     private ByteBuf reqBuf = Unpooled.buffer();
 
     public NettyWebSocketChannelInboundHandler(ApiManager apiManager, AggregateWebSocketChannelHandlerContext aggregateContext) {
@@ -50,7 +52,6 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
         logger.error("Exception caught on {}", ctx.channel().remoteAddress());
         aggregateContext.close();
         cause.printStackTrace();
-        ctx.close();
     }
 
     private void handleWebsocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
@@ -89,9 +90,10 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
             if(reqBody.get("event") == null)
                 return Observable.error(new FieldRequiredException("event"));
 
-            WebSocketServerRequest request = new WebSocketServerRequest();
-            request.setBody(reqBody);
-            request.setAggregateContext(aggregateContext);
+            WebSocketServerRequest request = WebSocketServerRequest.builder()
+                    .body(reqBody)
+                    .aggregateContext(aggregateContext)
+                    .build();
 
             return apiManager.handleRequest(request);
         })

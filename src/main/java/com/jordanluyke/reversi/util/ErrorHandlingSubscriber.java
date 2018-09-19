@@ -1,11 +1,9 @@
 package com.jordanluyke.reversi.util;
 
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import rx.Subscriber;
 
 public class ErrorHandlingSubscriber<T extends Object> extends Subscriber<T> {
-    private static final Logger logger = LogManager.getLogger(ErrorHandlingSubscriber.class);
     private Class<?> loggerClass;
 
     public ErrorHandlingSubscriber() {

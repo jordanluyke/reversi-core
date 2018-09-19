@@ -8,6 +8,7 @@ import com.jordanluyke.reversi.match.model.Side;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
+import com.jordanluyke.reversi.web.api.SocketManager;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.model.WebException;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
@@ -29,7 +30,7 @@ public class MatchManagerImpl implements MatchManager {
     private static final Logger logger = LogManager.getLogger(MatchManager.class);
 
     private AccountManager accountManager;
-    private ApiManager apiManager;
+    private SocketManager socketManager;
 
     private final List<Match> matches = new ArrayList<>();
 
@@ -66,7 +67,7 @@ public class MatchManagerImpl implements MatchManager {
                     return match.placePiece(side, position);
                 })
                 .doOnNext(match -> {
-                    apiManager.getConnections(OutgoingEvents.Match, matchId)
+                    socketManager.getConnections(OutgoingEvents.Match, matchId)
                             .doOnNext(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(OutgoingEvents.Match)))
                             .subscribe(new ErrorHandlingSubscriber<>());
 

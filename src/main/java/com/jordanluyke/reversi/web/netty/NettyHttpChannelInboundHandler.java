@@ -1,10 +1,10 @@
 package com.jordanluyke.reversi.web.netty;
 
 import com.google.inject.Inject;
-import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
+import com.jordanluyke.reversi.web.api.SocketManager;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.HttpServerResponse;
 import com.jordanluyke.reversi.web.model.WebException;
@@ -30,15 +30,15 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
     private static final Logger logger = LogManager.getLogger(NettyHttpChannelInboundHandler.class);
 
     private ApiManager apiManager;
-    private Config config;
+    private SocketManager socketManager;
 
     private ByteBuf reqBuf = Unpooled.buffer();
     private HttpServerRequest httpServerRequest = new HttpServerRequest();
 
     @Inject
-    public NettyHttpChannelInboundHandler(ApiManager apiManager, Config config) {
+    public NettyHttpChannelInboundHandler(ApiManager apiManager, SocketManager socketManager) {
         this.apiManager = apiManager;
-        this.config = config;
+        this.socketManager = socketManager;
     }
 
     @Override
@@ -127,15 +127,16 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
             handshaker.handshake(ctx.channel(), req);
             ctx.pipeline().remove(this);
 
-            AggregateWebSocketChannelHandlerContext aggregateContext = new AggregateWebSocketChannelHandlerContext(apiManager);
+            AggregateWebSocketChannelHandlerContext aggregateContext = new AggregateWebSocketChannelHandlerContext();
             aggregateContext.setCtx(ctx);
-            aggregateContext.init();
+            aggregateContext.startKeepAliveTimer();
+            socketManager.addConnection(aggregateContext);
 
             ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, aggregateContext));
             logger.info("Handshake accepted: {}", ctx.channel().remoteAddress());
         } else {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
-            logger.error("Handshaker detected supported version");
+            logger.error("Handshaker detected unsupported version");
         }
     }
 
