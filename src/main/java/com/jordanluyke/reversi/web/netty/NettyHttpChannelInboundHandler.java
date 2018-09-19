@@ -35,7 +35,6 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
     private ByteBuf reqBuf = Unpooled.buffer();
     private HttpServerRequest httpServerRequest = new HttpServerRequest();
 
-    @Inject
     public NettyHttpChannelInboundHandler(ApiManager apiManager, SocketManager socketManager) {
         this.apiManager = apiManager;
         this.socketManager = socketManager;
