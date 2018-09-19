@@ -1,6 +1,5 @@
 package com.jordanluyke.reversi.web.netty;
 
-import com.google.inject.Inject;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;

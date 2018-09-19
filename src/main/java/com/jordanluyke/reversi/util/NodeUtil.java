@@ -80,4 +80,25 @@ public class NodeUtil {
     public static <T> Observable<T> parseObjectNodeInto(Optional<JsonNode> body, Class<T> clazz) {
         return body.map(jsonNode -> parseObjectNodeInto(jsonNode, clazz)).orElseGet(() -> Observable.error(new WebException("Empty body", HttpResponseStatus.BAD_REQUEST)));
     }
+
+    public static Optional<String> getText(JsonNode node, String field) {
+        JsonNode fieldNode = node.get(field);
+        if(fieldNode == null)
+            return Optional.empty();
+        return Optional.of(fieldNode.asText());
+    }
+
+    public static Optional<Boolean> getBoolean(JsonNode node, String field) {
+        JsonNode fieldNode = node.get(field);
+        if(fieldNode == null)
+            return Optional.empty();
+        return Optional.of(fieldNode.asBoolean());
+    }
+
+    public static Optional<Integer> getInteger(JsonNode node, String field) {
+        JsonNode fieldNode = node.get(field);
+        if(fieldNode == null)
+            return Optional.empty();
+        return Optional.of(fieldNode.asInt());
+    }
 }

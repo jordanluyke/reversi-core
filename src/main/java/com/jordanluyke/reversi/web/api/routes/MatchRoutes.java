@@ -6,6 +6,7 @@ import com.jordanluyke.reversi.match.MatchManager;
 import com.jordanluyke.reversi.match.model.Match;
 import com.jordanluyke.reversi.match.model.Position;
 import com.jordanluyke.reversi.session.SessionManager;
+import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
@@ -14,6 +15,8 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
+
+import java.util.Optional;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -54,15 +57,17 @@ public class MatchRoutes {
                         if(!req.getBody().isPresent())
                             return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
                         JsonNode body = req.getBody().get();
-                        JsonNode index = body.get("index");
-                        JsonNode coordinates = body.get("coordinates");
+                        Optional<Integer> index = NodeUtil.getInteger(body, "index");
+                        Optional<String> coordinates = NodeUtil.getText(body, "coordinates");
+
                         Position position;
-                        if(index != null)
-                            position = Position.fromIndex(index.asInt());
-                        else if(coordinates != null)
-                            position = Position.fromCoordinates(coordinates.asText());
+                        if(index.isPresent())
+                            position = Position.fromIndex(index.get());
+                        else if(coordinates.isPresent())
+                            position = Position.fromCoordinates(coordinates.get());
                         else
                             return Observable.error(new FieldRequiredException("coordinates or index"));
+
                         return matchManager.placePiece(matchId, session.getOwnerId(), position);
                     }));
         }

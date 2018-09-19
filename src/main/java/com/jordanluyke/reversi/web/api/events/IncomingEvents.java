@@ -3,13 +3,15 @@ package com.jordanluyke.reversi.web.api.events;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
-import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
+
+import java.util.Optional;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -36,30 +38,14 @@ public class IncomingEvents {
     public static class Account implements WebSocketEventHandler {
         @Override
         public Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o) {
-            return o.flatMap(req -> {
-                JsonNode channel = req.getBody().get("channel");
-                if(channel == null)
-                    return Observable.error(new FieldRequiredException("channel"));
-
-                req.getAggregateContext().addEventSubscription(OutgoingEvents.valueOf(req.getBody().get("event").asText()), channel.asText());
-
-                return Observable.empty();
-            });
+            return o.flatMap(IncomingEvents::channelSubscriptionHandler);
         }
     }
 
     public static class Match implements WebSocketEventHandler {
         @Override
         public Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o) {
-            return o.flatMap(req -> {
-                JsonNode channel = req.getBody().get("channel");
-                if(channel == null)
-                    return Observable.error(new FieldRequiredException("channel"));
-
-                req.getAggregateContext().addEventSubscription(OutgoingEvents.valueOf(req.getBody().get("event").asText()), channel.asText());
-
-                return Observable.empty();
-            });
+            return o.flatMap(IncomingEvents::channelSubscriptionHandler);
         }
     }
 
@@ -68,5 +54,22 @@ public class IncomingEvents {
         public Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o) {
             return o.flatMap(req -> Observable.empty());
         }
+    }
+
+    private static Observable<ObjectNode> channelSubscriptionHandler(WebSocketServerRequest req) {
+        Optional<String> event = NodeUtil.getText(req.getBody(), "event");
+        Optional<String> channel = NodeUtil.getText(req.getBody(), "channel");
+        Optional<Boolean> unsubscribe = NodeUtil.getBoolean(req.getBody(), "unsubscribe");
+
+        if(!event.isPresent())
+            return Observable.error(new FieldRequiredException("event"));
+        if(channel.isPresent() && !unsubscribe.isPresent())
+            req.getAggregateContext().addEventSubscription(OutgoingEvents.valueOf(event.get()), channel.get());
+        else if(!channel.isPresent() && unsubscribe.isPresent())
+            req.getAggregateContext().removeEventSubscription(OutgoingEvents.valueOf(event.get()));
+        else
+            return Observable.error(new FieldRequiredException("channel"));
+
+        return Observable.empty();
     }
 }
