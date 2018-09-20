@@ -63,7 +63,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
             HttpContent httpContent = (HttpContent) msg;
             reqBuf = Unpooled.copiedBuffer(reqBuf, httpContent.content());
             if(msg instanceof LastHttpContent) {
-                handleRequest(httpContent, reqBuf)
+                handleRequest(httpContent)
                         .doOnNext(httpServerResponse -> {
                             logger.info("{} {}", ctx.channel().remoteAddress(), httpServerResponse.getBody());
                             writeResponse(ctx, httpServerResponse);
@@ -85,21 +85,22 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
         ctx.close();
     }
 
-    private Observable<HttpServerResponse> handleRequest(HttpContent httpContent, ByteBuf content) {
+    private Observable<HttpServerResponse> handleRequest(HttpContent httpContent) {
         return Observable.defer(() -> {
             if(httpContent.decoderResult().isFailure())
                 return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
 
-            if(content.readableBytes() > 0) {
+            if(reqBuf.readableBytes() > 0) {
                 try {
-                    NodeUtil.isValidJSON(content.array());
+                    NodeUtil.isValidJSON(reqBuf.array());
                 } catch(RuntimeException e) {
                     return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
                 }
 
-                httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(content.array())));
+                httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(reqBuf.array())));
             }
-            content.release();
+
+            reqBuf.release();
 
             return apiManager.handleRequest(httpServerRequest);
         })
