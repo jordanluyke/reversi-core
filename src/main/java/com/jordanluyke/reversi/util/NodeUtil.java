@@ -83,21 +83,21 @@ public class NodeUtil {
 
     public static Optional<String> getText(JsonNode node, String field) {
         JsonNode fieldNode = node.get(field);
-        if(fieldNode == null)
+        if(fieldNode == null || fieldNode.isNull())
             return Optional.empty();
         return Optional.of(fieldNode.asText());
     }
 
     public static Optional<Boolean> getBoolean(JsonNode node, String field) {
         JsonNode fieldNode = node.get(field);
-        if(fieldNode == null)
+        if(fieldNode == null || fieldNode.isNull())
             return Optional.empty();
         return Optional.of(fieldNode.asBoolean());
     }
 
     public static Optional<Integer> getInteger(JsonNode node, String field) {
         JsonNode fieldNode = node.get(field);
-        if(fieldNode == null)
+        if(fieldNode == null || fieldNode.isNull())
             return Optional.empty();
         return Optional.of(fieldNode.asInt());
     }

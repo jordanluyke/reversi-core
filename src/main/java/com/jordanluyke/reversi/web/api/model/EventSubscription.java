@@ -15,4 +15,13 @@ public class EventSubscription {
 
     private OutgoingEvents event;
     private String channel;
+
+    @Override
+    public boolean equals(Object o) {
+        if(o instanceof EventSubscription) {
+            EventSubscription e = (EventSubscription) o;
+            return event == e.event && channel.equals(e.channel);
+        }
+        return false;
+    }
 }

@@ -64,9 +64,7 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
                 frame instanceof ContinuationWebSocketFrame) {
             reqBuf = Unpooled.copiedBuffer(reqBuf, frame.content());
             if(frame.isFinalFragment()) {
-                ByteBuf b = Unpooled.copiedBuffer(reqBuf);
-                reqBuf = Unpooled.buffer();
-                handleRequest(b, ctx)
+                handleRequest(reqBuf)
                         .doOnNext(res -> WebSocketUtil.writeResponse(ctx, res))
                         .subscribe(new ErrorHandlingSubscriber<>());
             }
@@ -76,7 +74,7 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
         }
     }
 
-    private Observable<WebSocketServerResponse> handleRequest(ByteBuf content, ChannelHandlerContext ctx) {
+    private Observable<WebSocketServerResponse> handleRequest(ByteBuf content) {
         return Observable.defer(() -> {
             try {
                 NodeUtil.isValidJSON(content.array());
@@ -85,6 +83,8 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
             }
 
             JsonNode reqBody = NodeUtil.getJsonNode(content.array());
+            content.release();
+            reqBuf = Unpooled.buffer();
             logger.info("received: {}", reqBody.toString());
 
             if(reqBody.get("event") == null)

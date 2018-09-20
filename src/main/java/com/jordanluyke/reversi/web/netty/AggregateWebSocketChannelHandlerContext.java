@@ -74,7 +74,7 @@ public class AggregateWebSocketChannelHandlerContext {
     }
 
     public void startKeepAliveTimer() {
-        Subscription keepAliveSub = Observable.interval(10, TimeUnit.SECONDS)
+        Subscription keepAliveSub = Observable.interval(10, 10, TimeUnit.SECONDS)
                 .doOnNext(Void -> {
                     ObjectNode body = NodeUtil.mapper.createObjectNode()
                             .put("time", Instant.now().toEpochMilli());
@@ -89,7 +89,9 @@ public class AggregateWebSocketChannelHandlerContext {
     }
 
     public void addEventSubscription(OutgoingEvents event, String channel) {
-        eventSubscriptions.add(new EventSubscription(event, channel));
+        EventSubscription eventSubscription = new EventSubscription(event, channel);
+        if(!eventSubscriptions.contains(eventSubscription))
+            eventSubscriptions.add(eventSubscription);
     }
 
     public void removeEventSubscription(OutgoingEvents event) {

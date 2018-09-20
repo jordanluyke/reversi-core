@@ -99,6 +99,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
 
                 httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(content.array())));
             }
+            content.release();
 
             return apiManager.handleRequest(httpServerRequest);
         })
