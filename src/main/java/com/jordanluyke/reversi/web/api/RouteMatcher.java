@@ -99,11 +99,12 @@ public class RouteMatcher {
                     if(object instanceof ObjectNode) {
                         res.setBody((ObjectNode) object);
                     } else {
-                        res.setBody(NodeUtil.mapper.valueToTree(object));
-//                            logger.error("Json serialize fail");
-//                            err.printStackTrace();
-//                            return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
-//                        }
+                        try {
+                            res.setBody(NodeUtil.mapper.valueToTree(object));
+                        } catch(IllegalArgumentException e) {
+                            logger.error("{}: {}", e.getClass().getSimpleName(), e.getMessage());
+                            return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                        }
                     }
 
                     return Observable.just(res);
@@ -127,7 +128,7 @@ public class RouteMatcher {
                 })
                 .flatMap(instance -> ((WebSocketEventHandler) instance).handle(Observable.just(request)))
                 .map(node -> {
-                    ObjectNode n = ((ObjectNode) node).deepCopy();
+                    ObjectNode n = node.deepCopy();
                     n.put("event", request.getBody().get("event").asText());
                     WebSocketServerResponse res = new WebSocketServerResponse();
                     res.setBody(n);
