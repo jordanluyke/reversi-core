@@ -131,10 +131,11 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
             aggregateContext.startKeepAliveTimer();
             socketManager.addConnection(aggregateContext);
 
-            ctx.pipeline().remove(HttpRequestDecoder.class);
-            ctx.pipeline().remove(HttpResponseEncoder.class);
-            ctx.pipeline().remove(HttpContentCompressor.class);
+//            ctx.pipeline().remove(HttpRequestDecoder.class);
+//            ctx.pipeline().remove(HttpResponseEncoder.class);
+//            ctx.pipeline().remove(HttpContentCompressor.class);
             ctx.pipeline().remove(NettyHttpChannelInboundHandler.class);
+//            ctx.pipeline().remove(ctx.pipeline().last());
             ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, aggregateContext));
             logger.info("Handshake accepted: {}", ctx.channel().remoteAddress());
         } else {
