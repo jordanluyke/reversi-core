@@ -10,8 +10,10 @@ import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import com.jordanluyke.reversi.web.model.WebException;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.websocketx.*;
 import org.apache.logging.log4j.LogManager;
@@ -21,13 +23,13 @@ import rx.Observable;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAdapter {
+public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHandler<Object> {
     private static final Logger logger = LogManager.getLogger(NettyWebSocketChannelInboundHandler.class);
 
     private ApiManager apiManager;
     private AggregateWebSocketChannelHandlerContext aggregateContext;
 
-    private byte[] reqBytes = new byte[0];
+    private ByteBuf reqBuf = Unpooled.buffer();
 
     public NettyWebSocketChannelInboundHandler(ApiManager apiManager, AggregateWebSocketChannelHandlerContext aggregateContext) {
         this.apiManager = apiManager;
@@ -35,7 +37,7 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    public void channelRead0(ChannelHandlerContext ctx, Object msg) {
         logger.info("channelRead: {} {}", ctx.channel().remoteAddress(), msg.getClass().getSimpleName());
         if(msg instanceof WebSocketFrame) {
             handleWebsocketFrame(ctx, (WebSocketFrame) msg);
@@ -60,8 +62,7 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
         } else if(frame instanceof TextWebSocketFrame ||
                 frame instanceof BinaryWebSocketFrame ||
                 frame instanceof ContinuationWebSocketFrame) {
-            byte[] chunk = ByteUtil.getBytes(frame.content());
-            reqBytes = ByteUtil.concat(reqBytes, chunk);
+            reqBuf = Unpooled.copiedBuffer(reqBuf, frame.content());
             if(frame.isFinalFragment()) {
                 handleRequest()
                         .doOnNext(res -> WebSocketUtil.writeResponse(ctx, res))
@@ -76,14 +77,13 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
     private Observable<WebSocketServerResponse> handleRequest() {
         return Observable.defer(() -> {
             try {
-                NodeUtil.isValidJSON(reqBytes);
+                NodeUtil.isValidJSON(reqBuf.array());
             } catch(RuntimeException e) {
                 return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
             }
 
-            JsonNode reqBody = NodeUtil.getJsonNode(reqBytes);
-            reqBytes = new byte[0];
-
+            JsonNode reqBody = NodeUtil.getJsonNode(reqBuf.array());
+            reqBuf = Unpooled.buffer();
             logger.info("received: {}", reqBody.toString());
 
             if(reqBody.get("event") == null)
