@@ -6,7 +6,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
-import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import rx.Observable;
 
@@ -31,10 +30,7 @@ public class DbManagerImpl implements DbManager {
     public Observable<Void> start() {
         try {
             Connection connection = DriverManager.getConnection(config.getJdbcUrl(), config.getJdbcUser(), config.getJdbcPassword());
-            System.getProperties().setProperty("org.jooq.no-logo", "true");
-            Settings settings = new Settings()
-                    .withExecuteLogging(false);
-            this.dsl = DSL.using(connection, SQLDialect.MYSQL, settings);
+            this.dsl = DSL.using(connection, SQLDialect.MYSQL);
             logger.info("Connected to mysql");
         } catch(Exception e) {
             throw new RuntimeException(e.getMessage());
