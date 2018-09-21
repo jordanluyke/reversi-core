@@ -58,7 +58,7 @@ public class MatchRoutes {
                             return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
                         JsonNode body = req.getBody().get();
                         Optional<Integer> index = NodeUtil.getInteger(body, "index");
-                        Optional<String> coordinates = NodeUtil.getText(body, "coordinates");
+                        Optional<String> coordinates = NodeUtil.get(body, "coordinates");
 
                         Position position;
                         if(index.isPresent())

@@ -81,7 +81,7 @@ public class NodeUtil {
         return body.map(jsonNode -> parseObjectNodeInto(jsonNode, clazz)).orElseGet(() -> Observable.error(new WebException("Empty body", HttpResponseStatus.BAD_REQUEST)));
     }
 
-    public static Optional<String> getText(JsonNode node, String field) {
+    public static Optional<String> get(JsonNode node, String field) {
         JsonNode fieldNode = node.get(field);
         if(fieldNode == null || fieldNode.isNull())
             return Optional.empty();
@@ -89,16 +89,10 @@ public class NodeUtil {
     }
 
     public static Optional<Boolean> getBoolean(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if(fieldNode == null || fieldNode.isNull())
-            return Optional.empty();
-        return Optional.of(fieldNode.asBoolean());
+        return get(node, field).map(Boolean::valueOf);
     }
 
     public static Optional<Integer> getInteger(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if(fieldNode == null || fieldNode.isNull())
-            return Optional.empty();
-        return Optional.of(fieldNode.asInt());
+        return get(node, field).map(Integer::parseInt);
     }
 }

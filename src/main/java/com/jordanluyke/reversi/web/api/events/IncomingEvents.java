@@ -56,8 +56,8 @@ public class IncomingEvents {
     }
 
     private static Observable<ObjectNode> channelSubscriptionHandler(WebSocketServerRequest req) {
-        Optional<String> event = NodeUtil.getText(req.getBody(), "event");
-        Optional<String> channel = NodeUtil.getText(req.getBody(), "channel");
+        Optional<String> event = NodeUtil.get(req.getBody(), "event");
+        Optional<String> channel = NodeUtil.get(req.getBody(), "channel");
         Optional<Boolean> unsubscribe = NodeUtil.getBoolean(req.getBody(), "unsubscribe");
 
         if(!event.isPresent())
