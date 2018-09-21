@@ -2,6 +2,7 @@ package com.jordanluyke.reversi.web.netty;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
+import com.jordanluyke.reversi.util.ByteUtil;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
@@ -29,7 +30,7 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
     private ApiManager apiManager;
     private AggregateWebSocketChannelHandlerContext aggregateContext;
 
-    private ByteBuf reqBuf = Unpooled.buffer();
+    private byte[] reqBytes = new byte[0];
 
     public NettyWebSocketChannelInboundHandler(ApiManager apiManager, AggregateWebSocketChannelHandlerContext aggregateContext) {
         this.apiManager = apiManager;
@@ -62,7 +63,8 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
         } else if(frame instanceof TextWebSocketFrame ||
                 frame instanceof BinaryWebSocketFrame ||
                 frame instanceof ContinuationWebSocketFrame) {
-            reqBuf = Unpooled.copiedBuffer(reqBuf, frame.content());
+            byte[] chunk = ByteUtil.getBytes(frame.content());
+            reqBytes = ByteUtil.concat(reqBytes, chunk);
             if(frame.isFinalFragment()) {
                 handleRequest()
                         .doOnNext(res -> WebSocketUtil.writeResponse(ctx, res))
@@ -77,15 +79,13 @@ public class NettyWebSocketChannelInboundHandler extends ChannelInboundHandlerAd
     private Observable<WebSocketServerResponse> handleRequest() {
         return Observable.defer(() -> {
             try {
-                NodeUtil.isValidJSON(reqBuf.array());
+                NodeUtil.isValidJSON(reqBytes);
             } catch(RuntimeException e) {
                 return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
             }
 
-            JsonNode reqBody = NodeUtil.getJsonNode(reqBuf.array());
-
-            reqBuf.release();
-            reqBuf = Unpooled.buffer();
+            JsonNode reqBody = NodeUtil.getJsonNode(reqBytes);
+            reqBytes = new byte[0];
 
             logger.info("received: {}", reqBody.toString());
 

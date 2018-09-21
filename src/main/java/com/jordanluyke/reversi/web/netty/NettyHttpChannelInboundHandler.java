@@ -1,5 +1,6 @@
 package com.jordanluyke.reversi.web.netty;
 
+import com.jordanluyke.reversi.util.ByteUtil;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
@@ -31,7 +32,7 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
     private ApiManager apiManager;
     private SocketManager socketManager;
 
-    private ByteBuf reqBuf = Unpooled.buffer();
+    private byte[] reqBytes = new byte[0];
     private HttpServerRequest httpServerRequest = new HttpServerRequest();
 
     public NettyHttpChannelInboundHandler(ApiManager apiManager, SocketManager socketManager) {
@@ -61,7 +62,8 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
                 handleHandshake(ctx, httpRequest);
         } else if(msg instanceof HttpContent) {
             HttpContent httpContent = (HttpContent) msg;
-            reqBuf = Unpooled.copiedBuffer(reqBuf, httpContent.content());
+            byte[] chunk = ByteUtil.getBytes(httpContent.content());
+            reqBytes = ByteUtil.concat(reqBytes, chunk);
             if(msg instanceof LastHttpContent) {
                 handleRequest(httpContent)
                         .doOnNext(httpServerResponse -> {
@@ -90,17 +92,15 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
             if(httpContent.decoderResult().isFailure())
                 return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
 
-            if(reqBuf.readableBytes() > 0) {
+            if(reqBytes.length > 0) {
                 try {
-                    NodeUtil.isValidJSON(reqBuf.array());
+                    NodeUtil.isValidJSON(reqBytes);
                 } catch(RuntimeException e) {
                     return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
                 }
 
-                httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(reqBuf.array())));
+                httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(reqBytes)));
             }
-
-            reqBuf.release();
 
             return apiManager.handleRequest(httpServerRequest);
         })
@@ -125,13 +125,16 @@ public class NettyHttpChannelInboundHandler extends ChannelInboundHandlerAdapter
         WebSocketServerHandshaker handshaker = wsFactory.newHandshaker(req);
         if(handshaker != null) {
             handshaker.handshake(ctx.channel(), req);
-            ctx.pipeline().remove(this);
 
             AggregateWebSocketChannelHandlerContext aggregateContext = new AggregateWebSocketChannelHandlerContext();
             aggregateContext.setCtx(ctx);
             aggregateContext.startKeepAliveTimer();
             socketManager.addConnection(aggregateContext);
 
+            ctx.pipeline().remove(HttpRequestDecoder.class);
+            ctx.pipeline().remove(HttpResponseEncoder.class);
+            ctx.pipeline().remove(HttpContentCompressor.class);
+            ctx.pipeline().remove(NettyHttpChannelInboundHandler.class);
             ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, aggregateContext));
             logger.info("Handshake accepted: {}", ctx.channel().remoteAddress());
         } else {

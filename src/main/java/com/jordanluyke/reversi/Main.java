@@ -11,7 +11,7 @@ public class Main {
     private static final Logger logger = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) {
-        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
         logger.info("Initializing");
         Injector injector = Guice.createInjector(new MainModule());
 
