@@ -1,7 +1,6 @@
 package com.jordanluyke.reversi.web.netty;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.jordanluyke.reversi.util.ByteUtil;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
