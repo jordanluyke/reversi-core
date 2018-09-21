@@ -1,13 +1,8 @@
 package com.jordanluyke.reversi.web.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
-import com.jordanluyke.reversi.MainManager;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketEvent;
@@ -123,7 +118,12 @@ public class RouteMatcher {
                 .flatMap(event -> {
                     if(event == null)
                         return Observable.error(new WebException(HttpResponseStatus.NOT_FOUND));
-                    return Observable.just(config.getInjector().getInstance(event.getType()));
+                    try {
+                        return Observable.just(config.getInjector().getInstance(Class.forName(event.getType().getName())));
+                    } catch(ClassNotFoundException e) {
+                        logger.error("{}: {}", e.getClass().getSimpleName(), e.getMessage());
+                        return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                    }
                 })
                 .flatMap(instance -> ((WebSocketEventHandler) instance).handle(Observable.just(request)))
                 .map(node -> {

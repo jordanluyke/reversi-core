@@ -1,6 +1,5 @@
 package com.jordanluyke.reversi.web.api.events;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.util.NodeUtil;
