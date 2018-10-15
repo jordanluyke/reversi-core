@@ -87,6 +87,11 @@ public class MatchManagerImpl implements MatchManager {
     @Override
     public Observable<Match> join(String matchId, String accountId) {
         return getMatch(matchId)
-                .flatMap(match -> match.join(accountId));
+                .flatMap(match -> match.join(accountId))
+                .doOnNext(Void -> {
+                    socketManager.getConnections(OutgoingEvents.Match, matchId)
+                            .doOnNext(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(OutgoingEvents.Match)))
+                            .subscribe(new ErrorHandlingSubscriber<>());
+                });
     }
 }
