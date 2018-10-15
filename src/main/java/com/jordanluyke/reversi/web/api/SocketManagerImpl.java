@@ -2,7 +2,9 @@ package com.jordanluyke.reversi.web.api;
 
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
+import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
+import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
 import lombok.AllArgsConstructor;
 import rx.Observable;
@@ -39,5 +41,12 @@ public class SocketManagerImpl implements SocketManager {
                         .filter(eventSubscription -> eventSubscription.getEvent() == event)
                         .take(1)
                         .map(Void -> aggregateContext));
+    }
+
+    @Override
+    public void sendUpdateEvent(OutgoingEvents event, String channel) {
+        getConnections(event, channel)
+                .doOnNext(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(event)))
+                .subscribe(new ErrorHandlingSubscriber<>());
     }
 }

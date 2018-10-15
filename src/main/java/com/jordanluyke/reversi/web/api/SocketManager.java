@@ -14,4 +14,6 @@ public interface SocketManager {
     void removeConnection(AggregateWebSocketChannelHandlerContext context);
 
     Observable<AggregateWebSocketChannelHandlerContext> getConnections(OutgoingEvents event, String channel);
+
+    void sendUpdateEvent(OutgoingEvents event, String channel);
 }

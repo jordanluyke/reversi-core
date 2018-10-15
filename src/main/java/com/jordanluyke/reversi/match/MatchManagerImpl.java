@@ -19,6 +19,7 @@ import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,9 +68,7 @@ public class MatchManagerImpl implements MatchManager {
                     return match.placePiece(side, position);
                 })
                 .doOnNext(match -> {
-                    socketManager.getConnections(OutgoingEvents.Match, matchId)
-                            .doOnNext(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(OutgoingEvents.Match)))
-                            .subscribe(new ErrorHandlingSubscriber<>());
+                    socketManager.sendUpdateEvent(OutgoingEvents.Match, matchId);
 
                     if(match.getCompletedAt().isPresent() && match.getPlayerDarkId().isPresent() && match.getPlayerLightId().isPresent()) {
                         Observable.from(Arrays.asList(match.getPlayerDarkId().get(), match.getPlayerLightId().get()))
@@ -78,8 +77,10 @@ public class MatchManagerImpl implements MatchManager {
                                     playerStats.setMatches(playerStats.getMatches() + 1);
                                     return accountManager.updatePlayerStats(playerStats);
                                 })
+                                .toList()
+                                .delay(5, TimeUnit.MINUTES)
+                                .doOnNext(Void -> matches.removeIf(match1 -> match1.getId().equals(matchId)))
                                 .subscribe(new ErrorHandlingSubscriber<>());
-                        // then remove from list
                     }
                 });
     }
@@ -89,9 +90,7 @@ public class MatchManagerImpl implements MatchManager {
         return getMatch(matchId)
                 .flatMap(match -> match.join(accountId))
                 .doOnNext(Void -> {
-                    socketManager.getConnections(OutgoingEvents.Match, matchId)
-                            .doOnNext(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(OutgoingEvents.Match)))
-                            .subscribe(new ErrorHandlingSubscriber<>());
+                    socketManager.sendUpdateEvent(OutgoingEvents.Match, matchId);
                 });
     }
 }
