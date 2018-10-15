@@ -35,7 +35,8 @@ public class ApiV1 implements Api {
                 new HttpRoute("/matches/:matchId", HttpMethod.GET, MatchRoutes.GetMatch.class),
                 new HttpRoute("/matches/:matchId/move", HttpMethod.POST, MatchRoutes.Move.class),
                 new HttpRoute("/matches/:matchId/join", HttpMethod.POST, MatchRoutes.Join.class),
-                new HttpRoute("/sessions", HttpMethod.POST, SessionRoutes.CreateSession.class)
+                new HttpRoute("/sessions", HttpMethod.POST, SessionRoutes.CreateSession.class),
+                new HttpRoute("/sessions/:sessionId", HttpMethod.DELETE, SessionRoutes.DeleteSession.class)
         );
     }
 

@@ -44,6 +44,11 @@ public class SessionManagerImpl implements SessionManager {
     }
 
     @Override
+    public Observable<Session> logout(String sessionId) {
+        return sessionDAO.expireSession(sessionId);
+    }
+
+    @Override
     public Observable<Session> validate(HttpServerRequest request) {
         Optional<String> sessionId = Optional.ofNullable(request.getQueryParams().get("sessionId"));
         if(!sessionId.isPresent())

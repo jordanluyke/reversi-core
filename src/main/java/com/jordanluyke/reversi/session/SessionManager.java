@@ -12,5 +12,7 @@ public interface SessionManager {
 
     Observable<Session> createSession(SessionCreationRequest sessionCreationRequest);
 
+    Observable<Session> logout(String sessionId);
+
     Observable<Session> validate(HttpServerRequest request);
 }

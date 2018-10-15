@@ -24,12 +24,20 @@ public class SessionDAO {
     private DbManager dbManager;
 
     public Observable<Session> createSession(String ownerId) {
-        String id = RandomUtil.generateId();
+        String sessionId = RandomUtil.generateId();
         Instant expiresAt = Instant.now().plus(1, ChronoUnit.DAYS);
         return Observable.just(dbManager.getDsl().insertInto(SESSION, SESSION.ID, SESSION.OWNERID, SESSION.EXPIRESAT)
-                .values(id, ownerId, expiresAt)
+                .values(sessionId, ownerId, expiresAt)
                 .execute())
-                .flatMap(Void -> getSessionById(id));
+                .flatMap(Void -> getSessionById(sessionId));
+    }
+
+    public Observable<Session> expireSession(String sessionId) {
+        return Observable.just(dbManager.getDsl().update(SESSION)
+                .set(SESSION.EXPIRESAT, Instant.now())
+                .where(SESSION.ID.eq(sessionId))
+                .execute())
+                .flatMap(Void -> getSessionById(sessionId));
     }
 
     public Observable<Session> getSessionById(String sessionId) {

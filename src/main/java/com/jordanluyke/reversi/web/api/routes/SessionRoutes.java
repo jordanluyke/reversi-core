@@ -25,4 +25,12 @@ public class SessionRoutes {
                     .flatMap(sessionManager::createSession);
         }
     }
+
+    public static class DeleteSession implements HttpRouteHandler {
+        @Inject protected SessionManager sessionManager;
+        @Override
+        public Observable<Session> handle(Observable<HttpServerRequest> o) {
+            return o.flatMap(req -> sessionManager.logout(req.getQueryParams().get("sessionId")));
+        }
+    }
 }
