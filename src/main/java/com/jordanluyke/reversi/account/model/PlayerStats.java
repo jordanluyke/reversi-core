@@ -1,5 +1,6 @@
 package com.jordanluyke.reversi.account.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.jooq.sources.tables.records.PlayerStatsRecord;
 
@@ -15,9 +16,9 @@ import java.time.Instant;
 @Builder
 public class PlayerStats {
 
-    private String ownerId;
-    private Instant createdAt;
-    private Instant updatedAt;
+    @JsonIgnore private String ownerId;
+    @JsonIgnore private Instant createdAt;
+    @JsonIgnore private Instant updatedAt;
     private int matches;
 
     public static PlayerStats fromRecord(PlayerStatsRecord record) {

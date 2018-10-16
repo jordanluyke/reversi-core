@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.account.model.Account;
+import com.jordanluyke.reversi.account.model.AggregateAccount;
 import com.jordanluyke.reversi.session.SessionManager;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.api.model.PagingResponse;
@@ -35,13 +36,16 @@ public class AccountRoutes {
         @Inject protected AccountManager accountManager;
         @Inject protected SessionManager sessionManager;
         @Override
-        public Observable<Account> handle(Observable<HttpServerRequest> o) {
+        public Observable<AggregateAccount> handle(Observable<HttpServerRequest> o) {
             return o.flatMap(req -> sessionManager.validate(req)
                     .flatMap(session -> {
                         String accountId = req.getQueryParams().get("ownerId");
                         if(!session.getOwnerId().equals(accountId))
                             return Observable.error(new WebException(HttpResponseStatus.FORBIDDEN));
-                        return accountManager.getAccountById(accountId);
+                        return Observable.zip(
+                                accountManager.getAccountById(accountId),
+                                accountManager.getPlayerStats(accountId),
+                                AggregateAccount::new);
                     }));
         }
     }
