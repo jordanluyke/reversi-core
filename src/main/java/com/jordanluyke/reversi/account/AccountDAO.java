@@ -12,8 +12,6 @@ import org.apache.logging.log4j.Logger;
 import org.jooq.exception.DataAccessException;
 import rx.Observable;
 
-import java.util.Optional;
-
 import static org.jooq.sources.tables.Account.ACCOUNT;
 import static org.jooq.sources.tables.PlayerStats.PLAYER_STATS;
 
@@ -34,8 +32,8 @@ public class AccountDAO {
     public Observable<Account> createAccount(SessionCreationRequest req) {
         try {
             String id = RandomUtil.generateId();
-            return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.EMAIL, ACCOUNT.NAME, ACCOUNT.GUEST)
-                    .values(id, req.getEmail().orElse(null), req.getName().orElse(null), !req.getEmail().isPresent())
+            return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.NAME, ACCOUNT.FACEBOOKUSERID, ACCOUNT.GOOGLEUSERID, ACCOUNT.GUEST)
+                    .values(id, "Player", req.getFacebookUserId().orElse(null), req.getGoogleUserId().orElse(null), !req.getFacebookUserId().isPresent() && !req.getGoogleUserId().isPresent())
                     .execute())
                     .flatMap(Void -> getAccountById(id));
         } catch(DataAccessException e) {
@@ -50,9 +48,20 @@ public class AccountDAO {
                 .map(Account::fromRecord);
     }
 
-    public Observable<Account> getAccountByEmail(String email) {
+    public Observable<Account> getAccountByFacebookUserId(String id) {
         return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
-                .where(ACCOUNT.EMAIL.eq(email))
+                .where(ACCOUNT.FACEBOOKUSERID.eq(id))
+                .fetchAny())
+                .flatMap(record -> {
+                    if(record == null)
+                        return Observable.empty();
+                    return Observable.just(Account.fromRecord(record));
+                });
+    }
+
+    public Observable<Account> getAccountByGoogleUserId(String id) {
+        return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
+                .where(ACCOUNT.GOOGLEUSERID.eq(id))
                 .fetchAny())
                 .flatMap(record -> {
                     if(record == null)

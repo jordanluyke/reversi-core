@@ -20,11 +20,12 @@ public class Account {
     private String id;
     private Instant createdAt;
     @JsonIgnore private Instant updatedAt;
-    private Optional<String> email;
     private Optional<String> name;
+    private Optional<String> facebookUserId;
+    private Optional<String> googleUserId;
     private boolean guest;
 
     public static Account fromRecord(AccountRecord record) {
-        return new Account(record.getId(), record.getCreatedat(), record.getUpdatedat(), Optional.ofNullable(record.getEmail()), Optional.ofNullable(record.getName()), record.getGuest());
+        return new Account(record.getId(), record.getCreatedat(), record.getUpdatedat(), Optional.ofNullable(record.getName()), Optional.ofNullable(record.getFacebookuserid()), Optional.ofNullable(record.getGoogleuserid()), record.getGuest());
     }
 }

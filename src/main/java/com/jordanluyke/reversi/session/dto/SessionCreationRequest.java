@@ -18,6 +18,6 @@ import java.util.Optional;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SessionCreationRequest {
-    private Optional<String> email = Optional.empty();
-    private Optional<String> name = Optional.empty();
+    private Optional<String> facebookUserId = Optional.empty();
+    private Optional<String> googleUserId = Optional.empty();
 }

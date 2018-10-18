@@ -16,7 +16,7 @@ public interface AccountManager {
 
     Observable<Account> getAccountById(String id);
 
-    Observable<Account> getAccountByEmail(String email);
+    Observable<Account> getAccountBySessionRequest(SessionCreationRequest sessionCreationRequest);
 
     Observable<PlayerStats> getPlayerStats(String ownerId);
 

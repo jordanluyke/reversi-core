@@ -12,7 +12,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
-import javax.xml.bind.ValidationException;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -28,18 +27,7 @@ public class SessionManagerImpl implements SessionManager {
 
     @Override
     public Observable<Session> createSession(SessionCreationRequest sessionCreationRequest) {
-        if(!sessionCreationRequest.getEmail().isPresent() && sessionCreationRequest.getName().isPresent())
-            return accountManager.createAccount(sessionCreationRequest)
-                    .flatMap(account -> sessionDAO.createSession(account.getId()));
-        if(!sessionCreationRequest.getEmail().isPresent())
-            return Observable.error(new ValidationException("email"));
-        return accountManager.getAccountByEmail(sessionCreationRequest.getEmail().get())
-                .defaultIfEmpty(null)
-                .flatMap(account -> {
-                    if(account == null)
-                        return accountManager.createAccount(sessionCreationRequest);
-                    return Observable.just(account);
-                })
+        return accountManager.getAccountBySessionRequest(sessionCreationRequest)
                 .flatMap(account -> sessionDAO.createSession(account.getId()));
     }
 
