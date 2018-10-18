@@ -1,6 +1,8 @@
 package com.jordanluyke.reversi.account;
 
 import com.google.inject.Inject;
+import com.jordanluyke.reversi.account.model.AggregateAccount;
+import com.jordanluyke.reversi.session.dto.AccountUpdateRequest;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.model.PlayerStats;
@@ -21,24 +23,32 @@ public class AccountManagerImpl implements AccountManager {
     private AccountDAO accountDAO;
 
     @Override
-    public Observable<Account> getAccounts() {
-        return accountDAO.getAccounts();
+    public Observable<AggregateAccount> getAccounts() {
+        return accountDAO.getAccounts()
+                .flatMap(this::getAggregateAccount);
     }
 
     @Override
-    public Observable<Account> createAccount(SessionCreationRequest req) {
+    public Observable<AggregateAccount> createAccount(SessionCreationRequest req) {
         return accountDAO.createAccount(req)
                 .flatMap(account -> accountDAO.createPlayerStats(account.getId())
-                        .map(stats -> account));
+                        .map(stats -> new AggregateAccount(account, stats)));
     }
 
     @Override
-    public Observable<Account> getAccountById(String id) {
-        return accountDAO.getAccountById(id);
+    public Observable<AggregateAccount> updateAccount(String accountId, AccountUpdateRequest req) {
+        return accountDAO.updateAccount(accountId, req)
+                .flatMap(this::getAggregateAccount);
     }
 
     @Override
-    public Observable<Account> getAccountBySessionRequest(SessionCreationRequest sessionCreationRequest) {
+    public Observable<AggregateAccount> getAccountById(String accountId) {
+        return accountDAO.getAccountById(accountId)
+                .flatMap(this::getAggregateAccount);
+    }
+
+    @Override
+    public Observable<AggregateAccount> getAccountBySessionRequest(SessionCreationRequest sessionCreationRequest) {
         return Observable.defer(() -> {
             if(sessionCreationRequest.getFacebookUserId().isPresent())
                 return accountDAO.getAccountByFacebookUserId(sessionCreationRequest.getFacebookUserId().get());
@@ -51,7 +61,8 @@ public class AccountManagerImpl implements AccountManager {
                     if(account == null)
                         return createAccount(sessionCreationRequest);
                     return Observable.just(account);
-                });
+                })
+                .flatMap(this::getAggregateAccount);
     }
 
     @Override
@@ -62,5 +73,10 @@ public class AccountManagerImpl implements AccountManager {
     @Override
     public Observable<PlayerStats> updatePlayerStats(PlayerStats playerStats) {
         return accountDAO.updatePlayerStats(playerStats);
+    }
+
+    private Observable<AggregateAccount> getAggregateAccount(Account account) {
+        return getPlayerStats(account.getId())
+                .map(stats -> new AggregateAccount(account, stats));
     }
 }

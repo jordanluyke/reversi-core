@@ -7,6 +7,8 @@ import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.model.AggregateAccount;
 import com.jordanluyke.reversi.session.SessionManager;
+import com.jordanluyke.reversi.session.dto.AccountUpdateRequest;
+import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.api.model.PagingResponse;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
@@ -39,7 +41,7 @@ public class AccountRoutes {
         public Observable<AggregateAccount> handle(Observable<HttpServerRequest> o) {
             return o.flatMap(req -> sessionManager.validate(req)
                     .flatMap(session -> {
-                        String accountId = req.getQueryParams().get("ownerId");
+                        String accountId = req.getQueryParams().get("accountId");
                         if(!session.getOwnerId().equals(accountId))
                             return Observable.error(new WebException(HttpResponseStatus.FORBIDDEN));
                         return Observable.zip(
@@ -47,6 +49,23 @@ public class AccountRoutes {
                                 accountManager.getPlayerStats(accountId),
                                 AggregateAccount::new);
                     }));
+        }
+    }
+
+    public static class UpdateAccount implements HttpRouteHandler {
+        @Inject protected AccountManager accountManager;
+        @Inject protected SessionManager sessionManager;
+        @Override
+        public Observable<AggregateAccount> handle(Observable<HttpServerRequest> o) {
+            return o.flatMap(req -> sessionManager.validate(req)
+                    .flatMap(session -> {
+                        String accountId = req.getQueryParams().get("accountId");
+                        if(!session.getOwnerId().equals(accountId))
+                            return Observable.error(new WebException(HttpResponseStatus.FORBIDDEN));
+                        return NodeUtil.parseObjectNodeInto(req.getBody(), AccountUpdateRequest.class)
+                                .flatMap(updateRequest -> accountManager.updateAccount(accountId, updateRequest));
+                    })
+            );
         }
     }
 

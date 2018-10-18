@@ -1,6 +1,7 @@
 package com.jordanluyke.reversi.account;
 
 import com.google.inject.Inject;
+import com.jordanluyke.reversi.session.dto.AccountUpdateRequest;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.model.PlayerStats;
@@ -9,7 +10,6 @@ import com.jordanluyke.reversi.util.RandomUtil;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jooq.exception.DataAccessException;
 import rx.Observable;
 
 import static org.jooq.sources.tables.Account.ACCOUNT;
@@ -30,15 +30,20 @@ public class AccountDAO {
     }
 
     public Observable<Account> createAccount(SessionCreationRequest req) {
-        try {
-            String id = RandomUtil.generateId();
-            return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.NAME, ACCOUNT.FACEBOOKUSERID, ACCOUNT.GOOGLEUSERID, ACCOUNT.GUEST)
-                    .values(id, "Player", req.getFacebookUserId().orElse(null), req.getGoogleUserId().orElse(null), !req.getFacebookUserId().isPresent() && !req.getGoogleUserId().isPresent())
-                    .execute())
-                    .flatMap(Void -> getAccountById(id));
-        } catch(DataAccessException e) {
-            throw new RuntimeException(e);
-        }
+        String id = RandomUtil.generateId();
+        return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.NAME, ACCOUNT.FACEBOOKUSERID, ACCOUNT.GOOGLEUSERID, ACCOUNT.GUEST)
+                .values(id, "Player", req.getFacebookUserId().orElse(null), req.getGoogleUserId().orElse(null), !req.getFacebookUserId().isPresent() && !req.getGoogleUserId().isPresent())
+                .execute())
+                .flatMap(Void -> getAccountById(id));
+    }
+
+    public Observable<Account> updateAccount(String accountId, AccountUpdateRequest req) {
+        return getAccountById(accountId)
+                .map(account -> dbManager.getDsl().update(ACCOUNT)
+                        .set(ACCOUNT.NAME, req.getName().orElse(account.getName().orElse("Player")))
+                        .where(ACCOUNT.ID.eq(accountId))
+                        .execute())
+                .flatMap(Void -> getAccountById(accountId));
     }
 
     public Observable<Account> getAccountById(String accountId) {
