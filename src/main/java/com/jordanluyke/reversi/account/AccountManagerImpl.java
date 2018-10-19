@@ -6,6 +6,8 @@ import com.jordanluyke.reversi.session.dto.AccountUpdateRequest;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.model.PlayerStats;
+import com.jordanluyke.reversi.web.api.SocketManager;
+import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.AllArgsConstructor;
@@ -21,6 +23,7 @@ public class AccountManagerImpl implements AccountManager {
     private static final Logger logger = LogManager.getLogger(AccountManagerImpl.class);
 
     private AccountDAO accountDAO;
+    private SocketManager socketManager;
 
     @Override
     public Observable<AggregateAccount> getAccounts() {
@@ -38,7 +41,8 @@ public class AccountManagerImpl implements AccountManager {
     @Override
     public Observable<AggregateAccount> updateAccount(String accountId, AccountUpdateRequest req) {
         return accountDAO.updateAccount(accountId, req)
-                .flatMap(this::getAggregateAccount);
+                .flatMap(this::getAggregateAccount)
+                .doOnNext(Void -> socketManager.sendUpdateEvent(OutgoingEvents.Account, accountId));
     }
 
     @Override
@@ -72,7 +76,8 @@ public class AccountManagerImpl implements AccountManager {
 
     @Override
     public Observable<PlayerStats> updatePlayerStats(PlayerStats playerStats) {
-        return accountDAO.updatePlayerStats(playerStats);
+        return accountDAO.updatePlayerStats(playerStats)
+                .doOnNext(Void -> socketManager.sendUpdateEvent(OutgoingEvents.Account, playerStats.getOwnerId()));
     }
 
     private Observable<AggregateAccount> getAggregateAccount(Account account) {
