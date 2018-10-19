@@ -3,13 +3,12 @@ package com.jordanluyke.reversi.account;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.model.AggregateAccount;
 import com.jordanluyke.reversi.session.dto.AccountUpdateRequest;
+import com.jordanluyke.reversi.session.dto.AccountProfileResponse;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.model.PlayerStats;
 import com.jordanluyke.reversi.web.api.SocketManager;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
-import com.jordanluyke.reversi.web.model.WebException;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,6 +66,15 @@ public class AccountManagerImpl implements AccountManager {
                     return Observable.just(account);
                 })
                 .flatMap(this::getAggregateAccount);
+    }
+
+    @Override
+    public Observable<AccountProfileResponse> getProfile(String accountId) {
+        return getAccountById(accountId)
+                .map(account -> AccountProfileResponse.builder()
+                        .name(account.getName().orElse(null))
+                        .stats(account.getStats())
+                        .build());
     }
 
     @Override

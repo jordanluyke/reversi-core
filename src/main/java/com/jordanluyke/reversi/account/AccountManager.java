@@ -2,8 +2,8 @@ package com.jordanluyke.reversi.account;
 
 import com.jordanluyke.reversi.account.model.AggregateAccount;
 import com.jordanluyke.reversi.session.dto.AccountUpdateRequest;
+import com.jordanluyke.reversi.session.dto.AccountProfileResponse;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
-import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.model.PlayerStats;
 import rx.Observable;
 
@@ -21,6 +21,8 @@ public interface AccountManager {
     Observable<AggregateAccount> getAccountById(String accountId);
 
     Observable<AggregateAccount> getAccountBySessionRequest(SessionCreationRequest sessionCreationRequest);
+
+    Observable<AccountProfileResponse> getProfile(String accountId);
 
     Observable<PlayerStats> getPlayerStats(String ownerId);
 

@@ -73,7 +73,7 @@ public class NodeUtil {
                 if(body.get(name) == null)
                     return Observable.error(new FieldRequiredException(name));
             }
-            return Observable.error(new RuntimeException(e.getMessage()));
+            return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
         }
     }
 

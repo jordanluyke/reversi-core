@@ -1,12 +1,12 @@
 package com.jordanluyke.reversi.web.api.routes;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.model.AggregateAccount;
 import com.jordanluyke.reversi.session.SessionManager;
+import com.jordanluyke.reversi.session.dto.AccountProfileResponse;
 import com.jordanluyke.reversi.session.dto.AccountUpdateRequest;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
@@ -69,14 +69,13 @@ public class AccountRoutes {
         }
     }
 
-    public static class GetPlayerStats implements HttpRouteHandler {
+    public static class GetProfile implements HttpRouteHandler {
+        @Inject protected AccountManager accountManager;
         @Override
-        public Observable<ObjectNode> handle(Observable<HttpServerRequest> o) {
-            return o.map(req -> {
-                ObjectMapper mapper = new ObjectMapper();
-                ObjectNode node = mapper.createObjectNode();
-                node.put("class", this.getClass().getCanonicalName());
-                return node;
+        public Observable<AccountProfileResponse> handle(Observable<HttpServerRequest> o) {
+            return o.flatMap(req -> {
+                String accountId = req.getQueryParams().get("accountId");
+                return accountManager.getProfile(accountId);
             });
         }
     }
