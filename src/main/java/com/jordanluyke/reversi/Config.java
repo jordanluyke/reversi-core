@@ -10,6 +10,7 @@ import lombok.Setter;
 
 import javax.net.ssl.SSLException;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.security.cert.CertificateException;
 import java.util.Properties;
 
@@ -39,7 +40,13 @@ public class Config {
     private void loadConfig() {
         try {
             Properties p = new Properties();
-            p.load(new FileInputStream("src/main/resources/config.properties"));
+            FileInputStream fileInputStream;
+            try {
+                fileInputStream = new FileInputStream("src/main/resources/config.properties");
+            } catch(FileNotFoundException e) {
+                fileInputStream = new FileInputStream("config.properties");
+            }
+            p.load(fileInputStream);
 
             jdbcUrl = p.getProperty("jdbc.url");
             jdbcUser = p.getProperty("jdbc.user");

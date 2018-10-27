@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.flywaydb.core.Flyway;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -29,9 +30,12 @@ public class DbManagerImpl implements DbManager {
     @Override
     public Observable<Void> start() {
         try {
+            logger.info("Starting Flyway");
+            Flyway.configure().dataSource(config.getJdbcUrl(), config.getJdbcUser(), config.getJdbcPassword()).load().migrate();
+            logger.info("Migration successful");
             Connection connection = DriverManager.getConnection(config.getJdbcUrl(), config.getJdbcUser(), config.getJdbcPassword());
             this.dsl = DSL.using(connection, SQLDialect.MYSQL);
-            logger.info("Connected to mysql");
+            logger.info("Connected to MySQL");
         } catch(Exception e) {
             throw new RuntimeException(e.getMessage());
         }
