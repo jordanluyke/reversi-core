@@ -30,9 +30,8 @@ public class DbManagerImpl implements DbManager {
     @Override
     public Observable<Void> start() {
         try {
-            logger.info("Starting Flyway");
             Flyway.configure().dataSource(config.getJdbcUrl(), config.getJdbcUser(), config.getJdbcPassword()).load().migrate();
-            logger.info("Migration successful");
+            logger.info("Flyway migration successful");
             Connection connection = DriverManager.getConnection(config.getJdbcUrl(), config.getJdbcUser(), config.getJdbcPassword());
             this.dsl = DSL.using(connection, SQLDialect.MYSQL);
             logger.info("Connected to MySQL");

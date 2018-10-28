@@ -56,7 +56,7 @@ public class AccountManagerImpl implements AccountManager {
             if(sessionCreationRequest.getFacebookUserId().isPresent())
                 return accountDAO.getAccountByFacebookUserId(sessionCreationRequest.getFacebookUserId().get());
             if(sessionCreationRequest.getGoogleUserId().isPresent())
-                return accountDAO.getAccountByFacebookUserId(sessionCreationRequest.getGoogleUserId().get());
+                return accountDAO.getAccountByGoogleUserId(sessionCreationRequest.getGoogleUserId().get());
             return Observable.empty();
         })
                 .defaultIfEmpty(null)

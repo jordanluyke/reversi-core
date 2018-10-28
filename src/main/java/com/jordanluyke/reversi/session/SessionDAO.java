@@ -25,7 +25,7 @@ public class SessionDAO {
 
     public Observable<Session> createSession(String ownerId) {
         String sessionId = RandomUtil.generateId();
-        Instant expiresAt = Instant.now().plus(1, ChronoUnit.DAYS);
+        Instant expiresAt = Instant.now().plus(21, ChronoUnit.DAYS);
         return Observable.just(dbManager.getDsl().insertInto(SESSION, SESSION.ID, SESSION.OWNERID, SESSION.EXPIRESAT)
                 .values(sessionId, ownerId, expiresAt)
                 .execute())
