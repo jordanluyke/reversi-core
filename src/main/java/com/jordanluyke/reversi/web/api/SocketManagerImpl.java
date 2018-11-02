@@ -7,6 +7,8 @@ import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
 import lombok.AllArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import rx.Observable;
 
 import java.util.HashMap;
@@ -17,6 +19,7 @@ import java.util.Map;
  */
 @AllArgsConstructor(onConstructor = @__(@Inject))
 public class SocketManagerImpl implements SocketManager {
+    private static final Logger logger = LogManager.getLogger(SocketManager.class);
 
     private final Map<String, AggregateWebSocketChannelHandlerContext> connections = new HashMap<>();
 

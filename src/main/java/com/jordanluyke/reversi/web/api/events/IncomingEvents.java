@@ -64,7 +64,7 @@ public class IncomingEvents {
             return Observable.error(new FieldRequiredException("event"));
         if(channel.isPresent() && !unsubscribe.isPresent())
             req.getAggregateContext().addEventSubscription(OutgoingEvents.valueOf(event.get()), channel.get());
-        else if(!channel.isPresent() && unsubscribe.isPresent())
+        else if(unsubscribe.isPresent())
             req.getAggregateContext().removeEventSubscription(OutgoingEvents.valueOf(event.get()));
         else
             return Observable.error(new FieldRequiredException("channel"));
