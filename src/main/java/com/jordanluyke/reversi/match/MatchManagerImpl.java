@@ -88,10 +88,7 @@ public class MatchManagerImpl implements MatchManager {
     @Override
     public Observable<Match> join(String matchId, String accountId) {
         return getMatch(matchId)
-                .flatMap(match -> match.join(accountId))
-                .doOnNext(Void -> {
-                    socketManager.sendUpdateEvent(OutgoingEvents.Match, matchId);
-                });
+                .flatMap(match -> join(match, accountId));
     }
 
     @Override
@@ -99,15 +96,20 @@ public class MatchManagerImpl implements MatchManager {
         return Observable.from(matches)
                 .filter(match -> !match.isPrivate() && (!match.getPlayerLightId().isPresent() || !match.getPlayerDarkId().isPresent()))
                 .first()
-                .retryWhen(errors -> errors.zipWith(Observable.range(1, 3), (n, i) -> i)
-                        .flatMap(retryCount -> Observable.timer(retryCount * 3, TimeUnit.SECONDS)
-                                .doOnNext(Void -> logger.info("retrying... {}", retryCount))
+                .retryWhen(errors -> errors.zipWith(Observable.range(1, 15), (n, i) -> i)
+                        .flatMap(retryCount -> Observable.timer(retryCount, TimeUnit.SECONDS)
+                                .doOnNext(Void -> logger.info("Find match retry... {} {}", retryCount, accountId))
                         ))
                 .defaultIfEmpty(null)
                 .flatMap(match -> {
                     if(match == null)
                         return createMatch(accountId);
-                    return Observable.just(match);
+                    return join(match, accountId);
                 });
+    }
+
+    private Observable<Match> join(Match match, String accountId) {
+        return match.join(accountId)
+                .doOnNext(Void -> socketManager.sendUpdateEvent(OutgoingEvents.Match, match.getId()));
     }
 }

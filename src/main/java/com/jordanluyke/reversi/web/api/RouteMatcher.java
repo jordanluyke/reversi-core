@@ -126,13 +126,6 @@ public class RouteMatcher {
                         return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
                     }
                 })
-                .flatMap(instance -> ((WebSocketEventHandler) instance).handle(Observable.just(request)))
-                .map(node -> {
-                    ObjectNode n = node.deepCopy();
-                    n.put("event", request.getBody().get("event").asText());
-                    WebSocketServerResponse res = new WebSocketServerResponse();
-                    res.setBody(n);
-                    return res;
-                });
+                .flatMap(instance -> ((WebSocketEventHandler) instance).handle(Observable.just(request)));
     }
 }

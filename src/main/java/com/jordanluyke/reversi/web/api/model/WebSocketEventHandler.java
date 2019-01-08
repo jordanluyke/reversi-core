@@ -2,6 +2,7 @@ package com.jordanluyke.reversi.web.api.model;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
+import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import rx.Observable;
 
 /**
@@ -9,5 +10,5 @@ import rx.Observable;
  */
 public interface WebSocketEventHandler {
 
-    Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o);
+    Observable<WebSocketServerResponse> handle(Observable<WebSocketServerRequest> o);
 }

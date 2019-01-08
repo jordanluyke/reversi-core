@@ -9,4 +9,5 @@ public enum OutgoingEvents {
     Match,
     WebException,
     FindMatch,
+    Receipt,
 }
