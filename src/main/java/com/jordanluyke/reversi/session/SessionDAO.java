@@ -4,6 +4,8 @@ import com.google.inject.Inject;
 import com.jordanluyke.reversi.db.DbManager;
 import com.jordanluyke.reversi.session.model.Session;
 import com.jordanluyke.reversi.util.RandomUtil;
+import com.jordanluyke.reversi.web.model.WebException;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,6 +46,12 @@ public class SessionDAO {
         return Observable.just(dbManager.getDsl().selectFrom(SESSION)
                 .where(SESSION.ID.eq(sessionId))
                 .fetchAny())
+                .defaultIfEmpty(null)
+                .flatMap(record -> {
+                    if(record == null)
+                        return Observable.error(new WebException(HttpResponseStatus.UNAUTHORIZED));
+                    return Observable.just(record);
+                })
                 .map(Session::fromRecord);
     }
 }

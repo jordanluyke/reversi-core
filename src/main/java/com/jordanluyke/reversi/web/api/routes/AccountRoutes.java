@@ -24,16 +24,6 @@ import rx.Observable;
 public class AccountRoutes {
     private static final Logger logger = LogManager.getLogger(AccountRoutes.class);
 
-    public static class GetAccounts implements HttpRouteHandler {
-        @Inject protected AccountManager accountManager;
-        @Override
-        public Observable<PagingResponse<Account>> handle(Observable<HttpServerRequest> o) {
-            return o.flatMap(req -> accountManager.getAccounts())
-                    .toList()
-                    .map(accounts -> new PagingResponse<>(accounts, 0, accounts.size()));
-        }
-    }
-
     public static class GetAccount implements HttpRouteHandler {
         @Inject protected AccountManager accountManager;
         @Inject protected SessionManager sessionManager;
@@ -44,10 +34,7 @@ public class AccountRoutes {
                         String accountId = req.getQueryParams().get("accountId");
                         if(!session.getOwnerId().equals(accountId))
                             return Observable.error(new WebException(HttpResponseStatus.FORBIDDEN));
-                        return Observable.zip(
-                                accountManager.getAccountById(accountId),
-                                accountManager.getPlayerStats(accountId),
-                                AggregateAccount::new);
+                        return accountManager.getAccountById(accountId);
                     }));
         }
     }

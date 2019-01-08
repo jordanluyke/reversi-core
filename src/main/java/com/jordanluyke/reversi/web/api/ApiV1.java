@@ -27,8 +27,6 @@ public class ApiV1 implements Api {
     public List<HttpRoute> getHttpRoutes() {
         return Arrays.asList(
                 new HttpRoute("/status", HttpMethod.GET, SystemRoutes.GetStatus.class),
-//                new HttpRoute("/accounts", HttpMethod.GET, AccountRoutes.GetAccounts.class),
-//                new HttpRoute("/accounts", HttpMethod.POST, AccountRoutes.CreateAccount.class),
                 new HttpRoute("/accounts/:accountId", HttpMethod.GET, AccountRoutes.GetAccount.class),
                 new HttpRoute("/accounts/:accountId", HttpMethod.PUT, AccountRoutes.UpdateAccount.class),
                 new HttpRoute("/accounts/:accountId/profile", HttpMethod.GET, AccountRoutes.GetProfile.class),
@@ -47,9 +45,8 @@ public class ApiV1 implements Api {
                 new WebSocketEvent<>(IncomingEvents.KeepAlive.class),
                 new WebSocketEvent<>(IncomingEvents.Account.class),
                 new WebSocketEvent<>(IncomingEvents.Match.class),
-                new WebSocketEvent<>(IncomingEvents.Receipt.class)
-//                new WebSocketEvent<>(MatchEvents.SubscribeMatch.class)
-//                new WebSocketEvent<>(MatchEvents.UnsubscribeMatch.class)
+                new WebSocketEvent<>(IncomingEvents.Receipt.class),
+                new WebSocketEvent<>(IncomingEvents.FindMatch.class)
         );
     }
 }

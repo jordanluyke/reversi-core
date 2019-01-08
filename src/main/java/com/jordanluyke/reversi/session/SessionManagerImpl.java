@@ -4,8 +4,11 @@ import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.session.model.Session;
+import com.jordanluyke.reversi.util.NodeUtil;
+import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.WebException;
+import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -38,9 +41,17 @@ public class SessionManagerImpl implements SessionManager {
 
     @Override
     public Observable<Session> validate(HttpServerRequest request) {
-        Optional<String> sessionId = Optional.ofNullable(request.getQueryParams().get("sessionId"));
+        return validate(Optional.ofNullable(request.getQueryParams().get("sessionId")));
+    }
+
+    @Override
+    public Observable<Session> validate(WebSocketServerRequest request) {
+        return validate(NodeUtil.get(request.getBody(), "sessionId"));
+    }
+
+    private Observable<Session> validate(Optional<String> sessionId) {
         if(!sessionId.isPresent())
-            return Observable.error(new WebException(HttpResponseStatus.UNAUTHORIZED));
+            return Observable.error(new FieldRequiredException("sessionId"));
         return sessionDAO.getSessionById(sessionId.get())
                 .defaultIfEmpty(null)
                 .flatMap(session -> {

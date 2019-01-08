@@ -7,5 +7,6 @@ public enum OutgoingEvents {
     KeepAlive,
     Account,
     Match,
-    WebException
+    WebException,
+    FindMatch,
 }

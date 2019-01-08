@@ -17,4 +17,6 @@ public interface MatchManager {
     Observable<Match> placePiece(String matchId, String accountId, Position position);
 
     Observable<Match> join(String matchId, String accountId);
+
+    Observable<Match> findMatch(String accountId);
 }

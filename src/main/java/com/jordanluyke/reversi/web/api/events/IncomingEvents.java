@@ -1,7 +1,9 @@
 package com.jordanluyke.reversi.web.api.events;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.inject.Inject;
+import com.jordanluyke.reversi.match.MatchManager;
+import com.jordanluyke.reversi.session.SessionManager;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
@@ -27,7 +29,7 @@ public class IncomingEvents {
 
                 req.getAggregateContext().unsubscribeMessageReceipt(req.getBody().get("id").asText());
 
-                ObjectNode body = new ObjectMapper().createObjectNode();
+                ObjectNode body = NodeUtil.mapper.createObjectNode();
                 body.put("success", true);
                 return Observable.just(body);
             });
@@ -52,6 +54,22 @@ public class IncomingEvents {
         @Override
         public Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o) {
             return o.flatMap(req -> Observable.empty());
+        }
+    }
+
+    public static class FindMatch implements WebSocketEventHandler {
+        @Inject protected MatchManager matchManager;
+        @Inject protected SessionManager sessionManager;
+        @Override
+        public Observable<ObjectNode> handle(Observable<WebSocketServerRequest> o) {
+            return o.flatMap(req -> sessionManager.validate(req))
+                    .flatMap(session -> matchManager.findMatch(session.getOwnerId()))
+                    .map(match -> {
+                        ObjectNode body = NodeUtil.mapper.createObjectNode();
+                        body.put("event", OutgoingEvents.FindMatch.toString());
+                        body.put("matchId", match.getId());
+                        return body;
+                    });
         }
     }
 

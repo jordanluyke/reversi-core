@@ -93,4 +93,21 @@ public class MatchManagerImpl implements MatchManager {
                     socketManager.sendUpdateEvent(OutgoingEvents.Match, matchId);
                 });
     }
+
+    @Override
+    public Observable<Match> findMatch(String accountId) {
+        return Observable.from(matches)
+                .filter(match -> !match.isPrivate() && (!match.getPlayerLightId().isPresent() || !match.getPlayerDarkId().isPresent()))
+                .first()
+                .retryWhen(errors -> errors.zipWith(Observable.range(1, 3), (n, i) -> i)
+                        .flatMap(retryCount -> Observable.timer(retryCount * 3, TimeUnit.SECONDS)
+                                .doOnNext(Void -> logger.info("retrying... {}", retryCount))
+                        ))
+                .defaultIfEmpty(null)
+                .flatMap(match -> {
+                    if(match == null)
+                        return createMatch(accountId);
+                    return Observable.just(match);
+                });
+    }
 }

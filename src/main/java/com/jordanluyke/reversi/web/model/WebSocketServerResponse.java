@@ -26,6 +26,8 @@ public class WebSocketServerResponse {
     }
 
     public JsonNode toNode() {
+        if(event == null)
+            event = OutgoingEvents.valueOf(NodeUtil.get(body, "event").orElseThrow(() -> new RuntimeException("invalid event")));
         ObjectNode node = NodeUtil.mapper.createObjectNode();
         node.put("event", event.toString());
         return node.setAll(body);
