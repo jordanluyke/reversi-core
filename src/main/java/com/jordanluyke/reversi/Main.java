@@ -12,9 +12,10 @@ public class Main {
     public static void main(String[] args) {
         logger.info("Initializing");
         Injector injector = Guice.createInjector(new MainModule());
-
+        injector.getInstance(Config.class)
+                .setInjector(injector);
         injector.getInstance(MainManager.class)
-                .start(injector)
+                .start()
                 .subscribe(new ErrorHandlingSubscriber<>());
     }
 }

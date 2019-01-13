@@ -15,11 +15,9 @@ public class MainManagerImpl implements MainManager {
 
     private WebManager webManager;
     private DbManager dbManager;
-    private Config config;
 
     @Override
-    public Observable<Void> start(Injector injector) {
-        config.setInjector(injector);
+    public Observable<Void> start() {
         return Observable.zip(
                 webManager.start(),
                 dbManager.start(),

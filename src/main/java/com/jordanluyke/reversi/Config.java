@@ -46,7 +46,7 @@ public class Config {
             try {
                 p.load(new FileInputStream("src/main/resources/config.properties"));
             } catch(IOException e2) {
-                throw new RuntimeException("Unable to load config.properties");
+                throw new RuntimeException("Unable to load config.properties file");
             }
         }
 
@@ -59,7 +59,9 @@ public class Config {
             FileInputStream key = new FileInputStream("key-pkcs8.pem");
             sslContext = Optional.of(SslContextBuilder.forServer(cert, key).build());
             port = 8443;
-        } catch(SSLException | FileNotFoundException e) {
+        } catch(SSLException e) {
+            logger.error(e.getMessage());
+        } catch(FileNotFoundException e) {
         }
     }
 }
