@@ -4,14 +4,16 @@ import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.SelfSignedCertificate;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.SSLException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.security.cert.CertificateException;
+import java.io.IOException;
+import java.util.Optional;
 import java.util.Properties;
 
 /**
@@ -22,51 +24,42 @@ import java.util.Properties;
 @Setter
 @Singleton
 public class Config {
+    private static final Logger logger = LogManager.getLogger(Config.class);
 
     private int port = 8080;
-    private boolean sslEnabled = false;
-    private SslContext sslContext = null;
+    private Optional<SslContext> sslContext = Optional.empty();
     private String jdbcUrl;
     private String jdbcUser;
     private String jdbcPassword;
     private Injector injector;
 
     public Config() {
-        if(sslEnabled)
-            this.sslContext = getSslCtx();
-        loadConfig();
+        load();
+        logger.info("Config loaded");
     }
 
-    private void loadConfig() {
+    private void load() {
+        Properties p = new Properties();
         try {
-            Properties p = new Properties();
-            FileInputStream fileInputStream;
+            p.load(new FileInputStream("config.properties"));
+        } catch(IOException e1) {
             try {
-                fileInputStream = new FileInputStream("src/main/resources/config.properties");
-            } catch(FileNotFoundException e) {
-                fileInputStream = new FileInputStream("config.properties");
+                p.load(new FileInputStream("src/main/resources/config.properties"));
+            } catch(IOException e2) {
+                throw new RuntimeException("Unable to load config.properties");
             }
-            p.load(fileInputStream);
-
-            jdbcUrl = p.getProperty("jdbc.url");
-            jdbcUser = p.getProperty("jdbc.user");
-            jdbcPassword = p.getProperty("jdbc.password");
-        } catch(Exception e) {
-            throw new RuntimeException(e);
         }
-    }
 
-    private SslContext getSslCtx() {
+        jdbcUrl = p.getProperty("jdbc.url");
+        jdbcUser = p.getProperty("jdbc.user");
+        jdbcPassword = p.getProperty("jdbc.password");
+
         try {
-            SelfSignedCertificate ssc;
-            try {
-                ssc = new SelfSignedCertificate();
-            } catch(CertificateException e) {
-                throw new RuntimeException(e.getMessage());
-            }
-            return SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
-        } catch(SSLException e) {
-            throw new RuntimeException(e.getMessage());
+            FileInputStream cert = new FileInputStream("cert.pem");
+            FileInputStream key = new FileInputStream("key-pkcs8.pem");
+            sslContext = Optional.of(SslContextBuilder.forServer(cert, key).build());
+            port = 8443;
+        } catch(SSLException | FileNotFoundException e) {
         }
     }
 }

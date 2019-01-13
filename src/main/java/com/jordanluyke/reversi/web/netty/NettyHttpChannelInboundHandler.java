@@ -73,10 +73,12 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
         }
     }
 
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-        ctx.close();
-    }
+//    @Override
+//    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+//        logger.info("channelReadComplete");
+////        ctx.close();
+//        super.channelReadComplete(ctx);
+//    }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
@@ -138,7 +140,7 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
         }
     }
 
-    public boolean isHandshakeRequest(HttpServerRequest request) {
+    private boolean isHandshakeRequest(HttpServerRequest request) {
         return request.getMethod() == HttpMethod.GET &&
                 request.getHeaders().containsKey(HttpHeaderNames.UPGRADE.toString()) &&
                 request.getHeaders().containsKey(HttpHeaderNames.CONNECTION.toString()) &&

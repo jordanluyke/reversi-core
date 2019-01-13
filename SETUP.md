@@ -55,9 +55,3 @@
     SET GLOBAL time_zone = '+0:00';
     CREATE DATABASE reversi DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;
     ```
-    
-1. SSL
-    
-    ```
-    openssl pkcs8 -topk8 -nocrypt -in client-key.pem -out client.pem
-    ```
