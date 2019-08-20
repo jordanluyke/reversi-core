@@ -55,3 +55,10 @@
     SET GLOBAL time_zone = '+0:00';
     CREATE DATABASE reversi DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;
     ```
+    
+    1. Edit /etc/mysql/my.cnf and add:
+    
+    ```
+    wait_timeout=999999999
+    interactive_timeout=999999999
+    ```
