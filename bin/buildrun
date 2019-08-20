@@ -7,7 +7,7 @@ mvn clean compile assembly:single
 JAR=target/reversi-1.0-SNAPSHOT-jar-with-dependencies.jar
 
 if [ "$1" == "-s" ] || [ "$1" == "--sync" ]; then
-    cp ${JAR} /Users/jordanluyke/Documents/sync/reversi
+    cp ${JAR} ~/Documents/sync/reversi
     echo "Copied to sync/reversi"
 fi
 
