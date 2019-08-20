@@ -5,6 +5,7 @@ import com.jordanluyke.reversi.util.ErrorHandlingCompletableObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
+import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.model.WebSocketConnection;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
@@ -20,6 +21,8 @@ import io.reactivex.Completable;
 import io.reactivex.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Optional;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -39,7 +42,6 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, Object msg) {
-        logger.info("channelRead: {} {}", ctx.channel().remoteAddress(), msg.getClass().getSimpleName());
         if(msg instanceof WebSocketFrame) {
             handleWebsocketFrame(ctx, (WebSocketFrame) msg);
         } else {
@@ -86,10 +88,13 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
 
             JsonNode body = NodeUtil.getJsonNode(reqBuf.array());
             reqBuf = Unpooled.buffer();
-            logger.info("received: {}", body.toString());
 
-            if(!NodeUtil.get("event", body).isPresent())
+            Optional<String> event = NodeUtil.get("event", body);
+            if(!event.isPresent())
                 return Single.error(new FieldRequiredException("event"));
+
+            if(!event.get().equals(OutgoingEvents.KeepAlive.toString()))
+                logger.info("WebSocketRequest: {} {}", connection.getCtx().channel().remoteAddress(), body.toString());
 
             return apiManager.handleRequest(new WebSocketServerRequest(connection, body));
         })
@@ -97,6 +102,10 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
                     WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
                     logger.error("{}", e.toWebSocketServerResponse().toNode());
                     return Single.just(e.toWebSocketServerResponse());
+                })
+                .doOnSuccess(res -> {
+                    if(res.getEvent() != OutgoingEvents.KeepAlive)
+                        logger.info("WebSocketResponse: {} {}", connection.getCtx().channel().remoteAddress(), res.toNode());
                 });
     }
 }
