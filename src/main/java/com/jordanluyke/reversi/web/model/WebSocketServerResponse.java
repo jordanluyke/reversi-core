@@ -2,7 +2,6 @@ package com.jordanluyke.reversi.web.model;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
@@ -26,6 +25,7 @@ public class WebSocketServerResponse {
 
     public WebSocketServerResponse(OutgoingEvents event) {
         this.event = event;
+        this.body = NodeUtil.mapper.createObjectNode();
     }
 
     public JsonNode toNode() {
