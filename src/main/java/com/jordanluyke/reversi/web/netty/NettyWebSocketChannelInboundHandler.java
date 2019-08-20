@@ -5,6 +5,7 @@ import com.jordanluyke.reversi.util.ErrorHandlingCompletableObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
+import com.jordanluyke.reversi.web.model.WebSocketConnection;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
@@ -27,13 +28,13 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
     private static final Logger logger = LogManager.getLogger(NettyWebSocketChannelInboundHandler.class);
 
     private ApiManager apiManager;
-    private AggregateWebSocketChannelHandlerContext aggregateContext;
+    private WebSocketConnection connection;
 
     private ByteBuf reqBuf = Unpooled.buffer();
 
-    public NettyWebSocketChannelInboundHandler(ApiManager apiManager, AggregateWebSocketChannelHandlerContext aggregateContext) {
+    public NettyWebSocketChannelInboundHandler(ApiManager apiManager, WebSocketConnection connection) {
         this.apiManager = apiManager;
-        this.aggregateContext = aggregateContext;
+        this.connection = connection;
     }
 
     @Override
@@ -50,13 +51,13 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         logger.error("Exception caught on {}", ctx.channel().remoteAddress());
-        aggregateContext.close();
+        connection.close();
         cause.printStackTrace();
     }
 
     private void handleWebsocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
         if(frame instanceof CloseWebSocketFrame) {
-            aggregateContext.close();
+            connection.close();
         } else if(frame instanceof PingWebSocketFrame) {
             ctx.channel().write(new PongWebSocketFrame(frame.content()));
         } else if(frame instanceof TextWebSocketFrame ||
@@ -83,19 +84,14 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
                 return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST));
             }
 
-            JsonNode reqBody = NodeUtil.getJsonNode(reqBuf.array());
+            JsonNode body = NodeUtil.getJsonNode(reqBuf.array());
             reqBuf = Unpooled.buffer();
-            logger.info("received: {}", reqBody.toString());
+            logger.info("received: {}", body.toString());
 
-            if(reqBody.get("event") == null)
+            if(!NodeUtil.get("event", body).isPresent())
                 return Single.error(new FieldRequiredException("event"));
 
-            WebSocketServerRequest request = WebSocketServerRequest.builder()
-                    .body(reqBody)
-                    .aggregateContext(aggregateContext)
-                    .build();
-
-            return apiManager.handleRequest(request);
+            return apiManager.handleRequest(new WebSocketServerRequest(connection, body));
         })
                 .onErrorResumeNext(err -> {
                     WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);

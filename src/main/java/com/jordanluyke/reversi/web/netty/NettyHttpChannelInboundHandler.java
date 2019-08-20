@@ -4,6 +4,7 @@ import com.jordanluyke.reversi.util.ErrorHandlingSingleObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
 import com.jordanluyke.reversi.web.api.SocketManager;
+import com.jordanluyke.reversi.web.model.WebSocketConnection;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.HttpServerResponse;
 import com.jordanluyke.reversi.web.model.WebException;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<Object> {
+public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<HttpObject> {
     private static final Logger logger = LogManager.getLogger(NettyHttpChannelInboundHandler.class);
 
     private ApiManager apiManager;
@@ -40,7 +41,7 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
         if(msg instanceof HttpRequest) {
             HttpRequest httpRequest = (HttpRequest) msg;
             URI uri = new URI(httpRequest.uri());
@@ -125,13 +126,10 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
         WebSocketServerHandshaker handshaker = wsFactory.newHandshaker(req);
         if(handshaker != null) {
             handshaker.handshake(ctx.channel(), req);
-
-            AggregateWebSocketChannelHandlerContext aggregateContext = new AggregateWebSocketChannelHandlerContext();
-            aggregateContext.setCtx(ctx);
-            socketManager.addConnection(aggregateContext);
-
+            WebSocketConnection connection = new WebSocketConnection(ctx);
+            socketManager.addConnection(connection);
             ctx.pipeline().removeLast();
-            ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, aggregateContext));
+            ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, connection));
             logger.info("Handshake accepted: {}", ctx.channel().remoteAddress());
         } else {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());

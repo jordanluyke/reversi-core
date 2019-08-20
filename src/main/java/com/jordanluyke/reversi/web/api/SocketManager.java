@@ -1,7 +1,7 @@
 package com.jordanluyke.reversi.web.api;
 
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
-import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
+import com.jordanluyke.reversi.web.model.WebSocketConnection;
 import io.reactivex.Observable;
 
 /**
@@ -9,11 +9,11 @@ import io.reactivex.Observable;
  */
 public interface SocketManager {
 
-    void addConnection(AggregateWebSocketChannelHandlerContext context);
+    void addConnection(WebSocketConnection connection);
 
-    void removeConnection(AggregateWebSocketChannelHandlerContext context);
+    void removeConnection(WebSocketConnection connection);
 
-    Observable<AggregateWebSocketChannelHandlerContext> getConnections(OutgoingEvents event, String channel);
+    Observable<WebSocketConnection> getConnections(OutgoingEvents event, String channel);
 
     void sendUpdateEvent(OutgoingEvents event, String channel);
 }

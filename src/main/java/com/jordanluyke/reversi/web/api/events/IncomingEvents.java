@@ -4,8 +4,10 @@ import com.google.inject.Inject;
 import com.jordanluyke.reversi.match.MatchManager;
 import com.jordanluyke.reversi.session.SessionManager;
 import com.jordanluyke.reversi.util.NodeUtil;
+import com.jordanluyke.reversi.web.api.SocketManager;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
+import com.jordanluyke.reversi.web.model.WebSocketConnection;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import io.reactivex.Completable;
@@ -23,13 +25,14 @@ public class IncomingEvents {
     private static final Logger logger = LogManager.getLogger(IncomingEvents.class);
 
     public static class Receipt implements WebSocketEventHandler {
+        @Inject SocketManager socketManager;
         @Override
         public Single<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
             return o.flatMap(req -> {
-                if(req.getBody().get("id") == null)
+                Optional<String> id = NodeUtil.get("id", req.getBody());
+                if(!id.isPresent())
                     return Single.error(new FieldRequiredException("id"));
-
-                req.getAggregateContext().unsubscribeMessageReceipt(req.getBody().get("id").asText());
+                req.getConnection().unsubscribeMessageReceipt(id.get());
 
                 return Single.just(WebSocketServerResponse.builder()
                                 .event(OutgoingEvents.Receipt)
@@ -97,9 +100,9 @@ public class IncomingEvents {
             return Completable.error(new FieldRequiredException("channel"));
         else {
             if(unsubscribe.isPresent())
-                req.getAggregateContext().removeEventSubscription(OutgoingEvents.valueOf(event.get()));
+                req.getConnection().removeEventSubscription(OutgoingEvents.valueOf(event.get()));
             else
-                req.getAggregateContext().addEventSubscription(OutgoingEvents.valueOf(event.get()), channel.get());
+                req.getConnection().addEventSubscription(OutgoingEvents.valueOf(event.get()), channel.get());
             return Completable.complete();
         }
     }

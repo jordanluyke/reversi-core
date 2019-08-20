@@ -1,13 +1,10 @@
-package com.jordanluyke.reversi.web.netty;
+package com.jordanluyke.reversi.web.model;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.util.ErrorHandlingObserver;
-import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
-import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.api.model.EventSubscription;
-import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,7 +12,8 @@ import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.subjects.PublishSubject;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,15 +29,17 @@ import java.util.stream.Collectors;
  */
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
-public class AggregateWebSocketChannelHandlerContext {
-    private static final Logger logger = LogManager.getLogger(AggregateWebSocketChannelHandlerContext.class);
+public class WebSocketConnection {
+    private static final Logger logger = LogManager.getLogger(WebSocketConnection.class);
 
     private ChannelHandlerContext ctx;
-    private Map<String, Disposable> responsesAwaitingReceipt = new HashMap<>();
-    private List<EventSubscription> eventSubscriptions = new ArrayList<>();
     private PublishSubject<Void> onClose = PublishSubject.create();
+    private List<EventSubscription> eventSubscriptions = new ArrayList<>();
+    private Map<String, Disposable> responsesAwaitingReceipt = new HashMap<>();
+
+    public WebSocketConnection(ChannelHandlerContext ctx) {
+        this.ctx = ctx;
+    }
 
     public void close() {
         ctx.write(new CloseWebSocketFrame());
@@ -83,5 +83,14 @@ public class AggregateWebSocketChannelHandlerContext {
         eventSubscriptions = eventSubscriptions.stream()
                 .filter(sub -> sub.getEvent() != event)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof WebSocketConnection) {
+            WebSocketConnection connection = (WebSocketConnection) obj;
+            return ctx.channel().remoteAddress().equals(connection.getCtx().channel().remoteAddress());
+        }
+        return false;
     }
 }

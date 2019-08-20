@@ -4,15 +4,15 @@ import com.google.inject.Inject;
 import com.jordanluyke.reversi.util.ErrorHandlingObserver;
 import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
+import com.jordanluyke.reversi.web.model.WebSocketConnection;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
-import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
 import io.reactivex.Observable;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -21,29 +21,29 @@ import java.util.Map;
 public class SocketManagerImpl implements SocketManager {
     private static final Logger logger = LogManager.getLogger(SocketManager.class);
 
-    private final Map<String, AggregateWebSocketChannelHandlerContext> connections = new HashMap<>();
+    private final List<WebSocketConnection> connections = new ArrayList<>();
 
     @Override
-    public void addConnection(AggregateWebSocketChannelHandlerContext context) {
-        connections.put(context.getCtx().channel().remoteAddress().toString(), context);
+    public void addConnection(WebSocketConnection connection) {
+        connections.add(connection);
 
-        context.getOnClose()
-                .doOnComplete(() -> removeConnection(context))
+        connection.getOnClose()
+                .doOnComplete(() -> removeConnection(connection))
                 .subscribe(new ErrorHandlingObserver<>());
     }
 
     @Override
-    public void removeConnection(AggregateWebSocketChannelHandlerContext context) {
-        connections.remove(context.getCtx().channel().remoteAddress().toString());
+    public void removeConnection(WebSocketConnection connection) {
+        connections.remove(connection);
     }
 
     @Override
-    public Observable<AggregateWebSocketChannelHandlerContext> getConnections(OutgoingEvents event, String channel) {
-        return Observable.fromIterable(connections.values())
-                .flatMap(aggregateContext -> Observable.fromIterable(aggregateContext.getEventSubscriptions())
-                        .filter(eventSubscription -> eventSubscription.getEvent() == event)
+    public Observable<WebSocketConnection> getConnections(OutgoingEvents event, String channel) {
+        return Observable.fromIterable(connections)
+                .flatMap(connection -> Observable.fromIterable(connection.getEventSubscriptions())
+                        .filter(eventSubscription -> eventSubscription.getEvent() == event && eventSubscription.getChannel().equals(channel))
                         .take(1)
-                        .map(Void -> aggregateContext));
+                        .map(Void -> connection));
     }
 
     @Override

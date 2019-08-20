@@ -1,8 +1,6 @@
 package com.jordanluyke.reversi.web.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.jordanluyke.reversi.util.NodeUtil;
-import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
 import lombok.*;
 
 /**
@@ -12,9 +10,7 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
 public class WebSocketServerRequest {
-
+    private WebSocketConnection connection;
     private JsonNode body;
-    private AggregateWebSocketChannelHandlerContext aggregateContext;
 }
