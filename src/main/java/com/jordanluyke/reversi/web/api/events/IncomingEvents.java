@@ -96,14 +96,12 @@ public class IncomingEvents {
 
         if(!event.isPresent())
             return Completable.error(new FieldRequiredException("event"));
-        else if(!channel.isPresent())
+        if(!unsubscribe.isPresent() && !channel.isPresent())
             return Completable.error(new FieldRequiredException("channel"));
-        else {
-            if(unsubscribe.isPresent())
-                req.getConnection().removeEventSubscription(OutgoingEvents.valueOf(event.get()));
-            else
-                req.getConnection().addEventSubscription(OutgoingEvents.valueOf(event.get()), channel.get());
-            return Completable.complete();
-        }
+        if(unsubscribe.isPresent())
+            req.getConnection().removeEventSubscription(OutgoingEvents.valueOf(event.get()));
+        else
+            req.getConnection().addEventSubscription(OutgoingEvents.valueOf(event.get()), channel.get());
+        return Completable.complete();
     }
 }
