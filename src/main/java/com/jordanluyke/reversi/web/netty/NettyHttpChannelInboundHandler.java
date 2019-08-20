@@ -64,11 +64,8 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
             HttpContent httpContent = (HttpContent) msg;
             reqBuf = Unpooled.copiedBuffer(reqBuf, httpContent.content());
             if(msg instanceof LastHttpContent) {
-                handleRequest(httpContent)
-                        .doOnSuccess(httpServerResponse -> {
-                            logger.info("{} {}", ctx.channel().remoteAddress(), httpServerResponse.getBody());
-                            writeResponse(ctx, httpServerResponse);
-                        })
+                handleRequest(httpContent, ctx)
+                        .doOnSuccess(httpServerResponse -> writeResponse(ctx, httpServerResponse))
                         .subscribe(new ErrorHandlingSingleObserver<>());
             }
         }
@@ -88,7 +85,7 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
         ctx.close();
     }
 
-    private Single<HttpServerResponse> handleRequest(HttpContent httpContent) {
+    private Single<HttpServerResponse> handleRequest(HttpContent httpContent, ChannelHandlerContext ctx) {
         return Single.defer(() -> {
             if(httpContent.decoderResult().isFailure())
                 return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST));
@@ -103,12 +100,15 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
                 httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(reqBuf.array())));
             }
 
+            logger.info("HttpRequest: {} {} {}", ctx.channel().remoteAddress(), httpServerRequest.getMethod(), httpServerRequest.getPath());
+
             return apiManager.handleRequest(httpServerRequest);
         })
                 .onErrorResumeNext(err -> {
                     WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
                     return Single.just(e.toHttpServerResponse());
-                });
+                })
+                .doOnSuccess(res -> logger.info("HttpResponse: {} {}", ctx.channel().remoteAddress(), res.getBody()));
     }
 
     private void writeResponse(ChannelHandlerContext ctx, HttpServerResponse res) {
@@ -130,7 +130,6 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
             socketManager.addConnection(connection);
             ctx.pipeline().removeLast();
             ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, connection));
-            logger.info("Handshake accepted: {}", ctx.channel().remoteAddress());
         } else {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
             logger.error("Handshaker detected unsupported version");

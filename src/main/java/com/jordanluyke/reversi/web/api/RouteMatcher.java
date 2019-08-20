@@ -39,8 +39,6 @@ public class RouteMatcher {
     }
 
     public Single<HttpServerResponse> handle(HttpServerRequest request) {
-        logger.info("{} {}", request.getMethod(), request.getPath());
-
         return Single.just(request.getMethod())
                 .flatMap(method -> {
                     if(!Arrays.asList(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE).contains(method))

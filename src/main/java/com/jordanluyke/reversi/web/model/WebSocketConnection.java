@@ -39,6 +39,7 @@ public class WebSocketConnection {
 
     public WebSocketConnection(ChannelHandlerContext ctx) {
         this.ctx = ctx;
+        logger.info("Socket opened: {}", ctx.channel().remoteAddress());
     }
 
     public void close() {
