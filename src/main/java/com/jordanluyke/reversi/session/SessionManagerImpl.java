@@ -10,10 +10,10 @@ import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.WebException;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.reactivex.Single;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -29,35 +29,35 @@ public class SessionManagerImpl implements SessionManager {
     private AccountManager accountManager;
 
     @Override
-    public Observable<Session> createSession(SessionCreationRequest sessionCreationRequest) {
+    public Single<Session> createSession(SessionCreationRequest sessionCreationRequest) {
         return accountManager.getAccountBySessionRequest(sessionCreationRequest)
-                .flatMap(account -> sessionDAO.createSession(account.getId()));
+                .flatMap(account -> sessionDAO.createSession(account.getAccount().getId()));
     }
 
     @Override
-    public Observable<Session> logout(String sessionId) {
+    public Single<Session> logout(String sessionId) {
         return sessionDAO.expireSession(sessionId);
     }
 
     @Override
-    public Observable<Session> validate(HttpServerRequest request) {
+    public Single<Session> validate(HttpServerRequest request) {
         return validate(Optional.ofNullable(request.getQueryParams().get("sessionId")));
     }
 
     @Override
-    public Observable<Session> validate(WebSocketServerRequest request) {
-        return validate(NodeUtil.get(request.getBody(), "sessionId"));
+    public Single<Session> validate(WebSocketServerRequest request) {
+        return validate(NodeUtil.get("sessionId", request.getBody()));
     }
 
-    private Observable<Session> validate(Optional<String> sessionId) {
+    private Single<Session> validate(Optional<String> sessionId) {
         if(!sessionId.isPresent())
-            return Observable.error(new FieldRequiredException("sessionId"));
+            return Single.error(new FieldRequiredException("sessionId"));
         return sessionDAO.getSessionById(sessionId.get())
-                .defaultIfEmpty(null)
+
                 .flatMap(session -> {
                     if(session == null || (session.getExpiresAt().isPresent() && Instant.now().isAfter(session.getExpiresAt().get())))
-                        return Observable.error(new WebException(HttpResponseStatus.UNAUTHORIZED));
-                    return Observable.just(session);
+                        return Single.error(new WebException(HttpResponseStatus.UNAUTHORIZED));
+                    return Single.just(session);
                 });
     }
 }

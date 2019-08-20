@@ -1,17 +1,17 @@
 package com.jordanluyke.reversi.match.model;
 
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -35,40 +35,36 @@ public class Board {
         return new Board(squares, "");
     }
 
-    public Observable<Integer> getAmount(Side side) {
-        return Observable.from(squares)
+    public Single<Integer> getAmount(Side side) {
+        return Observable.fromArray(squares)
                 .filter(square -> square == side)
                 .toList()
                 .map(List::size);
     }
 
-    public Observable<Board> placePiece(Side side, Position position) {
+    public Single<Board> placePiece(Side side, Position position) {
         if(squares[position.getIndex()] != null)
-            return Observable.error(new IllegalMoveException());
-        return Observable.from(Direction.class.getEnumConstants())
+            return Single.error(new IllegalMoveException());
+        return Observable.fromArray(Direction.class.getEnumConstants())
                 .filter(direction -> position.isWithinBounds(direction) && squares[position.getNewPosition(direction).getIndex()] == side.getOpposite())
                 .flatMap(direction -> getConnectingPositions(side, position, direction))
-                .defaultIfEmpty(null)
-                .flatMap(pos -> {
-                    if(pos == null)
-                        return Observable.error(new IllegalMoveException());
-                    return Observable.just(pos);
-                })
+                .switchIfEmpty(Observable.error(new IllegalMoveException()))
                 .doOnNext(pos -> squares[pos.getIndex()] = side)
                 .toList()
-                .doOnNext(Void -> transcript += position.getCoordinates())
+                .doOnSuccess(Void -> transcript += position.getCoordinates())
                 .map(Void -> this);
     }
 
-    public Observable<Boolean> canPlacePiece(Side side) {
+    public Single<Boolean> canPlacePiece(Side side) {
         return Observable.range(0, squares.length)
                 .filter(index -> squares[index] == null)
-                .flatMap(index -> Observable.from(Direction.class.getEnumConstants())
+                .flatMap(index -> Observable.fromArray(Direction.class.getEnumConstants())
                         .filter(direction -> Position.fromIndex(index).isWithinBounds(direction) && squares[Position.fromIndex(index).getNewPosition(direction).getIndex()] == side.getOpposite())
-                        .flatMap(direction -> getConnectingPositions(side, Position.fromIndex(index), direction)))
-                .take(1)
-                .defaultIfEmpty(null)
-                .map(Objects::nonNull);
+                        .flatMap(direction -> getConnectingPositions(side, Position.fromIndex(index), direction))
+                )
+                .toList()
+                .map(Void -> true)
+                .onErrorResumeNext(e -> Single.just(false));
     }
 
     private Observable<Position> getConnectingPositions(Side side, Position startPosition, Direction direction) {
@@ -89,7 +85,7 @@ public class Board {
             return Observable.empty();
 
         if(square == side)
-            return Observable.from(positions);
+            return Observable.fromIterable(positions);
 
         positions.add(currentPosition);
 

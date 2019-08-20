@@ -1,12 +1,11 @@
 package com.jordanluyke.reversi;
 
-import com.google.inject.Injector;
-import rx.Observable;
+import io.reactivex.Completable;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
 public interface MainManager {
 
-    Observable<Void> start();
+    Completable start();
 }

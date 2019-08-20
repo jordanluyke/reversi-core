@@ -2,7 +2,7 @@ package com.jordanluyke.reversi.web.api;
 
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
-import rx.Observable;
+import io.reactivex.Observable;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>

@@ -4,14 +4,14 @@ import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.HttpServerResponse;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
-import rx.Observable;
+import io.reactivex.Single;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
 public interface ApiManager {
 
-    Observable<HttpServerResponse> handleRequest(HttpServerRequest request);
+    Single<HttpServerResponse> handleRequest(HttpServerRequest request);
 
-    Observable<WebSocketServerResponse> handleRequest(WebSocketServerRequest request);
+    Single<WebSocketServerResponse> handleRequest(WebSocketServerRequest request);
 }

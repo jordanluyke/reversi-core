@@ -1,11 +1,10 @@
 package com.jordanluyke.reversi;
 
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 import com.jordanluyke.reversi.db.DbManager;
 import com.jordanluyke.reversi.web.WebManager;
+import io.reactivex.Completable;
 import lombok.AllArgsConstructor;
-import rx.Observable;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -17,10 +16,10 @@ public class MainManagerImpl implements MainManager {
     private DbManager dbManager;
 
     @Override
-    public Observable<Void> start() {
-        return Observable.zip(
+    public Completable start() {
+        return Completable.mergeArray(
                 webManager.start(),
-                dbManager.start(),
-                (V1, V2) -> null);
+                dbManager.start()
+        );
     }
 }

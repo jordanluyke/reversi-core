@@ -14,7 +14,7 @@ import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
+import io.reactivex.Single;
 
 import java.util.Optional;
 
@@ -28,7 +28,7 @@ public class MatchRoutes {
         @Inject protected MatchManager matchManager;
         @Inject protected SessionManager sessionManager;
         @Override
-        public Observable<Match> handle(Observable<HttpServerRequest> o) {
+        public Single<Match> handle(Single<HttpServerRequest> o) {
             return o.flatMap(req -> sessionManager.validate(req))
                     .flatMap(session -> matchManager.createMatch(session.getOwnerId()));
         }
@@ -37,7 +37,7 @@ public class MatchRoutes {
     public static class GetMatch implements HttpRouteHandler {
         @Inject protected MatchManager matchManager;
         @Override
-        public Observable<Match> handle(Observable<HttpServerRequest> o) {
+        public Single<Match> handle(Single<HttpServerRequest> o) {
             return o.flatMap(req -> {
                 String matchId = req.getQueryParams().get("matchId");
                 return matchManager.getMatch(matchId);
@@ -50,15 +50,15 @@ public class MatchRoutes {
         @Inject protected MatchManager matchManager;
         @Inject protected SessionManager sessionManager;
         @Override
-        public Observable<Match> handle(Observable<HttpServerRequest> o) {
+        public Single<Match> handle(Single<HttpServerRequest> o) {
             return o.flatMap(req -> sessionManager.validate(req)
                     .flatMap(session -> {
                         String matchId = req.getQueryParams().get("matchId");
                         if(!req.getBody().isPresent())
-                            return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
+                            return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST));
                         JsonNode body = req.getBody().get();
-                        Optional<Integer> index = NodeUtil.getInteger(body, "index");
-                        Optional<String> coordinates = NodeUtil.get(body, "coordinates");
+                        Optional<Integer> index = NodeUtil.getInteger("index", body);
+                        Optional<String> coordinates = NodeUtil.get("coordinates", body);
 
                         Position position;
                         if(index.isPresent())
@@ -66,7 +66,7 @@ public class MatchRoutes {
                         else if(coordinates.isPresent())
                             position = Position.fromCoordinates(coordinates.get());
                         else
-                            return Observable.error(new FieldRequiredException("coordinates or index"));
+                            return Single.error(new FieldRequiredException("coordinates or index"));
 
                         return matchManager.placePiece(matchId, session.getOwnerId(), position);
                     }));
@@ -77,7 +77,7 @@ public class MatchRoutes {
         @Inject protected MatchManager matchManager;
         @Inject protected SessionManager sessionManager;
         @Override
-        public Observable<Match> handle(Observable<HttpServerRequest> o) {
+        public Single<Match> handle(Single<HttpServerRequest> o) {
             return o.flatMap(req -> sessionManager.validate(req)
                     .flatMap(session -> {
                         String matchId = req.getQueryParams().get("matchId");

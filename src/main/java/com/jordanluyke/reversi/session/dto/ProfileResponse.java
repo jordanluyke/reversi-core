@@ -11,7 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Builder
-public class AccountProfileResponse {
+public class ProfileResponse {
     private String name;
     private PlayerStats stats;
 }

@@ -1,6 +1,6 @@
 package com.jordanluyke.reversi.web.netty;
 
-import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
+import com.jordanluyke.reversi.util.ErrorHandlingSingleObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
 import com.jordanluyke.reversi.web.api.SocketManager;
@@ -13,9 +13,9 @@ import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
+import io.reactivex.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
 
 import java.net.URI;
 import java.util.Map;
@@ -64,11 +64,11 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
             reqBuf = Unpooled.copiedBuffer(reqBuf, httpContent.content());
             if(msg instanceof LastHttpContent) {
                 handleRequest(httpContent)
-                        .doOnNext(httpServerResponse -> {
+                        .doOnSuccess(httpServerResponse -> {
                             logger.info("{} {}", ctx.channel().remoteAddress(), httpServerResponse.getBody());
                             writeResponse(ctx, httpServerResponse);
                         })
-                        .subscribe(new ErrorHandlingSubscriber<>());
+                        .subscribe(new ErrorHandlingSingleObserver<>());
             }
         }
     }
@@ -87,16 +87,16 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
         ctx.close();
     }
 
-    private Observable<HttpServerResponse> handleRequest(HttpContent httpContent) {
-        return Observable.defer(() -> {
+    private Single<HttpServerResponse> handleRequest(HttpContent httpContent) {
+        return Single.defer(() -> {
             if(httpContent.decoderResult().isFailure())
-                return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
+                return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST));
 
             if(reqBuf.readableBytes() > 0) {
                 try {
                     NodeUtil.isValidJSON(reqBuf.array());
                 } catch(RuntimeException e) {
-                    return Observable.error(new WebException(HttpResponseStatus.BAD_REQUEST));
+                    return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST));
                 }
 
                 httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(reqBuf.array())));
@@ -106,7 +106,7 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
         })
                 .onErrorResumeNext(err -> {
                     WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    return Observable.just(e.toHttpServerResponse());
+                    return Single.just(e.toHttpServerResponse());
                 });
     }
 
@@ -128,7 +128,6 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
 
             AggregateWebSocketChannelHandlerContext aggregateContext = new AggregateWebSocketChannelHandlerContext();
             aggregateContext.setCtx(ctx);
-            aggregateContext.startKeepAliveTimer();
             socketManager.addConnection(aggregateContext);
 
             ctx.pipeline().removeLast();

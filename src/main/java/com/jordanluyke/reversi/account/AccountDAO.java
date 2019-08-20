@@ -7,10 +7,11 @@ import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.model.PlayerStats;
 import com.jordanluyke.reversi.db.DbManager;
 import com.jordanluyke.reversi.util.RandomUtil;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
 
 import static org.jooq.sources.tables.Account.ACCOUNT;
 import static org.jooq.sources.tables.PlayerStats.PLAYER_STATS;
@@ -25,19 +26,19 @@ public class AccountDAO {
     private DbManager dbManager;
 
     public Observable<Account> getAccounts() {
-        return Observable.from(dbManager.getDsl().selectFrom(ACCOUNT).fetch())
+        return Observable.fromIterable(dbManager.getDsl().selectFrom(ACCOUNT).fetch())
                 .map(Account::fromRecord);
     }
 
-    public Observable<Account> createAccount(SessionCreationRequest req) {
+    public Single<Account> createAccount(SessionCreationRequest req) {
         String id = RandomUtil.generateId();
-        return Observable.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.NAME, ACCOUNT.FACEBOOKUSERID, ACCOUNT.GOOGLEUSERID, ACCOUNT.GUEST)
+        return Single.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.NAME, ACCOUNT.FACEBOOKUSERID, ACCOUNT.GOOGLEUSERID, ACCOUNT.GUEST)
                 .values(id, "Player", req.getFacebookUserId().orElse(null), req.getGoogleUserId().orElse(null), !req.getFacebookUserId().isPresent() && !req.getGoogleUserId().isPresent())
                 .execute())
                 .flatMap(Void -> getAccountById(id));
     }
 
-    public Observable<Account> updateAccount(String accountId, AccountUpdateRequest req) {
+    public Single<Account> updateAccount(String accountId, AccountUpdateRequest req) {
         return getAccountById(accountId)
                 .map(account -> dbManager.getDsl().update(ACCOUNT)
                         .set(ACCOUNT.NAME, req.getName().orElse(account.getName().orElse("Player")))
@@ -46,51 +47,43 @@ public class AccountDAO {
                 .flatMap(Void -> getAccountById(accountId));
     }
 
-    public Observable<Account> getAccountById(String accountId) {
-        return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
+    public Single<Account> getAccountById(String accountId) {
+        return Single.just(dbManager.getDsl().selectFrom(ACCOUNT)
                 .where(ACCOUNT.ID.eq(accountId))
                 .fetchAny())
                 .map(Account::fromRecord);
     }
 
-    public Observable<Account> getAccountByFacebookUserId(String id) {
-        return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
+    public Single<Account> getAccountByFacebookUserId(String id) {
+        return Single.just(dbManager.getDsl().selectFrom(ACCOUNT)
                 .where(ACCOUNT.FACEBOOKUSERID.eq(id))
                 .fetchAny())
-                .flatMap(record -> {
-                    if(record == null)
-                        return Observable.empty();
-                    return Observable.just(Account.fromRecord(record));
-                });
+                .map(Account::fromRecord);
     }
 
-    public Observable<Account> getAccountByGoogleUserId(String id) {
-        return Observable.just(dbManager.getDsl().selectFrom(ACCOUNT)
+    public Single<Account> getAccountByGoogleUserId(String id) {
+        return Single.just(dbManager.getDsl().selectFrom(ACCOUNT)
                 .where(ACCOUNT.GOOGLEUSERID.eq(id))
                 .fetchAny())
-                .flatMap(record -> {
-                    if(record == null)
-                        return Observable.empty();
-                    return Observable.just(Account.fromRecord(record));
-                });
+                .map(Account::fromRecord);
     }
 
-    public Observable<PlayerStats> createPlayerStats(String ownerId) {
-        return Observable.just(dbManager.getDsl().insertInto(PLAYER_STATS, PLAYER_STATS.OWNERID)
+    public Single<PlayerStats> createPlayerStats(String ownerId) {
+        return Single.just(dbManager.getDsl().insertInto(PLAYER_STATS, PLAYER_STATS.OWNERID)
                 .values(ownerId)
                 .execute())
                 .flatMap(Void -> getPlayerStatsById(ownerId));
     }
 
-    public Observable<PlayerStats> getPlayerStatsById(String ownerId) {
-        return Observable.just(dbManager.getDsl().selectFrom(PLAYER_STATS)
+    public Single<PlayerStats> getPlayerStatsById(String ownerId) {
+        return Single.just(dbManager.getDsl().selectFrom(PLAYER_STATS)
                 .where(PLAYER_STATS.OWNERID.eq(ownerId))
                 .fetchAny())
                 .map(PlayerStats::fromRecord);
     }
 
-    public Observable<PlayerStats> updatePlayerStats(PlayerStats playerStats) {
-        return Observable.just(dbManager.getDsl().update(PLAYER_STATS)
+    public Single<PlayerStats> updatePlayerStats(PlayerStats playerStats) {
+        return Single.just(dbManager.getDsl().update(PLAYER_STATS)
                 .set(PLAYER_STATS.MATCHES, playerStats.getMatches())
                 .where(PLAYER_STATS.OWNERID.eq(playerStats.getOwnerId()))
                 .execute())

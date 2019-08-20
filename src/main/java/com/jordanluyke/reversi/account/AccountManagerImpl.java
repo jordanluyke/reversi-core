@@ -3,16 +3,18 @@ package com.jordanluyke.reversi.account;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.model.AggregateAccount;
 import com.jordanluyke.reversi.session.dto.AccountUpdateRequest;
-import com.jordanluyke.reversi.session.dto.AccountProfileResponse;
+import com.jordanluyke.reversi.session.dto.ProfileResponse;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.model.PlayerStats;
 import com.jordanluyke.reversi.web.api.SocketManager;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
+import io.reactivex.Maybe;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -27,68 +29,64 @@ public class AccountManagerImpl implements AccountManager {
     @Override
     public Observable<AggregateAccount> getAccounts() {
         return accountDAO.getAccounts()
-                .flatMap(this::getAggregateAccount);
+                .flatMap(account -> getAggregateAccount(account).toObservable());
     }
 
     @Override
-    public Observable<AggregateAccount> createAccount(SessionCreationRequest req) {
+    public Single<AggregateAccount> createAccount(SessionCreationRequest req) {
         return accountDAO.createAccount(req)
                 .flatMap(account -> accountDAO.createPlayerStats(account.getId())
                         .map(stats -> new AggregateAccount(account, stats)));
     }
 
     @Override
-    public Observable<AggregateAccount> updateAccount(String accountId, AccountUpdateRequest req) {
+    public Single<AggregateAccount> updateAccount(String accountId, AccountUpdateRequest req) {
         return accountDAO.updateAccount(accountId, req)
                 .flatMap(this::getAggregateAccount)
-                .doOnNext(Void -> socketManager.sendUpdateEvent(OutgoingEvents.Account, accountId));
+                .doOnSuccess(Void -> socketManager.sendUpdateEvent(OutgoingEvents.Account, accountId));
     }
 
     @Override
-    public Observable<AggregateAccount> getAccountById(String accountId) {
+    public Single<AggregateAccount> getAccountById(String accountId) {
         return accountDAO.getAccountById(accountId)
                 .flatMap(this::getAggregateAccount);
     }
 
     @Override
-    public Observable<AggregateAccount> getAccountBySessionRequest(SessionCreationRequest sessionCreationRequest) {
-        return Observable.defer(() -> {
+    public Single<AggregateAccount> getAccountBySessionRequest(SessionCreationRequest sessionCreationRequest) {
+        return Maybe.defer(() -> {
             if(sessionCreationRequest.getFacebookUserId().isPresent())
-                return accountDAO.getAccountByFacebookUserId(sessionCreationRequest.getFacebookUserId().get());
+                return accountDAO.getAccountByFacebookUserId(sessionCreationRequest.getFacebookUserId().get()).toMaybe();
             if(sessionCreationRequest.getGoogleUserId().isPresent())
-                return accountDAO.getAccountByGoogleUserId(sessionCreationRequest.getGoogleUserId().get());
-            return Observable.empty();
+                return accountDAO.getAccountByGoogleUserId(sessionCreationRequest.getGoogleUserId().get()).toMaybe();
+            return Maybe.empty();
         })
-                .defaultIfEmpty(null)
-                .flatMap(account -> {
-                    if(account == null)
-                        return createAccount(sessionCreationRequest);
-                    return Observable.just(account);
-                })
-                .flatMap(this::getAggregateAccount);
+                .toSingle()
+                .flatMap(this::getAggregateAccount)
+                .onErrorResumeNext(e -> createAccount(sessionCreationRequest));
     }
 
     @Override
-    public Observable<AccountProfileResponse> getProfile(String accountId) {
+    public Single<ProfileResponse> getProfile(String accountId) {
         return getAccountById(accountId)
-                .map(account -> AccountProfileResponse.builder()
-                        .name(account.getName().orElse(null))
-                        .stats(account.getStats())
+                .map(aggregateAccount -> ProfileResponse.builder()
+                        .name(aggregateAccount.getAccount().getName().orElse(null))
+                        .stats(aggregateAccount.getStats())
                         .build());
     }
 
     @Override
-    public Observable<PlayerStats> getPlayerStats(String ownerId) {
+    public Single<PlayerStats> getPlayerStats(String ownerId) {
         return accountDAO.getPlayerStatsById(ownerId);
     }
 
     @Override
-    public Observable<PlayerStats> updatePlayerStats(PlayerStats playerStats) {
+    public Single<PlayerStats> updatePlayerStats(PlayerStats playerStats) {
         return accountDAO.updatePlayerStats(playerStats)
-                .doOnNext(Void -> socketManager.sendUpdateEvent(OutgoingEvents.Account, playerStats.getOwnerId()));
+                .doOnSuccess(Void -> socketManager.sendUpdateEvent(OutgoingEvents.Account, playerStats.getOwnerId()));
     }
 
-    private Observable<AggregateAccount> getAggregateAccount(Account account) {
+    private Single<AggregateAccount> getAggregateAccount(Account account) {
         return getPlayerStats(account.getId())
                 .map(stats -> new AggregateAccount(account, stats));
     }

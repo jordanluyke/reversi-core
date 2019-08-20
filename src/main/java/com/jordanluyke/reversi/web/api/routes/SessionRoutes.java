@@ -7,9 +7,9 @@ import com.jordanluyke.reversi.session.model.Session;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
+import io.reactivex.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -20,8 +20,8 @@ public class SessionRoutes {
     public static class CreateSession implements HttpRouteHandler {
         @Inject protected SessionManager sessionManager;
         @Override
-        public Observable<Session> handle(Observable<HttpServerRequest> o) {
-            return o.flatMap(req -> NodeUtil.parseObjectNodeInto(req.getBody(), SessionCreationRequest.class))
+        public Single<Session> handle(Single<HttpServerRequest> o) {
+            return o.flatMap(req -> NodeUtil.parseNodeInto(SessionCreationRequest.class, req.getBody()))
                     .flatMap(sessionManager::createSession);
         }
     }
@@ -29,7 +29,7 @@ public class SessionRoutes {
     public static class DeleteSession implements HttpRouteHandler {
         @Inject protected SessionManager sessionManager;
         @Override
-        public Observable<Session> handle(Observable<HttpServerRequest> o) {
+        public Single<Session> handle(Single<HttpServerRequest> o) {
             return o.flatMap(req -> sessionManager.logout(req.getQueryParams().get("sessionId")));
         }
     }

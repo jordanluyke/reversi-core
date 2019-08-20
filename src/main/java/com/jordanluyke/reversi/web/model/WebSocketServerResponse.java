@@ -22,7 +22,7 @@ public class WebSocketServerResponse {
     private static final Logger logger = LogManager.getLogger(WebSocketServerResponse.class);
 
     private OutgoingEvents event;
-    private ObjectNode body = NodeUtil.mapper.createObjectNode();
+    @Builder.Default private ObjectNode body = NodeUtil.mapper.createObjectNode();
 
     public WebSocketServerResponse(OutgoingEvents event) {
         this.event = event;

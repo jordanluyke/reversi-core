@@ -2,7 +2,7 @@ package com.jordanluyke.reversi;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
+import com.jordanluyke.reversi.util.ErrorHandlingCompletableObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -16,6 +16,6 @@ public class Main {
                 .setInjector(injector);
         injector.getInstance(MainManager.class)
                 .start()
-                .subscribe(new ErrorHandlingSubscriber<>());
+                .subscribe(new ErrorHandlingCompletableObserver());
     }
 }

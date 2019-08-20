@@ -9,6 +9,7 @@ import java.time.Instant;
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
 public class TimestampConverter implements Converter<Timestamp, Instant> {
+    public static final long serialVersionUID = 102L;
 
     @Override
     public Instant from(Timestamp timestamp) {

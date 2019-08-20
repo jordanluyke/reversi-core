@@ -12,6 +12,7 @@ import lombok.Getter;
  */
 @Getter
 public class WebException extends Exception {
+    public static final long serialVersionUID = 100L;
 
     private HttpResponseStatus status;
     private String exceptionType;

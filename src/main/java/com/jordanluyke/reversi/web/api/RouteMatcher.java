@@ -10,11 +10,15 @@ import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.model.*;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 /**
@@ -27,48 +31,47 @@ public class RouteMatcher {
 
     private ApiV1 apiV1 = new ApiV1();
     private List<HttpRoute> routes = apiV1.getHttpRoutes();
-    private List<WebSocketEvent> events = apiV1.getWebSocketEvents();
+    private List<WebSocketEvent<WebSocketEventHandler>> events = apiV1.getWebSocketEvents();
 
     @Inject
     public RouteMatcher(Config config) {
         this.config = config;
     }
 
-    public Observable<HttpServerResponse> handle(HttpServerRequest request) {
+    public Single<HttpServerResponse> handle(HttpServerRequest request) {
         logger.info("{} {}", request.getMethod(), request.getPath());
 
-        return Observable.just(request.getMethod())
+        return Single.just(request.getMethod())
                 .flatMap(method -> {
                     if(!Arrays.asList(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE).contains(method))
-                        return Observable.error(new WebException(HttpResponseStatus.METHOD_NOT_ALLOWED));
-                    return Observable.from(routes);
+                        return Single.error(new WebException(HttpResponseStatus.METHOD_NOT_ALLOWED));
+                    return Observable.fromIterable(routes)
+                            .filter(route -> {
+                                if(request.getMethod() != route.getMethod())
+                                    return false;
+
+                                String[] splitRequestPath = request.getPath().split("/");
+                                String[] splitRouteHandlerPath = route.getPath().split("/");
+
+                                if(splitRequestPath.length != splitRouteHandlerPath.length)
+                                    return false;
+
+                                IntStream.range(0, splitRouteHandlerPath.length)
+                                        .filter(i -> splitRouteHandlerPath[i].startsWith(":"))
+                                        .forEach(i -> {
+                                            splitRequestPath[i] = "*";
+                                            splitRouteHandlerPath[i] = "*";
+                                        });
+
+                                String joinedRequestPath = String.join("/", splitRequestPath);
+                                String joinedRouteHandlerPath = String.join("/", splitRouteHandlerPath);
+
+                                return joinedRequestPath.equals(joinedRouteHandlerPath);
+                            })
+                            .singleOrError()
+                            .onErrorResumeNext(err -> Single.error(new WebException(HttpResponseStatus.NOT_FOUND)));
                 })
-                .filter(route -> request.getMethod() == route.getMethod())
-                .filter(route -> {
-                    String[] splitRequestPath = request.getPath().split("/");
-                    String[] splitRouteHandlerPath = route.getPath().split("/");
-
-                    if(splitRequestPath.length != splitRouteHandlerPath.length)
-                        return false;
-
-                    IntStream.range(0, splitRouteHandlerPath.length)
-                            .filter(i -> splitRouteHandlerPath[i].startsWith(":"))
-                            .forEach(i -> {
-                                splitRequestPath[i] = "*";
-                                splitRouteHandlerPath[i] = "*";
-                            });
-
-                    String joinedRequestPath = String.join("/", splitRequestPath);
-                    String joinedRouteHandlerPath = String.join("/", splitRouteHandlerPath);
-
-                    return joinedRequestPath.equals(joinedRouteHandlerPath);
-                })
-                .take(1)
-                .defaultIfEmpty(null)
                 .flatMap(route -> {
-                    if(route == null)
-                        return Observable.error(new WebException(HttpResponseStatus.NOT_FOUND));
-
                     List<String> splitRouteHandlerPath = Arrays.asList(route.getPath().split("/"));
                     List<String> splitRequestPath = Arrays.asList(request.getPath().split("/"));
 
@@ -85,13 +88,13 @@ public class RouteMatcher {
                     });
                     request.setQueryParams(params);
 
-                    return Observable.just(route.getHandler());
+                    return Single.just(route.getHandler());
                 })
                 .map(clazz -> config.getInjector().getInstance(clazz))
-                .flatMap(instance -> instance.handle(Observable.just(request)))
+                .flatMap(instance -> instance.handle(Single.just(request)))
                 .flatMap(object -> {
                     if(object instanceof HttpServerResponse)
-                        return Observable.just((HttpServerResponse) object);
+                        return Single.just((HttpServerResponse) object);
 
                     HttpServerResponse res = new HttpServerResponse();
                     res.setStatus(HttpResponseStatus.OK);
@@ -103,29 +106,27 @@ public class RouteMatcher {
                             res.setBody(NodeUtil.mapper.valueToTree(object));
                         } catch(IllegalArgumentException e) {
                             logger.error("{}: {}", e.getClass().getSimpleName(), e.getMessage());
-                            return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
                         }
                     }
 
-                    return Observable.just(res);
+                    return Single.just(res);
                 });
     }
 
-    public Observable<WebSocketServerResponse> handle(WebSocketServerRequest request) {
-        return Observable.from(events)
+    public Single<WebSocketServerResponse> handle(WebSocketServerRequest request) {
+        return Observable.fromIterable(events)
                 .filter(event -> event.getType().getSimpleName().equals(request.getBody().get("event").textValue()))
-                .take(1)
-                .defaultIfEmpty(null)
+                .singleOrError()
+                .onErrorResumeNext(err -> Single.error(new WebException(HttpResponseStatus.NOT_FOUND)))
                 .flatMap(event -> {
-                    if(event == null)
-                        return Observable.error(new WebException(HttpResponseStatus.NOT_FOUND));
                     try {
-                        return Observable.just(config.getInjector().getInstance(Class.forName(event.getType().getName())));
+                        return Single.just(config.getInjector().getInstance(Class.forName(event.getType().getName())));
                     } catch(ClassNotFoundException e) {
                         logger.error("{}: {}", e.getClass().getSimpleName(), e.getMessage());
-                        return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                        return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
                     }
                 })
-                .flatMap(instance -> ((WebSocketEventHandler) instance).handle(Observable.just(request)));
+                .flatMap(instance -> ((WebSocketEventHandler) instance).handle(Single.just(request)));
     }
 }

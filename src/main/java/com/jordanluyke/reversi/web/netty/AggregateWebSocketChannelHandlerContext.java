@@ -1,7 +1,7 @@
 package com.jordanluyke.reversi.web.netty;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
+import com.jordanluyke.reversi.util.ErrorHandlingObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
@@ -12,14 +12,13 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
+import io.reactivex.Observable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.subjects.PublishSubject;
 import lombok.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
-import rx.Subscription;
-import rx.subjects.PublishSubject;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,14 +37,14 @@ public class AggregateWebSocketChannelHandlerContext {
     private static final Logger logger = LogManager.getLogger(AggregateWebSocketChannelHandlerContext.class);
 
     private ChannelHandlerContext ctx;
-    private Map<String, Subscription> responsesAwaitingReceipt = new HashMap<>();
+    private Map<String, Disposable> responsesAwaitingReceipt = new HashMap<>();
     private List<EventSubscription> eventSubscriptions = new ArrayList<>();
     private PublishSubject<Void> onClose = PublishSubject.create();
 
     public void close() {
         ctx.write(new CloseWebSocketFrame());
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-        onClose.onCompleted();
+        onClose.onComplete();
         ctx.close();
         logger.info("Socket closed: {}", ctx.channel().remoteAddress());
     }
@@ -59,33 +58,19 @@ public class AggregateWebSocketChannelHandlerContext {
     }
 
     public void subscribeMessageReceipt(WebSocketServerResponse res) {
+        ErrorHandlingObserver<Long> observer = new ErrorHandlingObserver<>();
         responsesAwaitingReceipt.put(res.getBody().get("receiptId").asText(), Observable.just(res)
                 .switchMap(Void -> Observable.timer(10, TimeUnit.SECONDS))
                 .doOnNext(Void -> close())
-                .subscribe(new ErrorHandlingSubscriber<>()));
+                .subscribe(observer::onNext, observer::onError));
     }
 
     public void unsubscribeMessageReceipt(String id) {
-        Subscription sub = responsesAwaitingReceipt.get(id);
+        Disposable sub = responsesAwaitingReceipt.get(id);
         if(sub != null)
-            sub.unsubscribe();
+            sub.dispose();
         else
             logger.error("Receipt not found: {}", id);
-    }
-
-    public void startKeepAliveTimer() {
-        Subscription keepAliveSub = Observable.interval(10, 10, TimeUnit.SECONDS)
-                .doOnNext(Void -> {
-                    ObjectNode body = NodeUtil.mapper.createObjectNode()
-                            .put("time", Instant.now().toEpochMilli());
-                    WebSocketUtil.writeResponse(ctx, new WebSocketServerResponse(OutgoingEvents.KeepAlive, body));
-                })
-                .subscribe(new ErrorHandlingSubscriber<>());
-
-        onClose
-                .doOnCompleted(keepAliveSub::unsubscribe)
-                .subscribe(new ErrorHandlingSubscriber<>());
-
     }
 
     public void addEventSubscription(OutgoingEvents event, String channel) {

@@ -4,6 +4,7 @@ import com.jordanluyke.reversi.web.api.events.IncomingEvents;
 import com.jordanluyke.reversi.web.api.model.Api;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketEvent;
+import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.api.routes.AccountRoutes;
 import com.jordanluyke.reversi.web.api.routes.MatchRoutes;
 import com.jordanluyke.reversi.web.api.routes.SessionRoutes;
@@ -40,7 +41,7 @@ public class ApiV1 implements Api {
     }
 
     @Override
-    public List<WebSocketEvent> getWebSocketEvents() {
+    public List<WebSocketEvent<WebSocketEventHandler>> getWebSocketEvents() {
         return Arrays.asList(
                 new WebSocketEvent<>(IncomingEvents.KeepAlive.class),
                 new WebSocketEvent<>(IncomingEvents.Account.class),

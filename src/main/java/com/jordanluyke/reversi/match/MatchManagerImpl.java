@@ -5,23 +5,23 @@ import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.match.model.Match;
 import com.jordanluyke.reversi.match.model.Position;
 import com.jordanluyke.reversi.match.model.Side;
-import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
-import com.jordanluyke.reversi.util.WebSocketUtil;
-import com.jordanluyke.reversi.web.api.ApiManager;
+import com.jordanluyke.reversi.util.ErrorHandlingSingleObserver;
 import com.jordanluyke.reversi.web.api.SocketManager;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.model.WebException;
-import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -36,26 +36,23 @@ public class MatchManagerImpl implements MatchManager {
     private final List<Match> matches = new ArrayList<>();
 
     @Override
-    public Observable<Match> createMatch(String accountId) {
+    public Single<Match> createMatch(String accountId) {
         Match match = new Match();
         match.setPlayerDarkId(Optional.of(accountId));
         matches.add(match);
-        return Observable.just(match);
+        return Single.just(match);
     }
 
     @Override
-    public Observable<Match> getMatch(String matchId) {
-        return Observable.from(matches)
+    public Single<Match> getMatch(String matchId) {
+        return Observable.fromIterable(matches)
                 .filter(match -> match.getId().equals(matchId))
-                .flatMap(match -> {
-                    if(match == null)
-                        return Observable.error(new WebException("Match not found", HttpResponseStatus.NOT_FOUND));
-                    return Observable.just(match);
-                });
+                .singleOrError()
+                .onErrorResumeNext(e -> Single.error(new WebException("Match not found", HttpResponseStatus.NOT_FOUND)));
     }
 
     @Override
-    public Observable<Match> placePiece(String matchId, String accountId, Position position) {
+    public Single<Match> placePiece(String matchId, String accountId, Position position) {
         return getMatch(matchId)
                 .flatMap(match -> {
                     Side side;
@@ -64,52 +61,47 @@ public class MatchManagerImpl implements MatchManager {
                     else if(match.getPlayerLightId().isPresent() && match.getPlayerLightId().get().equals(accountId))
                         side = Side.LIGHT;
                     else
-                        return Observable.error(new WebException(HttpResponseStatus.FORBIDDEN));
+                        return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
                     return match.placePiece(side, position);
                 })
-                .doOnNext(match -> {
+                .doOnSuccess(match -> {
                     socketManager.sendUpdateEvent(OutgoingEvents.Match, matchId);
 
                     if(match.getCompletedAt().isPresent() && match.getPlayerDarkId().isPresent() && match.getPlayerLightId().isPresent()) {
-                        Observable.from(Arrays.asList(match.getPlayerDarkId().get(), match.getPlayerLightId().get()))
-                                .flatMap(id -> accountManager.getPlayerStats(id))
+                        Observable.fromIterable(Arrays.asList(match.getPlayerDarkId().get(), match.getPlayerLightId().get()))
+                                .flatMap(id -> accountManager.getPlayerStats(id).toObservable())
                                 .flatMap(playerStats -> {
                                     playerStats.setMatches(playerStats.getMatches() + 1);
-                                    return accountManager.updatePlayerStats(playerStats);
+                                    return accountManager.updatePlayerStats(playerStats).toObservable();
                                 })
                                 .toList()
                                 .delay(5, TimeUnit.MINUTES)
-                                .doOnNext(Void -> matches.removeIf(match1 -> match1.getId().equals(matchId)))
-                                .subscribe(new ErrorHandlingSubscriber<>());
+                                .doOnSuccess(Void -> matches.removeIf(match1 -> match1.getId().equals(matchId)))
+                                .subscribe(new ErrorHandlingSingleObserver<>());
                     }
                 });
     }
 
     @Override
-    public Observable<Match> join(String matchId, String accountId) {
+    public Single<Match> join(String matchId, String accountId) {
         return getMatch(matchId)
                 .flatMap(match -> join(match, accountId));
     }
 
     @Override
-    public Observable<Match> findMatch(String accountId) {
-        return Observable.from(matches)
+    public Single<Match> findMatch(String accountId) {
+        return Observable.fromIterable(matches)
                 .filter(match -> !match.isPrivate() && (!match.getPlayerLightId().isPresent() || !match.getPlayerDarkId().isPresent()))
-                .first()
-                .retryWhen(errors -> errors.zipWith(Observable.range(1, 15), (n, i) -> i)
-                        .flatMap(retryCount -> Observable.timer(retryCount, TimeUnit.SECONDS)
-                                .doOnNext(Void -> logger.info("Find match retry... {} {}", retryCount, accountId))
-                        ))
-                .defaultIfEmpty(null)
-                .flatMap(match -> {
-                    if(match == null)
-                        return createMatch(accountId);
-                    return join(match, accountId);
-                });
+                .singleOrError()
+                .retryWhen(errors -> errors.zipWith(Flowable.range(1, 15), (n, i) -> i)
+                        .flatMap(retryCount -> Flowable.timer(retryCount, TimeUnit.SECONDS)
+                                .doOnNext(Void -> logger.info("Find match retry... {} {}", retryCount, accountId))))
+                .onErrorResumeNext(e -> createMatch(accountId))
+                .flatMap(match -> join(match, accountId));
     }
 
-    private Observable<Match> join(Match match, String accountId) {
+    private Single<Match> join(Match match, String accountId) {
         return match.join(accountId)
-                .doOnNext(Void -> socketManager.sendUpdateEvent(OutgoingEvents.Match, match.getId()));
+                .doOnSuccess(Void -> socketManager.sendUpdateEvent(OutgoingEvents.Match, match.getId()));
     }
 }

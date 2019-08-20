@@ -11,5 +11,5 @@ public interface Api {
 
     List<HttpRoute> getHttpRoutes();
 
-    List<WebSocketEvent> getWebSocketEvents();
+    List<WebSocketEvent<WebSocketEventHandler>> getWebSocketEvents();
 }

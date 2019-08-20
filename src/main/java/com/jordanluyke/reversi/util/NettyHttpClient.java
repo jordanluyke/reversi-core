@@ -1,6 +1,7 @@
 package com.jordanluyke.reversi.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -10,199 +11,221 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import rx.Emitter;
-import rx.Observable;
+import io.reactivex.Single;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.SSLException;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
 public class NettyHttpClient {
+    private static final Logger logger = LogManager.getLogger(NettyHttpClient.class);
 
-    public Observable<ClientResponse> get(String url) {
+    public static Single<ClientResponse> get(String url) {
         return get(url, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> get(String url, Map<String, Object> params) {
+    public static Single<ClientResponse> get(String url, Map<String, Object> params) {
         return get(url, params, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> get(String url, Map<String, Object> params, Map<String, String> headers) {
-        return get(url, params, headers, HttpHeaderValues.APPLICATION_JSON.toString());
+    public static Single<ClientResponse> get(String url, Map<String, Object> params, Map<String, String> headers) {
+        String _url = params.size() > 0 ? url + "?" + toQuerystring(params) : url;
+        return request(_url, HttpMethod.GET, new byte[0], headers);
     }
 
-    public Observable<ClientResponse> get(String url, Map<String, Object> params, Map<String, String> headers, String contentType) {
-        if(params.size() > 0)
-            url += "?" + toQuerystring(params);
-        return request(url, HttpMethod.GET, new byte[0], headers, contentType);
-    }
-
-    public Observable<ClientResponse> post(String url) {
+    public static Single<ClientResponse> post(String url) {
         return post(url, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> post(String url, Map<String, Object> body) {
+    public static Single<ClientResponse> post(String url, Map<String, Object> body) {
         return post(url, body, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> post(String url, Map<String, Object> body, Map<String, String> headers) {
-        return post(url, body, headers, HttpHeaderValues.APPLICATION_JSON.toString());
+    public static Single<ClientResponse> post(String url, Map<String, Object> body, Map<String, String> headers) {
+        return request(url, HttpMethod.POST, body, headers);
     }
 
-    public Observable<ClientResponse> post(String url, Map<String, Object> body, Map<String, String> headers, String contentType) {
-        return request(url, HttpMethod.POST, bodyToBytes(body, contentType), headers, contentType);
-    }
-
-    public Observable<ClientResponse> put(String url) {
+    public static Single<ClientResponse> put(String url) {
         return put(url, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> put(String url, Map<String, Object> body) {
+    public static Single<ClientResponse> put(String url, Map<String, Object> body) {
         return put(url, body, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> put(String url, Map<String, Object> body, Map<String, String> headers) {
-        return put(url, body, headers, HttpHeaderValues.APPLICATION_JSON.toString());
+    public static Single<ClientResponse> put(String url, Map<String, Object> body, Map<String, String> headers) {
+        return request(url, HttpMethod.PUT, body, headers);
     }
 
-    public Observable<ClientResponse> put(String url, Map<String, Object> body, Map<String, String> headers, String contentType) {
-        return request(url, HttpMethod.PUT, bodyToBytes(body, contentType), headers, contentType);
-    }
-
-    public Observable<ClientResponse> delete(String url) {
+    public static Single<ClientResponse> delete(String url) {
         return delete(url, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> delete(String url, Map<String, Object> body) {
+    public static Single<ClientResponse> delete(String url, Map<String, Object> body) {
         return delete(url, body, Collections.emptyMap());
     }
 
-    public Observable<ClientResponse> delete(String url, Map<String, Object> body, Map<String, String> headers) {
-        return delete(url, body, headers, HttpHeaderValues.APPLICATION_JSON.toString());
+    public static Single<ClientResponse> delete(String url, Map<String, Object> body, Map<String, String> headers) {
+        return request(url, HttpMethod.DELETE, body, headers);
     }
 
-    public Observable<ClientResponse> delete(String url, Map<String, Object> body, Map<String, String> headers, String contentType) {
-        return request(url, HttpMethod.DELETE, bodyToBytes(body, contentType), headers, contentType);
+    public static Single<ClientResponse> request(String url, HttpMethod method, Map<String, Object> body, Map<String, String> headers) {
+        return request(url, method, bodyToBytes(body, headers), headers);
     }
 
-    public Observable<ClientResponse> request(String url, HttpMethod method, byte[] body, Map<String, String> headers, String contentType) {
-        URI uri;
-        try {
-            URI u = new URI(url);
-            uri = new URI(u.getScheme(),
-                    null,
-                    u.getHost(),
-                    HttpScheme.HTTPS.name().toString().equals(u.getScheme()) ? HttpScheme.HTTPS.port() : HttpScheme.HTTP.port(),
-                    u.getPath(),
-                    u.getQuery(),
-                    null);
-        } catch(URISyntaxException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+    public static Single<ClientResponse> request(String url, HttpMethod method, byte[] body, Map<String, String> headers) {
+        return Single.defer(() -> {
+            URI uri;
+            try {
+                URI u = new URI(url);
+                uri = new URI(u.getScheme(),
+                        null,
+                        u.getHost(),
+                        HttpScheme.HTTPS.name().toString().equals(u.getScheme()) ? HttpScheme.HTTPS.port() : HttpScheme.HTTP.port(),
+                        u.getPath(),
+                        u.getQuery(),
+                        null);
+            } catch(URISyntaxException e) {
+                throw new RuntimeException(e.getMessage());
+            }
 
-        SslContext sslCtx;
-        try {
-            if(uri.getPort() == HttpScheme.HTTPS.port())
-                sslCtx = SslContextBuilder.forClient()
-                    .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
-            else
-                sslCtx = null;
-        } catch (SSLException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+            SslContext sslCtx;
+            try {
+                if(uri.getPort() == HttpScheme.HTTPS.port())
+                    sslCtx = SslContextBuilder.forClient()
+                        .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+                else
+                    sslCtx = null;
+            } catch (SSLException e) {
+                throw new RuntimeException(e.getMessage());
+            }
 
-        EventLoopGroup group = new NioEventLoopGroup();
-        ClientResponse res = new ClientResponse();
-        Bootstrap bootstrap = new Bootstrap()
-                .group(group)
-                .channel(NioSocketChannel.class)
-                .handler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel channel) {
-                        ChannelPipeline pipeline = channel.pipeline();
-                        if(sslCtx != null)
-                            pipeline.addLast(sslCtx.newHandler(channel.alloc()));
-                        pipeline.addLast(new HttpClientCodec());
-                        pipeline.addLast(new HttpContentDecompressor());
-                        pipeline.addLast(new ChannelInboundHandlerAdapter() {
-                            ByteBuf data = Unpooled.buffer();
+            EventLoopGroup group = new NioEventLoopGroup();
+            ClientResponse res = new ClientResponse();
+            Bootstrap bootstrap = new Bootstrap()
+                    .group(group)
+                    .channel(NioSocketChannel.class)
+                    .handler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        protected void initChannel(SocketChannel channel) {
+                            ChannelPipeline pipeline = channel.pipeline();
+                            if(sslCtx != null)
+                                pipeline.addLast(sslCtx.newHandler(channel.alloc()));
+                            pipeline.addLast(new HttpClientCodec());
+                            pipeline.addLast(new HttpContentDecompressor());
+                            pipeline.addLast(new SimpleChannelInboundHandler<HttpObject>() {
+                                HttpResponse response;
+                                Timer timer;
+                                ByteBuf data = Unpooled.buffer();
 
-                            @Override
-                            public void channelRead(ChannelHandlerContext ctx, Object msg) {
-                                if(msg instanceof HttpResponse) {
-                                    HttpResponse response = (HttpResponse) msg;
+                                @Override
+                                public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
+                                    if(msg instanceof HttpResponse) {
+                                        response = (HttpResponse) msg;
 
-                                    res.setStatusCode(response.status().code());
-                                    res.setHeaders(response.headers()
-                                            .entries()
-                                            .stream()
-                                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-                                } else if(msg instanceof HttpContent) {
-                                    HttpContent content = (HttpContent) msg;
-                                    data = Unpooled.copiedBuffer(data, content.content());
+                                        if(isBinaryFile(response.headers())) {
+                                            long contentLength = HttpUtil.getContentLength(response);
+                                            logger.info("Downloading: {}", url);
+                                            timer = new Timer();
+                                            timer.schedule(new TimerTask() {
+                                                @Override
+                                                public void run() {
+                                                    int percent = (int) (((double) data.readableBytes() / contentLength) * 100);
+                                                    logger.info("Progress: {}%", percent);
+                                                }
+                                            }, 0, 3000);
+                                        }
 
-                                    if(content instanceof LastHttpContent) {
-                                        res.setRawBody(data.array());
-                                        ctx.close();
+                                        res.setStatusCode(response.status().code());
+                                        res.setHeaders(response.headers()
+                                                .entries()
+                                                .stream()
+                                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+                                    } else if(msg instanceof HttpContent) {
+                                        HttpContent content = (HttpContent) msg;
+                                        data = Unpooled.copiedBuffer(data, content.content());
+
+                                        if(content instanceof LastHttpContent) {
+                                            if(isBinaryFile(response.headers())) {
+                                                timer.cancel();
+                                                timer.purge();
+                                                logger.info("Download complete");
+                                            }
+
+                                            res.setRawBody(data.array());
+                                            ctx.close();
+                                        }
                                     }
                                 }
-                            }
-                        });
-                    }
-                });
 
-        return channelFutureToObservable(bootstrap.connect(uri.getHost(), uri.getPort()))
-                .flatMap(channel -> {
-                    String path = uri.getRawPath();
-                    if(uri.getQuery() != null)
-                        path += "?" + uri.getQuery();
-                    ByteBuf content = Unpooled.copiedBuffer(body);
-                    HttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, path, content);
-                    request.headers().set(HttpHeaderNames.HOST, uri.getHost());
-                    request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
-                    request.headers().set(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.GZIP);
-                    request.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
-                    request.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
-                    headers.forEach((key, value) -> request.headers().set(key, value));
-                    return channelFutureToObservable(channel.writeAndFlush(request));
-                })
-                .flatMap(channel -> channelFutureToObservable(channel.closeFuture()))
-                .doOnNext(Void -> group.shutdownGracefully())
-                .map(Void -> {
-                    res.validate();
-                    return res;
-                });
+                                @Override
+                                public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+                                }
+
+                                private boolean isBinaryFile(HttpHeaders httpHeaders) {
+                                    return httpHeaders.contains(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_OCTET_STREAM, true);
+                                }
+                            });
+                        }
+                    });
+
+            return getChannel(bootstrap.connect(uri.getHost(), uri.getPort()))
+                    .flatMap(channel -> {
+                        ByteBuf content = Unpooled.copiedBuffer(body);
+                        DefaultFullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, uri.toString(), content);
+                        request.headers().set(HttpHeaderNames.HOST, uri.getHost());
+                        request.headers().set(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.GZIP);
+                        request.headers().set(HttpHeaderNames.CONTENT_TYPE, headers.getOrDefault(HttpHeaderNames.CONTENT_TYPE.toString(), HttpHeaderValues.APPLICATION_JSON.toString()));
+                        request.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
+                        headers.forEach((key, value) -> request.headers().set(key, value));
+                        channel.config().setConnectTimeoutMillis((int) TimeUnit.SECONDS.toMillis(2));
+                        return getChannel(channel.writeAndFlush(request));
+                    })
+                    .flatMap(channel -> getChannel(channel.closeFuture()))
+                    .flatMap(Void -> {
+                        if(res.getRawBody() == null || res.getStatusCode() == -1)
+                            return Single.error(new RuntimeException("Bad response"));
+                        return Single.just(res);
+                    })
+                    .doFinally(group::shutdownGracefully);
+        });
     }
 
-    private Observable<Channel> channelFutureToObservable(ChannelFuture channelFuture) {
-        return Observable.create(observer -> {
-            channelFuture.addListener(future -> {
-                if(future.isSuccess()) {
-                    observer.onNext(channelFuture.channel());
-                    observer.onCompleted();
-                } else
-                    observer.onError(future.cause());
-            });
-        }, Emitter.BackpressureMode.BUFFER);
+    private static Single<Channel> getChannel(ChannelFuture channelFuture) {
+        CompletableFuture<Channel> completableFuture = new CompletableFuture<>();
+        channelFuture.addListener((ChannelFuture future) -> {
+            if(future.isSuccess())
+                completableFuture.complete(future.channel());
+            else
+                completableFuture.completeExceptionally(future.cause());
+        });
+        return Single.fromFuture(completableFuture);
     }
 
-    private byte[] bodyToBytes(Map<String, Object> body, String contentType) {
+    private static byte[] bodyToBytes(Map<String, Object> body, Map<String, String> headers) {
         if(body.size() == 0)
             return new byte[0];
-        if(contentType.equals(HttpHeaderValues.APPLICATION_JSON.toString())) {
+        String contentType = headers.get(HttpHeaderNames.CONTENT_TYPE.toString());
+        if(contentType == null || contentType.equals(HttpHeaderValues.APPLICATION_JSON.toString())) {
             try {
                 return new ObjectMapper().writeValueAsBytes(body);
             } catch(JsonProcessingException e) {
@@ -212,14 +235,14 @@ public class NettyHttpClient {
         return toQuerystring(body).getBytes();
     }
 
-    private String toQuerystring(Map<String, Object> params) {
+    private static String toQuerystring(Map<String, Object> params) {
         return params.entrySet()
                 .stream()
                 .map(entry -> encode(entry.getKey()) + "=" + encode(entry.getValue().toString()))
                 .collect(Collectors.joining("&"));
     }
 
-    private String encode(String s) {
+    private static String encode(String s) {
         try {
             return URLEncoder.encode(s, StandardCharsets.UTF_8.name());
         } catch(UnsupportedEncodingException e) {
@@ -227,44 +250,34 @@ public class NettyHttpClient {
         }
     }
 
-    class ClientResponse {
-
+    @Getter
+    @Setter
+    public static class ClientResponse {
         private int statusCode;
         private byte[] rawBody;
         private Map<String, String> headers = new HashMap<>();
 
-        public ClientResponse() {
-        }
-
-        public void validate() {
+        public String getBodyString() {
             if(rawBody == null)
-                throw new RuntimeException("body is null");
-            if(statusCode == -1)
-                throw new RuntimeException("statusCode is null");
-        }
-
-        public String getBody() {
+                return null;
             return new String(rawBody, StandardCharsets.UTF_8);
         }
 
-        public int getStatusCode() {
-            return statusCode;
+        public JsonNode getBodyJson() {
+            try {
+                return new ObjectMapper().readTree(rawBody);
+            } catch(IOException e) {
+                throw new RuntimeException("Unable to parse json");
+            }
         }
 
-        public void setStatusCode(int statusCode) {
-            this.statusCode = statusCode;
-        }
-
-        public Map<String, String> getHeaders() {
-            return headers;
-        }
-
-        public void setHeaders(Map<String, String> headers) {
-            this.headers = headers;
-        }
-
-        public void setRawBody(byte[] rawBody) {
-            this.rawBody = rawBody;
+        @Override
+        public String toString() {
+            return "ClientResponse{" +
+                    "statusCode=" + statusCode +
+                    ", body=" + getBodyString() +
+                    ", headers=" + headers +
+                    '}';
         }
     }
 }

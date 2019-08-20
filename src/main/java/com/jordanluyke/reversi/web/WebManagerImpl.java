@@ -2,10 +2,10 @@ package com.jordanluyke.reversi.web;
 
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.web.netty.NettyServerInitializer;
+import io.reactivex.Completable;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -17,7 +17,7 @@ public class WebManagerImpl implements WebManager {
     private NettyServerInitializer nettyServerInitializer;
 
     @Override
-    public Observable<Void> start() {
+    public Completable start() {
         return nettyServerInitializer.initialize();
     }
 }

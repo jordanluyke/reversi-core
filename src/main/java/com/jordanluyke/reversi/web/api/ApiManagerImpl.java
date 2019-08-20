@@ -5,10 +5,10 @@ import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.HttpServerResponse;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
+import io.reactivex.Single;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -20,12 +20,12 @@ public class ApiManagerImpl implements ApiManager {
     private RouteMatcher routeMatcher;
 
     @Override
-    public Observable<HttpServerResponse> handleRequest(HttpServerRequest request) {
+    public Single<HttpServerResponse> handleRequest(HttpServerRequest request) {
         return routeMatcher.handle(request);
     }
 
     @Override
-    public Observable<WebSocketServerResponse> handleRequest(WebSocketServerRequest request) {
+    public Single<WebSocketServerResponse> handleRequest(WebSocketServerRequest request) {
         return routeMatcher.handle(request);
     }
 }

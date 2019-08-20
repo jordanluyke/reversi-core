@@ -9,7 +9,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
+import io.reactivex.Single;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -25,33 +25,28 @@ public class SessionDAO {
 
     private DbManager dbManager;
 
-    public Observable<Session> createSession(String ownerId) {
+    public Single<Session> createSession(String ownerId) {
         String sessionId = RandomUtil.generateId();
         Instant expiresAt = Instant.now().plus(21, ChronoUnit.DAYS);
-        return Observable.just(dbManager.getDsl().insertInto(SESSION, SESSION.ID, SESSION.OWNERID, SESSION.EXPIRESAT)
+        return Single.just(dbManager.getDsl().insertInto(SESSION, SESSION.ID, SESSION.OWNERID, SESSION.EXPIRESAT)
                 .values(sessionId, ownerId, expiresAt)
                 .execute())
                 .flatMap(Void -> getSessionById(sessionId));
     }
 
-    public Observable<Session> expireSession(String sessionId) {
-        return Observable.just(dbManager.getDsl().update(SESSION)
+    public Single<Session> expireSession(String sessionId) {
+        return Single.just(dbManager.getDsl().update(SESSION)
                 .set(SESSION.EXPIRESAT, Instant.now())
                 .where(SESSION.ID.eq(sessionId))
                 .execute())
                 .flatMap(Void -> getSessionById(sessionId));
     }
 
-    public Observable<Session> getSessionById(String sessionId) {
-        return Observable.just(dbManager.getDsl().selectFrom(SESSION)
+    public Single<Session> getSessionById(String sessionId) {
+        return Single.just(dbManager.getDsl().selectFrom(SESSION)
                 .where(SESSION.ID.eq(sessionId))
                 .fetchAny())
-                .defaultIfEmpty(null)
-                .flatMap(record -> {
-                    if(record == null)
-                        return Observable.error(new WebException(HttpResponseStatus.UNAUTHORIZED));
-                    return Observable.just(record);
-                })
+                .onErrorResumeNext(e -> Single.error(new WebException(HttpResponseStatus.UNAUTHORIZED)))
                 .map(Session::fromRecord);
     }
 }

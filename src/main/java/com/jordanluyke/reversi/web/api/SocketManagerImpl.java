@@ -1,15 +1,15 @@
 package com.jordanluyke.reversi.web.api;
 
 import com.google.inject.Inject;
-import com.jordanluyke.reversi.util.ErrorHandlingSubscriber;
+import com.jordanluyke.reversi.util.ErrorHandlingObserver;
 import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import com.jordanluyke.reversi.web.netty.AggregateWebSocketChannelHandlerContext;
+import io.reactivex.Observable;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rx.Observable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,8 +28,8 @@ public class SocketManagerImpl implements SocketManager {
         connections.put(context.getCtx().channel().remoteAddress().toString(), context);
 
         context.getOnClose()
-                .doOnCompleted(() -> removeConnection(context))
-                .subscribe(new ErrorHandlingSubscriber<>());
+                .doOnComplete(() -> removeConnection(context))
+                .subscribe(new ErrorHandlingObserver<>());
     }
 
     @Override
@@ -39,8 +39,8 @@ public class SocketManagerImpl implements SocketManager {
 
     @Override
     public Observable<AggregateWebSocketChannelHandlerContext> getConnections(OutgoingEvents event, String channel) {
-        return Observable.from(connections.values())
-                .flatMap(aggregateContext -> Observable.from(aggregateContext.getEventSubscriptions())
+        return Observable.fromIterable(connections.values())
+                .flatMap(aggregateContext -> Observable.fromIterable(aggregateContext.getEventSubscriptions())
                         .filter(eventSubscription -> eventSubscription.getEvent() == event)
                         .take(1)
                         .map(Void -> aggregateContext));
@@ -50,6 +50,6 @@ public class SocketManagerImpl implements SocketManager {
     public void sendUpdateEvent(OutgoingEvents event, String channel) {
         getConnections(event, channel)
                 .doOnNext(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(event)))
-                .subscribe(new ErrorHandlingSubscriber<>());
+                .subscribe(new ErrorHandlingObserver<>());
     }
 }

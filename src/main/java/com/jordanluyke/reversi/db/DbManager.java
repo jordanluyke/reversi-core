@@ -1,14 +1,14 @@
 package com.jordanluyke.reversi.db;
 
+import io.reactivex.Completable;
 import org.jooq.DSLContext;
-import rx.Observable;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
 public interface DbManager {
 
-    Observable<Void> start();
+    Completable start();
 
     DSLContext getDsl();
 }
