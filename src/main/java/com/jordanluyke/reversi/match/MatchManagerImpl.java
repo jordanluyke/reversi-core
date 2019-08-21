@@ -91,7 +91,10 @@ public class MatchManagerImpl implements MatchManager {
     @Override
     public Single<Match> findMatch(String accountId) {
         return Observable.fromIterable(matches)
-                .filter(match -> !match.isPrivate() && (!match.getPlayerLightId().isPresent() || !match.getPlayerDarkId().isPresent()))
+                .filter(match -> !match.isPrivate()
+                        && (!match.getPlayerLightId().isPresent() || !match.getPlayerDarkId().isPresent())
+                        && (!match.getPlayerLightId().isPresent() || !match.getPlayerLightId().get().equals(accountId))
+                        && (!match.getPlayerDarkId().isPresent() || !match.getPlayerDarkId().get().equals(accountId)))
                 .singleOrError()
                 .retryWhen(errors -> errors.zipWith(Flowable.range(1, 15), (n, i) -> i)
                         .flatMap(retryCount -> Flowable.timer(retryCount, TimeUnit.SECONDS)
