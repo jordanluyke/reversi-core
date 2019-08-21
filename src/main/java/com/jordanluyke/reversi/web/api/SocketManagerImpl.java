@@ -3,7 +3,7 @@ package com.jordanluyke.reversi.web.api;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.util.ErrorHandlingObserver;
 import com.jordanluyke.reversi.util.WebSocketUtil;
-import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
+import com.jordanluyke.reversi.web.api.events.SocketEvent;
 import com.jordanluyke.reversi.web.model.WebSocketConnection;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
 import io.reactivex.Observable;
@@ -38,16 +38,13 @@ public class SocketManagerImpl implements SocketManager {
     }
 
     @Override
-    public Observable<WebSocketConnection> getConnections(OutgoingEvents event, String channel) {
+    public Observable<WebSocketConnection> getConnections(SocketEvent event, String channel) {
         return Observable.fromIterable(connections)
-                .flatMap(connection -> Observable.fromIterable(connection.getEventSubscriptions())
-                        .filter(eventSubscription -> eventSubscription.getEvent() == event && eventSubscription.getChannel().equals(channel))
-                        .take(1)
-                        .map(Void -> connection));
+                .filter(connection -> connection.getEventSubscriptions().containsKey(event) && connection.getEventSubscriptions().get(event).getChannel().equals(channel));
     }
 
     @Override
-    public void sendUpdateEvent(OutgoingEvents event, String channel) {
+    public void sendUpdateEvent(SocketEvent event, String channel) {
         getConnections(event, channel)
                 .doOnNext(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(event)))
                 .subscribe(new ErrorHandlingObserver<>());

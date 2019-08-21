@@ -4,7 +4,7 @@ package com.jordanluyke.reversi.web.model;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.util.NodeUtil;
-import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
+import com.jordanluyke.reversi.web.api.events.SocketEvent;
 import lombok.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,10 +20,10 @@ import org.apache.logging.log4j.Logger;
 public class WebSocketServerResponse {
     private static final Logger logger = LogManager.getLogger(WebSocketServerResponse.class);
 
-    private OutgoingEvents event;
+    private SocketEvent event;
     @Builder.Default private ObjectNode body = NodeUtil.mapper.createObjectNode();
 
-    public WebSocketServerResponse(OutgoingEvents event) {
+    public WebSocketServerResponse(SocketEvent event) {
         this.event = event;
         this.body = NodeUtil.mapper.createObjectNode();
     }

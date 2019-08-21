@@ -2,6 +2,7 @@ package com.jordanluyke.reversi.match;
 
 import com.jordanluyke.reversi.match.model.Match;
 import com.jordanluyke.reversi.match.model.Position;
+import com.jordanluyke.reversi.web.model.WebSocketConnection;
 import io.reactivex.Single;
 
 /**

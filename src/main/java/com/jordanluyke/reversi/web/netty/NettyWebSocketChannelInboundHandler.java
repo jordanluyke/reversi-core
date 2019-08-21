@@ -5,7 +5,7 @@ import com.jordanluyke.reversi.util.ErrorHandlingCompletableObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
-import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
+import com.jordanluyke.reversi.web.api.events.SocketEvent;
 import com.jordanluyke.reversi.web.model.WebSocketConnection;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
@@ -93,7 +93,7 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
             if(!event.isPresent())
                 return Single.error(new FieldRequiredException("event"));
 
-            if(!event.get().equals(OutgoingEvents.KeepAlive.toString()))
+            if(!event.get().equals(SocketEvent.KeepAlive.toString()))
                 logger.info("WebSocketRequest: {} {}", connection.getCtx().channel().remoteAddress(), body.toString());
 
             return apiManager.handleRequest(new WebSocketServerRequest(connection, body));
@@ -104,7 +104,7 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
                     return Single.just(e.toWebSocketServerResponse());
                 })
                 .doOnSuccess(res -> {
-                    if(res.getEvent() != OutgoingEvents.KeepAlive)
+                    if(res.getEvent() != SocketEvent.KeepAlive)
                         logger.info("WebSocketResponse: {} {}", connection.getCtx().channel().remoteAddress(), res.toNode());
                 });
     }

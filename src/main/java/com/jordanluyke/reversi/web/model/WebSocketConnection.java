@@ -3,7 +3,7 @@ package com.jordanluyke.reversi.web.model;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.util.ErrorHandlingObserver;
 import com.jordanluyke.reversi.util.RandomUtil;
-import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
+import com.jordanluyke.reversi.web.api.events.SocketEvent;
 import com.jordanluyke.reversi.web.api.model.EventSubscription;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -17,10 +17,7 @@ import lombok.Setter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -34,7 +31,7 @@ public class WebSocketConnection {
 
     private ChannelHandlerContext ctx;
     private PublishSubject<Void> onClose = PublishSubject.create();
-    private List<EventSubscription> eventSubscriptions = new ArrayList<>();
+    private Map<SocketEvent, EventSubscription> eventSubscriptions = new HashMap<>();
     private Map<String, Disposable> responsesAwaitingReceipt = new HashMap<>();
 
     public WebSocketConnection(ChannelHandlerContext ctx) {
@@ -47,6 +44,7 @@ public class WebSocketConnection {
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
         onClose.onComplete();
         ctx.close();
+        disposeAllEventSubscriptions();
         logger.info("Socket closed: {}", ctx.channel().remoteAddress());
     }
 
@@ -74,16 +72,29 @@ public class WebSocketConnection {
             logger.error("Receipt not found: {}", id);
     }
 
-    public void addEventSubscription(OutgoingEvents event, String channel) {
-        EventSubscription eventSubscription = new EventSubscription(event, channel);
-        if(!eventSubscriptions.contains(eventSubscription))
-            eventSubscriptions.add(eventSubscription);
+    public void addEventSubscription(SocketEvent event, String channel, Optional<Disposable> disposable) {
+        EventSubscription eventSubscription = new EventSubscription(event, channel, disposable);
+        if(eventSubscriptions.containsKey(event))
+            logger.error("EventSubscription {} already exists", event);
+        eventSubscriptions.put(event, eventSubscription);
     }
 
-    public void removeEventSubscription(OutgoingEvents event) {
-        eventSubscriptions = eventSubscriptions.stream()
-                .filter(sub -> sub.getEvent() != event)
-                .collect(Collectors.toList());
+    public void addEventSubscription(SocketEvent event, String channel) {
+        addEventSubscription(event, channel, Optional.empty());
+    }
+
+    public void removeEventSubscription(SocketEvent event) {
+        if(eventSubscriptions.containsKey(event)) {
+            eventSubscriptions.get(event).getDisposable().ifPresent(Disposable::dispose);
+            eventSubscriptions.remove(event);
+        }
+    }
+
+    private void disposeAllEventSubscriptions() {
+        eventSubscriptions.values()
+                .forEach(eventSubscription -> {
+                    eventSubscription.getDisposable().ifPresent(Disposable::dispose);
+                });
     }
 
     @Override

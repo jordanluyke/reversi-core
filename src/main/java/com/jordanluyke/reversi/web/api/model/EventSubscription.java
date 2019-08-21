@@ -1,7 +1,10 @@
 package com.jordanluyke.reversi.web.api.model;
 
-import com.jordanluyke.reversi.web.api.events.OutgoingEvents;
+import com.jordanluyke.reversi.web.api.events.SocketEvent;
+import io.reactivex.disposables.Disposable;
 import lombok.*;
+
+import java.util.Optional;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -10,13 +13,16 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
 public class EventSubscription {
 
-    private OutgoingEvents event;
+    private SocketEvent event;
     private String channel;
+    private Optional<Disposable> disposable = Optional.empty();
 
-    public boolean equals(EventSubscription e) {
-        return event == e.event && channel.equals(e.channel);
+    @Override
+    public boolean equals(Object e) {
+        if(e instanceof EventSubscription)
+            return event == ((EventSubscription) e).event && channel.equals(((EventSubscription) e).channel);
+        return false;
     }
 }
