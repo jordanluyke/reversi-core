@@ -1,5 +1,6 @@
 package com.jordanluyke.reversi.web.netty;
 
+import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.util.ErrorHandlingSingleObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
@@ -31,13 +32,15 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
 
     private ApiManager apiManager;
     private SocketManager socketManager;
+    private Config config;
 
     private ByteBuf reqBuf = Unpooled.buffer();
     private HttpServerRequest httpServerRequest = new HttpServerRequest();
 
-    public NettyHttpChannelInboundHandler(ApiManager apiManager, SocketManager socketManager) {
+    public NettyHttpChannelInboundHandler(ApiManager apiManager, SocketManager socketManager, Config config) {
         this.apiManager = apiManager;
         this.socketManager = socketManager;
+        this.config = config;
     }
 
     @Override
@@ -57,7 +60,6 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
                     .entrySet()
                     .stream()
                     .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get(0))));
-
             if(isHandshakeRequest(httpServerRequest))
                 handleHandshake(ctx, httpRequest);
         } else if(msg instanceof HttpContent) {
@@ -67,6 +69,7 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
                 handleRequest(httpContent, ctx)
                         .doOnSuccess(httpServerResponse -> writeResponse(ctx, httpServerResponse))
                         .subscribe(new ErrorHandlingSingleObserver<>());
+                httpContent.release();
             }
         }
     }
@@ -121,7 +124,8 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
     }
 
     private void handleHandshake(ChannelHandlerContext ctx, HttpRequest req) {
-        String webSocketUrl = "ws://" + req.headers().get(HttpHeaderNames.HOST) + req.uri();
+        String protocol = config.getSslContext().isPresent() ? "wss://" : "ws://";
+        String webSocketUrl = protocol + req.headers().get(HttpHeaderNames.HOST) + req.uri();
         WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(webSocketUrl, null, true);
         WebSocketServerHandshaker handshaker = wsFactory.newHandshaker(req);
         if(handshaker != null) {
