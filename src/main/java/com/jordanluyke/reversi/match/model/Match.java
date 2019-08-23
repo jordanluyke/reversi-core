@@ -35,11 +35,11 @@ public class Match {
 
     public Single<Match> placePiece(Side side, Position position) {
         if(completedAt.isPresent())
-            return Single.error(new WebException("Game completed", HttpResponseStatus.INTERNAL_SERVER_ERROR));
+            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Game completed"));
         if(side != turn)
-            return Single.error(new WebException("Not your turn", HttpResponseStatus.INTERNAL_SERVER_ERROR));
+            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Not your turn"));
         if(!playerLightId.isPresent() || !playerDarkId.isPresent())
-            return Single.error(new WebException("Two players required", HttpResponseStatus.INTERNAL_SERVER_ERROR));
+            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Two players required"));
         return board.placePiece(side, position)
                 .flatMap(board1 -> board1.canPlacePiece(side.getOpposite())
                         .flatMap(opposingSideCanPlacePiece -> {
@@ -73,7 +73,7 @@ public class Match {
         else if(!playerLightId.isPresent())
             playerLightId = Optional.of(accountId);
         else
-            return Single.error(new WebException("Too many players", HttpResponseStatus.INTERNAL_SERVER_ERROR));
+            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Too many players"));
         return Single.just(this);
     }
 }

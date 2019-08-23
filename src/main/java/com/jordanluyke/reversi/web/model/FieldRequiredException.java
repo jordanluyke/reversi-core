@@ -9,6 +9,6 @@ public class FieldRequiredException extends WebException {
     public static final long serialVersionUID = 103L;
 
     public FieldRequiredException(String fieldName) {
-        super("Field required: " + fieldName, HttpResponseStatus.BAD_REQUEST, FieldRequiredException.class.getSimpleName());
+        super(HttpResponseStatus.BAD_REQUEST, "Field required: " + fieldName, FieldRequiredException.class.getSimpleName());
     }
 }

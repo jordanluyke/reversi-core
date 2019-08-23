@@ -48,7 +48,7 @@ public class MatchManagerImpl implements MatchManager {
         return Observable.fromIterable(matches)
                 .filter(match -> match.getId().equals(matchId))
                 .singleOrError()
-                .onErrorResumeNext(e -> Single.error(new WebException("Match not found", HttpResponseStatus.NOT_FOUND)));
+                .onErrorResumeNext(e -> Single.error(new WebException(HttpResponseStatus.NOT_FOUND, "Match not found")));
     }
 
     @Override

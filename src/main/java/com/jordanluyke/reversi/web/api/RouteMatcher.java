@@ -5,7 +5,7 @@ import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
-import com.jordanluyke.reversi.web.api.model.WebSocketEvent;
+import com.jordanluyke.reversi.web.api.model.WebSocketRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.model.*;
 import io.netty.handler.codec.http.HttpMethod;
@@ -15,10 +15,7 @@ import io.reactivex.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.IntStream;
 
 /**
@@ -31,7 +28,7 @@ public class RouteMatcher {
 
     private ApiV1 apiV1 = new ApiV1();
     private List<HttpRoute> routes = apiV1.getHttpRoutes();
-    private List<WebSocketEvent<WebSocketEventHandler>> events = apiV1.getWebSocketEvents();
+    private List<WebSocketRoute<WebSocketEventHandler>> events = apiV1.getWebSocketEvents();
 
     @Inject
     public RouteMatcher(Config config) {

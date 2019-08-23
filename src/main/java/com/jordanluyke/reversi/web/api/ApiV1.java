@@ -3,7 +3,7 @@ package com.jordanluyke.reversi.web.api;
 import com.jordanluyke.reversi.web.api.events.IncomingEvents;
 import com.jordanluyke.reversi.web.api.model.Api;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
-import com.jordanluyke.reversi.web.api.model.WebSocketEvent;
+import com.jordanluyke.reversi.web.api.model.WebSocketRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.api.routes.AccountRoutes;
 import com.jordanluyke.reversi.web.api.routes.MatchRoutes;
@@ -41,13 +41,13 @@ public class ApiV1 implements Api {
     }
 
     @Override
-    public List<WebSocketEvent<WebSocketEventHandler>> getWebSocketEvents() {
+    public List<WebSocketRoute<WebSocketEventHandler>> getWebSocketEvents() {
         return Arrays.asList(
-                new WebSocketEvent<>(IncomingEvents.KeepAlive.class),
-                new WebSocketEvent<>(IncomingEvents.Account.class),
-                new WebSocketEvent<>(IncomingEvents.Match.class),
-                new WebSocketEvent<>(IncomingEvents.Receipt.class),
-                new WebSocketEvent<>(IncomingEvents.FindMatch.class)
+                new WebSocketRoute<>(IncomingEvents.KeepAlive.class),
+                new WebSocketRoute<>(IncomingEvents.Account.class),
+                new WebSocketRoute<>(IncomingEvents.Match.class),
+                new WebSocketRoute<>(IncomingEvents.Receipt.class),
+                new WebSocketRoute<>(IncomingEvents.FindMatch.class)
         );
     }
 }

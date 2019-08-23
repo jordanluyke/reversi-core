@@ -10,6 +10,6 @@ public class IllegalMoveException extends WebException {
     public static final long serialVersionUID = 101L;
 
     public IllegalMoveException() {
-        super("Illegal move", HttpResponseStatus.BAD_REQUEST);
+        super(HttpResponseStatus.BAD_REQUEST, "Illegal move");
     }
 }

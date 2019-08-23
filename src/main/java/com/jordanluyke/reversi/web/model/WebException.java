@@ -18,14 +18,14 @@ public class WebException extends Exception {
     private String exceptionType;
 
     public WebException(HttpResponseStatus status) {
-        this(status.reasonPhrase(), status);
+        this(status, status.reasonPhrase());
     }
 
-    public WebException(String message, HttpResponseStatus status) {
-        this(message, status, status.reasonPhrase().replace(" ", "") + "Exception");
+    public WebException(HttpResponseStatus status, String message) {
+        this(status, message, status.reasonPhrase().replace(" ", "") + "Exception");
     }
 
-    public WebException(String message, HttpResponseStatus status, String exceptionType) {
+    public WebException(HttpResponseStatus status, String message, String exceptionType) {
         super(message);
         this.status = status;
         this.exceptionType = exceptionType;

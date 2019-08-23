@@ -71,7 +71,7 @@ public class NodeUtil {
     }
 
     public static <T> Single<T> parseNodeInto(Class<T> clazz, Optional<JsonNode> body) {
-        return body.map(jsonNode -> parseNodeInto(clazz, jsonNode)).orElseGet(() -> Single.error(new WebException("Empty body", HttpResponseStatus.BAD_REQUEST)));
+        return body.map(jsonNode -> parseNodeInto(clazz, jsonNode)).orElseGet(() -> Single.error(new WebException(HttpResponseStatus.BAD_REQUEST, "Empty body")));
     }
 
     public static Optional<String> get(String field, JsonNode node) {
@@ -79,10 +79,6 @@ public class NodeUtil {
         if(fieldNode == null || fieldNode.isNull())
             return Optional.empty();
         return Optional.of(fieldNode.asText());
-    }
-
-    public static Optional<String> getString(String field, JsonNode node) {
-        return get(field, node);
     }
 
     public static Optional<Boolean> getBoolean(String field, JsonNode node) {

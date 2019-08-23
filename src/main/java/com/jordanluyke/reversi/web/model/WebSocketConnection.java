@@ -92,9 +92,7 @@ public class WebSocketConnection {
 
     private void disposeAllEventSubscriptions() {
         eventSubscriptions.values()
-                .forEach(eventSubscription -> {
-                    eventSubscription.getDisposable().ifPresent(Disposable::dispose);
-                });
+                .forEach(eventSubscription -> eventSubscription.getDisposable().ifPresent(Disposable::dispose));
     }
 
     @Override
