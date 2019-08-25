@@ -5,6 +5,7 @@ import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.HttpServerResponse;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
+import io.reactivex.Maybe;
 import io.reactivex.Single;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -25,7 +26,7 @@ public class ApiManagerImpl implements ApiManager {
     }
 
     @Override
-    public Single<WebSocketServerResponse> handleRequest(WebSocketServerRequest request) {
+    public Maybe<WebSocketServerResponse> handleRequest(WebSocketServerRequest request) {
         return routeMatcher.handle(request);
     }
 }

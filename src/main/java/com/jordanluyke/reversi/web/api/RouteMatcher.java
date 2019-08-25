@@ -10,6 +10,7 @@ import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.model.*;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import org.apache.logging.log4j.LogManager;
@@ -109,7 +110,7 @@ public class RouteMatcher {
                 });
     }
 
-    public Single<WebSocketServerResponse> handle(WebSocketServerRequest request) {
+    public Maybe<WebSocketServerResponse> handle(WebSocketServerRequest request) {
         return Observable.fromIterable(events)
                 .filter(event -> {
                     Optional<String> e = NodeUtil.get("event", request.getBody());
@@ -125,6 +126,6 @@ public class RouteMatcher {
                         return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
                     }
                 })
-                .flatMap(instance -> ((WebSocketEventHandler) instance).handle(Single.just(request)));
+                .flatMapMaybe(instance -> ((WebSocketEventHandler) instance).handle(Single.just(request)));
     }
 }

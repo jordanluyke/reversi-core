@@ -2,6 +2,7 @@ package com.jordanluyke.reversi.web.api.model;
 
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
+import io.reactivex.Maybe;
 import io.reactivex.Single;
 
 /**
@@ -9,5 +10,5 @@ import io.reactivex.Single;
  */
 public interface WebSocketEventHandler {
 
-    Single<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o);
+    Maybe<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o);
 }

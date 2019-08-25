@@ -7,6 +7,7 @@ import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import com.jordanluyke.reversi.web.model.WebSocketServerResponse;
+import io.reactivex.Maybe;
 import io.reactivex.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,14 +23,14 @@ public class IncomingEvents {
 
     public static class Receipt implements WebSocketEventHandler {
         @Override
-        public Single<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
-            return o.flatMap(req -> {
+        public Maybe<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
+            return o.flatMapMaybe(req -> {
                 Optional<String> id = NodeUtil.get("id", req.getBody());
                 if(!id.isPresent())
-                    return Single.error(new FieldRequiredException("id"));
+                    return Maybe.error(new FieldRequiredException("id"));
                 req.getConnection().unsubscribeMessageReceipt(id.get());
 
-                return Single.just(WebSocketServerResponse.builder()
+                return Maybe.just(WebSocketServerResponse.builder()
                                 .event(SocketEvent.Receipt)
                                 .body(NodeUtil.mapper.createObjectNode().put("success", true))
                                 .build());
@@ -39,54 +40,46 @@ public class IncomingEvents {
 
     public static class Account implements WebSocketEventHandler {
         @Override
-        public Single<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
+        public Maybe<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
             return o.flatMapCompletable(req -> req.getConnection().handleSubscriptionRequest(req, true))
-                    .toSingle(() -> WebSocketServerResponse.builder()
-                                .event(SocketEvent.Account)
-                                .body(NodeUtil.mapper.createObjectNode().put("success", true))
-                                .build());
+                    .toMaybe();
         }
     }
 
     public static class Match implements WebSocketEventHandler {
         @Override
-        public Single<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
+        public Maybe<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
             return o.flatMapCompletable(req -> req.getConnection().handleSubscriptionRequest(req, true))
-                    .toSingle(() -> WebSocketServerResponse.builder()
-                                .event(SocketEvent.Match)
-                                .body(NodeUtil.mapper.createObjectNode().put("success", true))
-                                .build());
+                    .toMaybe();
         }
     }
 
     public static class KeepAlive implements WebSocketEventHandler {
         @Override
-        public Single<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
+        public Maybe<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
             return o.map(req -> WebSocketServerResponse.builder()
                     .event(SocketEvent.KeepAlive)
                     .body(NodeUtil.mapper.createObjectNode()
                             .put("time", Instant.now().toEpochMilli()))
-                    .build());
+                    .build())
+                    .toMaybe();
         }
     }
 
     public static class FindMatch implements WebSocketEventHandler {
         @Inject protected MatchManager matchManager;
         @Override
-        public Single<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
+        public Maybe<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
             return o.flatMapCompletable(req -> {
                 Optional<String> channel = NodeUtil.get("channel", req.getBody());
-                Single<WebSocketServerResponse> findMatch = matchManager.findMatch(channel.get())
+                Optional<Single<WebSocketServerResponse>> findMatch = channel.map(c -> matchManager.findMatch(c)
                         .map(match -> WebSocketServerResponse.builder()
                                 .event(SocketEvent.FindMatch)
                                 .body(NodeUtil.mapper.createObjectNode().put("matchId", match.getId()))
-                                .build());
-                return req.getConnection().handleSubscriptionRequest(req, true, Optional.of(findMatch));
+                                .build()));
+                return req.getConnection().handleSubscriptionRequest(req, true, findMatch);
             })
-                    .toSingle(() -> WebSocketServerResponse.builder()
-                                        .event(SocketEvent.FindMatch)
-                                        .body(NodeUtil.mapper.createObjectNode().put("success", true))
-                                        .build());
+                    .toMaybe();
         }
     }
 }

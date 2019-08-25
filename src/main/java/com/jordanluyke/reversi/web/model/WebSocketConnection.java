@@ -2,6 +2,7 @@ package com.jordanluyke.reversi.web.model;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.util.ErrorHandlingObserver;
+import com.jordanluyke.reversi.util.ErrorHandlingSingleObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.web.api.events.SocketEvent;
@@ -75,12 +76,11 @@ public class WebSocketConnection {
             logger.error("Receipt not found: {}", id);
     }
 
-    public Completable handleSubscriptionRequest(WebSocketServerRequest req, boolean channelRequiredOnSubscribe, Optional<Single<?>> sub) {
+    public Completable handleSubscriptionRequest(WebSocketServerRequest req, boolean channelRequiredOnSubscribe, Optional<Single<WebSocketServerResponse>> sub) {
         return Completable.defer(() -> {
             Optional<String> event = NodeUtil.get("event", req.getBody());
             Optional<String> channel = NodeUtil.get("channel", req.getBody());
             Optional<Boolean> unsubscribe = NodeUtil.getBoolean("unsubscribe", req.getBody());
-            logger.info("unsubscribe: {}", unsubscribe);
 
             if(!event.isPresent())
                 return Completable.error(new FieldRequiredException("event"));
@@ -99,7 +99,7 @@ public class WebSocketConnection {
             else {
                 req.getConnection().addEventSubscription(e, channel, sub.map(s -> s
                         .doOnSuccess(Void -> req.getConnection().removeEventSubscription(e))
-                        .subscribe()));
+                        .subscribe(Void -> {}, err -> logger.error("{}", err))));
             }
             return Completable.complete();
         });
