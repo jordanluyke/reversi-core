@@ -112,7 +112,8 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
                 .onErrorResumeNext(err -> {
                     WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
                     logger.error("{}", e.toWebSocketServerResponse().toNode());
-                    err.printStackTrace();
+                    if(err.getClass() != WebException.class)
+                        err.printStackTrace();
                     return Single.just(e.toHttpServerResponse());
                 });
     }
