@@ -10,6 +10,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.reactivex.Completable;
 import io.reactivex.Single;
+import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,17 +19,12 @@ import java.util.concurrent.CompletableFuture;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
+@AllArgsConstructor(onConstructor = @__(@Inject))
 public class NettyServerInitializer {
     private static final Logger logger = LogManager.getLogger(NettyServerInitializer.class);
 
     private Config config;
     private NettyHttpChannelInitializer nettyHttpChannelInitializer;
-
-    @Inject
-    public NettyServerInitializer(Config config, NettyHttpChannelInitializer nettyHttpChannelInitializer) {
-        this.config = config;
-        this.nettyHttpChannelInitializer = nettyHttpChannelInitializer;
-    }
 
     public Completable initialize() {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);

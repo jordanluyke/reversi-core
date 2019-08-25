@@ -2,7 +2,6 @@ package com.jordanluyke.reversi.web.api.events;
 
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.match.MatchManager;
-import com.jordanluyke.reversi.session.SessionManager;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
@@ -73,22 +72,21 @@ public class IncomingEvents {
 
     public static class FindMatch implements WebSocketEventHandler {
         @Inject protected MatchManager matchManager;
-        @Inject protected SessionManager sessionManager;
         @Override
         public Single<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
-            return o.flatMap(req -> sessionManager.validate(req)
-                    .flatMapCompletable(session -> {
-                        Single<WebSocketServerResponse> findMatch = matchManager.findMatch(session.getOwnerId())
-                                .map(match -> WebSocketServerResponse.builder()
-                                        .event(SocketEvent.FindMatch)
-                                        .body(NodeUtil.mapper.createObjectNode().put("matchId", match.getId()))
-                                        .build());
-                        return req.getConnection().handleSubscriptionRequest(req, true, Optional.of(findMatch));
-                    })
+            return o.flatMapCompletable(req -> {
+                Optional<String> channel = NodeUtil.get("channel", req.getBody());
+                Single<WebSocketServerResponse> findMatch = matchManager.findMatch(channel.get())
+                        .map(match -> WebSocketServerResponse.builder()
+                                .event(SocketEvent.FindMatch)
+                                .body(NodeUtil.mapper.createObjectNode().put("matchId", match.getId()))
+                                .build());
+                return req.getConnection().handleSubscriptionRequest(req, true, Optional.of(findMatch));
+            })
                     .toSingle(() -> WebSocketServerResponse.builder()
                                         .event(SocketEvent.FindMatch)
                                         .body(NodeUtil.mapper.createObjectNode().put("success", true))
-                                        .build()));
+                                        .build());
         }
     }
 }

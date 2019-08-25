@@ -3,7 +3,7 @@ package com.jordanluyke.reversi.web.api.model;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class WebSocketRoute<T extends WebSocketEventHandler> {
+public class WebSocketRoute {
 
     private Class<? extends WebSocketEventHandler> type;
 

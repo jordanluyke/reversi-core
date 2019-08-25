@@ -34,7 +34,7 @@ public class NodeUtil {
         try {
             return !mapper.readTree(json).isNull();
         } catch(IOException e) {
-            throw new RuntimeException(e.getMessage());
+            return false;
         }
     }
 
@@ -58,8 +58,7 @@ public class NodeUtil {
         try {
             return Single.just(mapper.treeToValue(body, clazz));
         } catch (Exception e) {
-            logger.error("Json serialize fail: {}", e.getMessage());
-            e.printStackTrace();
+            logger.error("Json serialize fail: {} {}", clazz, body);
             for(Field field : clazz.getFields()) {
                 field.setAccessible(true);
                 String name = field.getName();

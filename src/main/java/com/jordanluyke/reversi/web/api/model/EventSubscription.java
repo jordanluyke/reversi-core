@@ -16,13 +16,6 @@ import java.util.Optional;
 public class EventSubscription {
 
     private SocketEvent event;
-    private String channel;
+    private Optional<String> channel;
     private Optional<Disposable> disposable = Optional.empty();
-
-    @Override
-    public boolean equals(Object e) {
-        if(e instanceof EventSubscription)
-            return event == ((EventSubscription) e).event && channel.equals(((EventSubscription) e).channel);
-        return false;
-    }
 }

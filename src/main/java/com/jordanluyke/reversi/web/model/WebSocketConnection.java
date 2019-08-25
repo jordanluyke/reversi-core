@@ -80,6 +80,7 @@ public class WebSocketConnection {
             Optional<String> event = NodeUtil.get("event", req.getBody());
             Optional<String> channel = NodeUtil.get("channel", req.getBody());
             Optional<Boolean> unsubscribe = NodeUtil.getBoolean("unsubscribe", req.getBody());
+            logger.info("unsubscribe: {}", unsubscribe);
 
             if(!event.isPresent())
                 return Completable.error(new FieldRequiredException("event"));
@@ -95,10 +96,11 @@ public class WebSocketConnection {
 
             if(unsubscribe.isPresent() && unsubscribe.get())
                 req.getConnection().removeEventSubscription(e);
-            else if(channel.isPresent())
-                req.getConnection().addEventSubscription(e, channel.get(), sub.map(s -> s
+            else {
+                req.getConnection().addEventSubscription(e, channel, sub.map(s -> s
                         .doOnSuccess(Void -> req.getConnection().removeEventSubscription(e))
                         .subscribe()));
+            }
             return Completable.complete();
         });
     }
@@ -107,23 +109,15 @@ public class WebSocketConnection {
         return handleSubscriptionRequest(req, channelRequiredOnSubscribe, Optional.empty());
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if(obj instanceof WebSocketConnection) {
-            WebSocketConnection connection = (WebSocketConnection) obj;
-            return ctx.channel().remoteAddress().equals(connection.getCtx().channel().remoteAddress());
-        }
-        return false;
-    }
-
-    private void addEventSubscription(SocketEvent event, String channel, Optional<Disposable> disposable) {
+    private void addEventSubscription(SocketEvent event, Optional<String> channel, Optional<Disposable> disposable) {
         EventSubscription eventSubscription = new EventSubscription(event, channel, disposable);
         if(eventSubscriptions.containsKey(event))
             logger.error("EventSubscription {} already exists", event);
-        eventSubscriptions.put(event, eventSubscription);
+        else
+            eventSubscriptions.put(event, eventSubscription);
     }
 
-    private void addEventSubscription(SocketEvent event, String channel) {
+    private void addEventSubscription(SocketEvent event, Optional<String> channel) {
         addEventSubscription(event, channel, Optional.empty());
     }
 

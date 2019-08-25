@@ -68,12 +68,14 @@ public class Match {
     }
 
     public Single<Match> join(String accountId) {
-        if(!playerDarkId.isPresent())
+        if(playerDarkId.isPresent() && playerLightId.isPresent())
+            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Too many players"));
+        if(!playerDarkId.isPresent() && playerLightId.isPresent() && !playerLightId.get().equals(accountId))
             playerDarkId = Optional.of(accountId);
-        else if(!playerLightId.isPresent())
+        else if(!playerLightId.isPresent() && playerDarkId.isPresent() && !playerDarkId.get().equals(accountId))
             playerLightId = Optional.of(accountId);
         else
-            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Too many players"));
+            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
         return Single.just(this);
     }
 }

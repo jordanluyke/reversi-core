@@ -26,9 +26,9 @@ public class RouteMatcher {
 
     private Config config;
 
-    private ApiV1 apiV1 = new ApiV1();
+    private ApiV1 apiV1 = new ApiV1(1);
     private List<HttpRoute> routes = apiV1.getHttpRoutes();
-    private List<WebSocketRoute<WebSocketEventHandler>> events = apiV1.getWebSocketEvents();
+    private List<WebSocketRoute> events = apiV1.getWebSocketEvents();
 
     @Inject
     public RouteMatcher(Config config) {
@@ -111,7 +111,10 @@ public class RouteMatcher {
 
     public Single<WebSocketServerResponse> handle(WebSocketServerRequest request) {
         return Observable.fromIterable(events)
-                .filter(event -> event.getType().getSimpleName().equals(request.getBody().get("event").textValue()))
+                .filter(event -> {
+                    Optional<String> e = NodeUtil.get("event", request.getBody());
+                    return e.isPresent() && event.getType().getSimpleName().equals(e.get());
+                })
                 .singleOrError()
                 .onErrorResumeNext(err -> Single.error(new WebException(HttpResponseStatus.NOT_FOUND)))
                 .flatMap(event -> {
