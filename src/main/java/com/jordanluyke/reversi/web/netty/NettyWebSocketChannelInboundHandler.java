@@ -19,7 +19,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.websocketx.*;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
-import io.reactivex.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -81,14 +80,13 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
 
     private Maybe<WebSocketServerResponse> handleRequest() {
         return Maybe.defer(() -> {
+            reqBuf = Unpooled.buffer();
+            JsonNode body;
             try {
-                NodeUtil.isValidJSON(reqBuf.array());
+                body = NodeUtil.getJsonNode(reqBuf.array());
             } catch(RuntimeException e) {
                 return Maybe.error(new WebException(HttpResponseStatus.BAD_REQUEST));
             }
-
-            JsonNode body = NodeUtil.getJsonNode(reqBuf.array());
-            reqBuf = Unpooled.buffer();
 
             Optional<String> event = NodeUtil.get("event", body);
             if(!event.isPresent())
@@ -99,16 +97,16 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
 
             return apiManager.handleRequest(new WebSocketServerRequest(connection, body));
         })
-                .onErrorResumeNext(err -> {
-                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    logger.error("{}", e.toWebSocketServerResponse().toNode());
-                    if(err.getClass() != WebException.class)
-                        err.printStackTrace();
-                    return Maybe.just(e.toWebSocketServerResponse());
-                })
                 .doOnSuccess(res -> {
                     if(res.getEvent() != SocketEvent.KeepAlive)
                         logger.info("WebSocketResponse: {} {}", connection.getCtx().channel().remoteAddress(), res.toNode());
+                })
+                .onErrorResumeNext(err -> {
+                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    logger.error("WebSocketResponse: {} {}", connection.getCtx().channel().remoteAddress(), e.toWebSocketServerResponse().toNode());
+                    if(!(err instanceof WebException))
+                        err.printStackTrace();
+                    return Maybe.just(e.toWebSocketServerResponse());
                 });
     }
 }

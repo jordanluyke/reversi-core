@@ -67,11 +67,10 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
             reqBuf = Unpooled.copiedBuffer(reqBuf, httpContent.content());
             if(msg instanceof LastHttpContent) {
                 logger.info("HttpRequest: {} {} {}", ctx.channel().remoteAddress(), httpServerRequest.getMethod(), httpServerRequest.getPath());
-                handleRequest(httpContent)
+                handleRequest(ctx, httpContent)
                         .doOnSuccess(res -> {
                             writeResponse(ctx, res);
                             reqBuf.release();
-                            logger.info("HttpResponse: {} {}", ctx.channel().remoteAddress(), res.getBody());
                         })
                         .subscribe(new ErrorHandlingSingleObserver<>());
             }
@@ -87,32 +86,31 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        logger.error("Exception caught on {}", ctx.channel().remoteAddress());
+        logger.error("Exception caught on {}: {}", ctx.channel().remoteAddress(), cause.getMessage());
         cause.printStackTrace();
         ctx.close();
     }
 
-    private Single<HttpServerResponse> handleRequest(HttpContent httpContent) {
+    private Single<HttpServerResponse> handleRequest(ChannelHandlerContext ctx, HttpContent httpContent) {
         return Single.defer(() -> {
             if(httpContent.decoderResult().isFailure())
                 return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST));
 
             if(reqBuf.readableBytes() > 0) {
                 try {
-                    NodeUtil.isValidJSON(reqBuf.array());
+                    httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(reqBuf.array())));
                 } catch(RuntimeException e) {
-                    return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST));
+                    return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST, "Unable to parse JSON"));
                 }
-
-                httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(reqBuf.array())));
             }
 
             return apiManager.handleRequest(httpServerRequest);
         })
+                .doOnSuccess(res -> logger.info("HttpResponse: {} {}", ctx.channel().remoteAddress(), res.getBody()))
                 .onErrorResumeNext(err -> {
                     WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    logger.error("{}", e.toWebSocketServerResponse().toNode());
-                    if(err.getClass() != WebException.class)
+                    logger.error("HttpResponse: {} {}", ctx.channel().remoteAddress(), e.toHttpServerResponse().getBody());
+                    if(!(err instanceof WebException))
                         err.printStackTrace();
                     return Single.just(e.toHttpServerResponse());
                 });

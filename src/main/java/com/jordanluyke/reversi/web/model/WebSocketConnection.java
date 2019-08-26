@@ -46,8 +46,8 @@ public class WebSocketConnection {
     public void close() {
         ctx.write(new CloseWebSocketFrame());
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-        onClose.onComplete();
         ctx.close();
+        onClose.onComplete();
         disposeAllSubscriptions();
         logger.info("Socket closed: {}", ctx.channel().remoteAddress());
     }
