@@ -68,10 +68,7 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
             if(msg instanceof LastHttpContent) {
                 logger.info("HttpRequest: {} {} {}", ctx.channel().remoteAddress(), httpServerRequest.getMethod(), httpServerRequest.getPath());
                 handleRequest(ctx, httpContent)
-                        .doOnSuccess(res -> {
-                            writeResponse(ctx, res);
-                            reqBuf.release();
-                        })
+                        .doOnSuccess(res -> writeResponse(ctx, res))
                         .subscribe(new ErrorHandlingSingleObserver<>());
             }
         }
@@ -101,6 +98,8 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
                     httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(reqBuf.array())));
                 } catch(RuntimeException e) {
                     return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST, "Unable to parse JSON"));
+                } finally {
+                    reqBuf.release();
                 }
             }
 
@@ -127,8 +126,8 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
 
     private void handleHandshake(ChannelHandlerContext ctx, HttpRequest req) {
         String protocol = config.getSslContext().isPresent() ? "wss://" : "ws://";
-        String webSocketUrl = protocol + req.headers().get(HttpHeaderNames.HOST) + req.uri();
-        WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(webSocketUrl, null, true);
+        String url = protocol + req.headers().get(HttpHeaderNames.HOST) + req.uri();
+        WebSocketServerHandshakerFactory wsFactory = new WebSocketServerHandshakerFactory(url, null, true);
         WebSocketServerHandshaker handshaker = wsFactory.newHandshaker(req);
         if(handshaker != null) {
             handshaker.handshake(ctx.channel(), req);

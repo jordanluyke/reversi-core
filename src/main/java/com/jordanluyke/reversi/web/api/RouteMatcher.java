@@ -25,16 +25,11 @@ import java.util.stream.IntStream;
 public class RouteMatcher {
     private static final Logger logger = LogManager.getLogger(RouteMatcher.class);
 
-    private Config config;
+    @Inject private Config config;
 
     private ApiV1 apiV1 = new ApiV1(1);
     private List<HttpRoute> routes = apiV1.getHttpRoutes();
     private List<WebSocketRoute> events = apiV1.getWebSocketEvents();
-
-    @Inject
-    public RouteMatcher(Config config) {
-        this.config = config;
-    }
 
     public Single<HttpServerResponse> handle(HttpServerRequest request) {
         return Single.just(request.getMethod())

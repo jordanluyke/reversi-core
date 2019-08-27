@@ -86,6 +86,8 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
                 body = NodeUtil.getJsonNode(reqBuf.array());
             } catch(RuntimeException e) {
                 return Maybe.error(new WebException(HttpResponseStatus.BAD_REQUEST));
+            } finally {
+                reqBuf.release();
             }
 
             Optional<String> event = NodeUtil.get("event", body);
