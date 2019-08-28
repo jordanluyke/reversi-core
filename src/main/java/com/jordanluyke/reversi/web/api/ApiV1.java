@@ -4,16 +4,11 @@ import com.jordanluyke.reversi.web.api.events.IncomingEvents;
 import com.jordanluyke.reversi.web.api.model.Api;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketRoute;
-import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.api.routes.AccountRoutes;
 import com.jordanluyke.reversi.web.api.routes.MatchRoutes;
 import com.jordanluyke.reversi.web.api.routes.SessionRoutes;
 import com.jordanluyke.reversi.web.api.routes.SystemRoutes;
 import io.netty.handler.codec.http.HttpMethod;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,15 +16,13 @@ import java.util.List;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
 public class ApiV1 implements Api {
 
-    private int version;
-
     @Override
+    public int getVersion() {
+        return 1;
+    }
+
     public List<HttpRoute> getHttpRoutes() {
         return Arrays.asList(
                 new HttpRoute("/status", HttpMethod.GET, SystemRoutes.GetStatus.class),

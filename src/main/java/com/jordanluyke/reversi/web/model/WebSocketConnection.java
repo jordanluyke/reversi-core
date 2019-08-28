@@ -1,16 +1,14 @@
 package com.jordanluyke.reversi.web.model;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.util.ErrorHandlingObserver;
-import com.jordanluyke.reversi.util.ErrorHandlingSingleObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
-import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.web.api.events.SocketEvent;
 import com.jordanluyke.reversi.web.api.model.EventSubscription;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
@@ -43,6 +41,13 @@ public class WebSocketConnection {
         logger.info("Socket opened: {}", ctx.channel().remoteAddress());
     }
 
+    public void send(WebSocketServerResponse res) {
+        subscribeReceipt(res);
+        BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(res.toNode())));
+        ctx.write(frame);
+        ctx.writeAndFlush(Unpooled.EMPTY_BUFFER);
+    }
+
     public void close() {
         ctx.write(new CloseWebSocketFrame());
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
@@ -52,28 +57,22 @@ public class WebSocketConnection {
         logger.info("Socket closed: {}", ctx.channel().remoteAddress());
     }
 
-    public WebSocketServerResponse markReceiptRequired(ObjectNode body) {
-        body.put("receiptRequired", true);
-        body.put("receiptId", RandomUtil.generateRandom(6));
-        WebSocketServerResponse res = new WebSocketServerResponse();
-        res.setBody(body);
-        return res;
-    }
-
-    public void subscribeMessageReceipt(WebSocketServerResponse res) {
+    public void subscribeReceipt(WebSocketServerResponse res) {
         ErrorHandlingObserver<Long> observer = new ErrorHandlingObserver<>();
-        responsesAwaitingReceipt.put(res.getBody().get("receiptId").asText(), Observable.just(res)
-                .switchMap(Void -> Observable.timer(10, TimeUnit.SECONDS))
-                .doOnNext(Void -> close())
-                .subscribe(observer::onNext, observer::onError));
+        Disposable disposable = Observable.timer(2, TimeUnit.SECONDS)
+                .doOnNext(Void -> send(res))
+                .subscribe(observer::onNext, observer::onError);
+        responsesAwaitingReceipt.put(res.getReceiptId(), disposable);
     }
 
-    public void unsubscribeMessageReceipt(String id) {
+    public void unsubscribeReceipt(String id) {
         Disposable sub = responsesAwaitingReceipt.get(id);
-        if(sub != null)
+        if(sub != null) {
             sub.dispose();
-        else
+            responsesAwaitingReceipt.remove(id);
+        } else {
             logger.error("Receipt not found: {}", id);
+        }
     }
 
     public Completable handleSubscriptionRequest(WebSocketServerRequest req, boolean channelRequiredOnSubscribe, Optional<Single<WebSocketServerResponse>> sub) {
@@ -117,10 +116,6 @@ public class WebSocketConnection {
             eventSubscriptions.put(event, eventSubscription);
     }
 
-    private void addEventSubscription(SocketEvent event, Optional<String> channel) {
-        addEventSubscription(event, channel, Optional.empty());
-    }
-
     private void removeEventSubscription(SocketEvent event) {
         if(eventSubscriptions.containsKey(event)) {
             eventSubscriptions.get(event).getDisposable().ifPresent(Disposable::dispose);
@@ -131,5 +126,6 @@ public class WebSocketConnection {
     private void disposeAllSubscriptions() {
         eventSubscriptions.values()
                 .forEach(eventSubscription -> eventSubscription.getDisposable().ifPresent(Disposable::dispose));
+        responsesAwaitingReceipt.forEach((key, value) -> value.dispose());
     }
 }

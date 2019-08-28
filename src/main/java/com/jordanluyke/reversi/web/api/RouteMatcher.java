@@ -27,7 +27,7 @@ public class RouteMatcher {
 
     @Inject private Config config;
 
-    private ApiV1 apiV1 = new ApiV1(1);
+    private ApiV1 apiV1 = new ApiV1();
     private List<HttpRoute> routes = apiV1.getHttpRoutes();
     private List<WebSocketRoute> events = apiV1.getWebSocketEvents();
 

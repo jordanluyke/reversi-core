@@ -2,7 +2,6 @@ package com.jordanluyke.reversi.web.api;
 
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.util.ErrorHandlingObserver;
-import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.events.SocketEvent;
 import com.jordanluyke.reversi.web.api.model.EventSubscription;
 import com.jordanluyke.reversi.web.model.WebException;
@@ -57,7 +56,7 @@ public class SocketManagerImpl implements SocketManager {
     @Override
     public void sendUpdateEvent(SocketEvent event, String channel) {
         getConnections(event, channel)
-                .doOnNext(connection -> WebSocketUtil.writeResponse(connection.getCtx(), new WebSocketServerResponse(event)))
+                .doOnNext(connection -> connection.send(WebSocketServerResponse.builder().event(event).build()))
                 .subscribe(new ErrorHandlingObserver<>());
     }
 }

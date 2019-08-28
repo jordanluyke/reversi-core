@@ -3,7 +3,6 @@ package com.jordanluyke.reversi.web.netty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.jordanluyke.reversi.util.ErrorHandlingCompletableObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
-import com.jordanluyke.reversi.util.WebSocketUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
 import com.jordanluyke.reversi.web.api.events.SocketEvent;
 import com.jordanluyke.reversi.web.model.WebSocketConnection;
@@ -22,6 +21,7 @@ import io.reactivex.Maybe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 /**
@@ -52,7 +52,7 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        logger.error("Exception caught on {}", ctx.channel().remoteAddress());
+        logger.error("Exception caught on {} {}", ctx.channel().remoteAddress(), cause.getMessage());
         connection.close();
         cause.printStackTrace();
     }
@@ -68,7 +68,7 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
             reqBuf = Unpooled.copiedBuffer(reqBuf, frame.content());
             if(frame.isFinalFragment()) {
                 handleRequest()
-                        .doOnSuccess(res -> WebSocketUtil.writeResponse(ctx, res))
+                        .doOnSuccess(res -> connection.send(res))
                         .flatMapCompletable(Void -> Completable.complete())
                         .subscribe(new ErrorHandlingCompletableObserver());
             }

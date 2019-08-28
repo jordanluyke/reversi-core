@@ -28,12 +28,10 @@ public class IncomingEvents {
                 Optional<String> id = NodeUtil.get("id", req.getBody());
                 if(!id.isPresent())
                     return Maybe.error(new FieldRequiredException("id"));
-                req.getConnection().unsubscribeMessageReceipt(id.get());
 
-                return Maybe.just(WebSocketServerResponse.builder()
-                                .event(SocketEvent.Receipt)
-                                .body(NodeUtil.mapper.createObjectNode().put("success", true))
-                                .build());
+                req.getConnection().unsubscribeReceipt(id.get());
+
+                return Maybe.empty();
             });
         }
     }
