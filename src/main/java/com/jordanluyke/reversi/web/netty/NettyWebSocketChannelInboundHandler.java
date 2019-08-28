@@ -21,7 +21,6 @@ import io.reactivex.Maybe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 /**
@@ -80,7 +79,6 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
 
     private Maybe<WebSocketServerResponse> handleRequest() {
         return Maybe.defer(() -> {
-            reqBuf = Unpooled.buffer();
             JsonNode body;
             try {
                 body = NodeUtil.getJsonNode(reqBuf.array());
@@ -88,6 +86,7 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
                 return Maybe.error(new WebException(HttpResponseStatus.BAD_REQUEST));
             } finally {
                 reqBuf.release();
+                reqBuf = Unpooled.buffer();
             }
 
             Optional<String> event = NodeUtil.get("event", body);
