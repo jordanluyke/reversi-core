@@ -42,7 +42,7 @@ public class WebSocketConnection {
     }
 
     public void send(WebSocketServerResponse res) {
-        if(res.getEvent() != SocketEvent.Receipt)
+        if(!Arrays.asList(SocketEvent.Receipt, SocketEvent.KeepAlive).contains(res.getEvent()))
             subscribeReceipt(res);
         BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(res.toNode())));
         ctx.write(frame);
@@ -60,7 +60,7 @@ public class WebSocketConnection {
 
     public void subscribeReceipt(WebSocketServerResponse res) {
         ErrorHandlingObserver<Long> observer = new ErrorHandlingObserver<>();
-        Disposable disposable = Observable.timer(3, TimeUnit.SECONDS)
+        Disposable disposable = Observable.interval(3, TimeUnit.SECONDS)
                 .doOnNext(Void -> send(res))
                 .subscribe(observer::onNext, observer::onError);
         responsesAwaitingReceipt.put(res.getReceiptId(), disposable);

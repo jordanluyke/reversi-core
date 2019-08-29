@@ -10,6 +10,8 @@ import lombok.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
+
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
@@ -31,7 +33,7 @@ public class WebSocketServerResponse {
             throw new RuntimeException("event null");
         ObjectNode node = NodeUtil.mapper.createObjectNode();
         node.put("event", event.toString());
-        if(event != SocketEvent.Receipt)
+        if(!Arrays.asList(SocketEvent.Receipt, SocketEvent.KeepAlive).contains(event))
             node.put("receiptId", receiptId);
         return node.setAll(body);
     }
