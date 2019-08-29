@@ -55,12 +55,13 @@ public class IncomingEvents {
     public static class KeepAlive implements WebSocketEventHandler {
         @Override
         public Maybe<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
-            return o.map(req -> WebSocketServerResponse.builder()
-                    .event(SocketEvent.KeepAlive)
-                    .body(NodeUtil.mapper.createObjectNode()
-                            .put("time", Instant.now().toEpochMilli()))
-                    .build())
-                    .toMaybe();
+            return o.flatMapMaybe(req -> Maybe.empty());
+            //            return o.map(req -> WebSocketServerResponse.builder()
+//                    .event(SocketEvent.KeepAlive)
+//                    .body(NodeUtil.mapper.createObjectNode()
+//                            .put("time", Instant.now().toEpochMilli()))
+//                    .build())
+//                    .toMaybe();
         }
     }
 

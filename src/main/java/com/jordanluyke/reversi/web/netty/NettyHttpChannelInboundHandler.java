@@ -60,14 +60,14 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
                     .entrySet()
                     .stream()
                     .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get(0))));
+            httpServerRequest.setCtx(ctx);
             if(isHandshakeRequest(httpServerRequest))
                 handleHandshake(ctx, httpRequest);
         } else if(msg instanceof HttpContent) {
             HttpContent httpContent = (HttpContent) msg;
             reqBuf = Unpooled.copiedBuffer(reqBuf, httpContent.content());
             if(msg instanceof LastHttpContent) {
-                logger.info("HttpRequest: {} {} {}", ctx.channel().remoteAddress(), httpServerRequest.getMethod(), httpServerRequest.getPath());
-                handleRequest(ctx, httpContent)
+                handleRequest()
                         .doOnSuccess(res -> writeResponse(ctx, res))
                         .subscribe(new ErrorHandlingSingleObserver<>());
             }
@@ -88,11 +88,10 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
         ctx.close();
     }
 
-    private Single<HttpServerResponse> handleRequest(ChannelHandlerContext ctx, HttpContent httpContent) {
+    private Single<HttpServerResponse> handleRequest() {
         return Single.defer(() -> {
-            if(httpContent.decoderResult().isFailure())
-                return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST));
-
+//            if(httpContent.decoderResult().isFailure())
+//                return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST));
             if(reqBuf.readableBytes() > 0) {
                 try {
                     httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(reqBuf.array())));
@@ -104,15 +103,7 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
             }
 
             return apiManager.handleRequest(httpServerRequest);
-        })
-                .doOnSuccess(res -> logger.info("HttpResponse: {} {}", ctx.channel().remoteAddress(), res.getBody()))
-                .onErrorResumeNext(err -> {
-                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    logger.error("HttpResponse: {} {}", ctx.channel().remoteAddress(), e.toHttpServerResponse().getBody());
-                    if(!(err instanceof WebException))
-                        err.printStackTrace();
-                    return Single.just(e.toHttpServerResponse());
-                });
+        });
     }
 
     private void writeResponse(ChannelHandlerContext ctx, HttpServerResponse res) {

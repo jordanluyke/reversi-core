@@ -34,7 +34,10 @@ public class ApiManagerImpl implements ApiManager {
 
     @Override
     public Single<HttpServerResponse> handleRequest(HttpServerRequest request) {
-        return Single.just(request.getMethod())
+        return Single.defer(() -> {
+            logger.info("HttpRequest: {} {} {}", request.getCtx().channel().remoteAddress(), request.getMethod(), request.getPath());
+            return Single.just(request.getMethod());
+        })
                 .flatMap(method -> {
                     if(!Arrays.asList(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE).contains(method))
                         return Single.error(new WebException(HttpResponseStatus.METHOD_NOT_ALLOWED));
@@ -104,12 +107,26 @@ public class ApiManagerImpl implements ApiManager {
                     }
 
                     return Single.just(res);
+                })
+                .doOnSuccess(res -> logger.info("HttpResponse: {} {}", request.getCtx().channel().remoteAddress(), res.getBody()))
+                .onErrorResumeNext(err -> {
+                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    logger.error("HttpResponse: {} {}", request.getCtx().channel().remoteAddress(), e.toHttpServerResponse().getBody());
+                    if(!(err instanceof WebException))
+                        err.printStackTrace();
+                    return Single.just(e.toHttpServerResponse());
                 });
     }
 
     @Override
     public Maybe<WebSocketServerResponse> handleRequest(WebSocketServerRequest request) {
-        return Observable.fromIterable(apiV1.getWebSocketEvents())
+        return Observable.defer(() -> {
+            NodeUtil.get("event", request.getBody()).ifPresent(event -> {
+//                if(!event.equals(SocketEvent.KeepAlive.toString()))
+                    logger.info("WebSocketRequest: {} {}", request.getConnection().getCtx().channel().remoteAddress(), request.getBody());
+            });
+            return Observable.fromIterable(apiV1.getWebSocketEvents());
+        })
                 .filter(event -> {
                     Optional<String> e = NodeUtil.get("event", request.getBody());
                     return e.isPresent() && event.getType().getSimpleName().equals(e.get());
@@ -133,6 +150,17 @@ public class ApiManagerImpl implements ApiManager {
                         request.getConnection().send(receiptRes);
                     });
                 })
-                .flatMapMaybe(instance -> ((WebSocketEventHandler) instance).handle(Single.just(request)));
+                .flatMapMaybe(instance -> ((WebSocketEventHandler) instance).handle(Single.just(request)))
+                .doOnSuccess(res -> {
+//                    if(res.getEvent() != SocketEvent.KeepAlive)
+                        logger.info("WebSocketResponse: {} {}", request.getConnection().getCtx().channel().remoteAddress(), res.toNode());
+                })
+                .onErrorResumeNext(err -> {
+                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    logger.error("WebSocketResponse: {} {}", request.getConnection().getCtx().channel().remoteAddress(), e.toWebSocketServerResponse().toNode());
+                    if(!(err instanceof WebException))
+                        err.printStackTrace();
+                    return Maybe.just(e.toWebSocketServerResponse());
+                });
     }
 }

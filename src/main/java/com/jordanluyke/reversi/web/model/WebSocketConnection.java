@@ -42,7 +42,8 @@ public class WebSocketConnection {
     }
 
     public void send(WebSocketServerResponse res) {
-        subscribeReceipt(res);
+        if(res.getEvent() != SocketEvent.Receipt)
+            subscribeReceipt(res);
         BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(res.toNode())));
         ctx.write(frame);
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER);

@@ -93,21 +93,7 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
             if(!event.isPresent())
                 return Maybe.error(new FieldRequiredException("event"));
 
-            if(!event.get().equals(SocketEvent.KeepAlive.toString()))
-                logger.info("WebSocketRequest: {} {}", connection.getCtx().channel().remoteAddress(), body.toString());
-
             return apiManager.handleRequest(new WebSocketServerRequest(connection, body));
-        })
-                .doOnSuccess(res -> {
-                    if(res.getEvent() != SocketEvent.KeepAlive)
-                        logger.info("WebSocketResponse: {} {}", connection.getCtx().channel().remoteAddress(), res.toNode());
-                })
-                .onErrorResumeNext(err -> {
-                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    logger.error("WebSocketResponse: {} {}", connection.getCtx().channel().remoteAddress(), e.toWebSocketServerResponse().toNode());
-                    if(!(err instanceof WebException))
-                        err.printStackTrace();
-                    return Maybe.just(e.toWebSocketServerResponse());
-                });
+        });
     }
 }
