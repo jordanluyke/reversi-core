@@ -50,6 +50,12 @@ public class NettyWebSocketChannelInboundHandler extends SimpleChannelInboundHan
     }
 
     @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) {
+        if(!connection.getOnClose().hasComplete())
+            connection.close();
+    }
+
+    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         logger.error("Exception caught on {} {}", ctx.channel().remoteAddress(), cause.getMessage());
         connection.close();
