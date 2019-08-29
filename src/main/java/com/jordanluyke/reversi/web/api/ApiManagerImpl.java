@@ -124,6 +124,15 @@ public class ApiManagerImpl implements ApiManager {
                         return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
                     }
                 })
+                .doOnSuccess(Void -> {
+                    NodeUtil.get("receiptId", request.getBody()).ifPresent(receiptId -> {
+                        WebSocketServerResponse receiptRes = WebSocketServerResponse.builder()
+                                .event(SocketEvent.Receipt)
+                                .body(NodeUtil.mapper.createObjectNode().put("id", receiptId))
+                                .build();
+                        request.getConnection().send(receiptRes);
+                    });
+                })
                 .flatMapMaybe(instance -> ((WebSocketEventHandler) instance).handle(Single.just(request)));
     }
 }
