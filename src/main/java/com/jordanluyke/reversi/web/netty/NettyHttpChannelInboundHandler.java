@@ -123,7 +123,6 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
         if(handshaker != null) {
             handshaker.handshake(ctx.channel(), req);
             WebSocketConnection connection = new WebSocketConnection(ctx);
-            connection.startKeepAliveTimer();
             socketManager.addConnection(connection);
             ctx.pipeline().removeLast();
             ctx.pipeline().addLast(new NettyWebSocketChannelInboundHandler(apiManager, connection));

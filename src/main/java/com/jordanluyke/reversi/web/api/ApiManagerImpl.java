@@ -149,10 +149,7 @@ public class ApiManagerImpl implements ApiManager {
                     });
                 })
                 .flatMapMaybe(instance -> ((WebSocketEventHandler) instance).handle(Single.just(request)))
-                .doOnSuccess(res -> {
-                    if(res.getEvent() != SocketEvent.KeepAlive)
-                        logger.info("WebSocketResponse: {} {}", request.getConnection().getCtx().channel().remoteAddress(), res.toNode());
-                })
+                .doOnSuccess(res -> logger.info("WebSocketResponse: {} {}", request.getConnection().getCtx().channel().remoteAddress(), res.toNode()))
                 .onErrorResumeNext(err -> {
                     WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
                     logger.error("WebSocketResponse: {} {}", request.getConnection().getCtx().channel().remoteAddress(), e.toWebSocketServerResponse().toNode());

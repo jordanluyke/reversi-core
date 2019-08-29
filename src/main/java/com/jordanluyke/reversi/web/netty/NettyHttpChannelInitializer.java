@@ -11,6 +11,7 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.WebSocket13FrameDecoder;
 import io.netty.handler.codec.http.websocketx.WebSocket13FrameEncoder;
 import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketServerCompressionHandler;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,6 +38,7 @@ public class NettyHttpChannelInitializer extends ChannelInitializer<SocketChanne
                 .addLast(new WebSocketServerCompressionHandler())
                 .addLast(new WebSocket13FrameEncoder(false))
                 .addLast(new WebSocket13FrameDecoder(true, true, 65536))
+                .addLast(new ReadTimeoutHandler(30))
                 .addLast(new NettyHttpChannelInboundHandler(apiManager, socketManager, config));
     }
 }

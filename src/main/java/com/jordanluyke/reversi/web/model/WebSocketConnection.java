@@ -42,7 +42,7 @@ public class WebSocketConnection {
     }
 
     public void send(WebSocketServerResponse res) {
-        if(!Arrays.asList(SocketEvent.Receipt, SocketEvent.KeepAlive).contains(res.getEvent()))
+        if(res.getEvent() != SocketEvent.Receipt)
             subscribeReceipt(res);
         BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.copiedBuffer(NodeUtil.writeValueAsBytes(res.toNode())));
         ctx.write(frame);
@@ -108,14 +108,6 @@ public class WebSocketConnection {
 
     public Completable handleSubscriptionRequest(WebSocketServerRequest req, boolean channelRequiredOnSubscribe) {
         return handleSubscriptionRequest(req, channelRequiredOnSubscribe, Optional.empty());
-    }
-
-    public void startKeepAliveTimer() {
-        ErrorHandlingObserver<Long> observer = new ErrorHandlingObserver<>();
-        Disposable disposable = Observable.interval(10, TimeUnit.SECONDS)
-                .doOnNext(Void -> send(WebSocketServerResponse.builder().event(SocketEvent.KeepAlive).build()))
-                .subscribe(observer::onNext, observer::onError);
-        addEventSubscription(SocketEvent.KeepAlive, Optional.empty(), Optional.of(disposable));
     }
 
     private void addEventSubscription(SocketEvent event, Optional<String> channel, Optional<Disposable> disposable) {

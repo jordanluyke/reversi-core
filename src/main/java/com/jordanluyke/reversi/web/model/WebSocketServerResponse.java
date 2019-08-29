@@ -33,7 +33,7 @@ public class WebSocketServerResponse {
             throw new RuntimeException("event null");
         ObjectNode node = NodeUtil.mapper.createObjectNode();
         node.put("event", event.toString());
-        if(!Arrays.asList(SocketEvent.Receipt, SocketEvent.KeepAlive).contains(event))
+        if(event != SocketEvent.Receipt)
             node.put("receiptId", receiptId);
         return node.setAll(body);
     }
