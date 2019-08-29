@@ -60,7 +60,7 @@ public class WebSocketConnection {
 
     public void subscribeReceipt(WebSocketServerResponse res) {
         ErrorHandlingObserver<Long> observer = new ErrorHandlingObserver<>();
-        Disposable disposable = Observable.timer(2, TimeUnit.SECONDS)
+        Disposable disposable = Observable.timer(3, TimeUnit.SECONDS)
                 .doOnNext(Void -> send(res))
                 .subscribe(observer::onNext, observer::onError);
         responsesAwaitingReceipt.put(res.getReceiptId(), disposable);
@@ -97,9 +97,10 @@ public class WebSocketConnection {
             if(unsubscribe.isPresent() && unsubscribe.get())
                 req.getConnection().removeEventSubscription(e);
             else {
+                ErrorHandlingObserver<WebSocketServerResponse> observer = new ErrorHandlingObserver<>();
                 req.getConnection().addEventSubscription(e, channel, sub.map(s -> s
                         .doOnSuccess(Void -> req.getConnection().removeEventSubscription(e))
-                        .subscribe(Void -> {}, err -> logger.error("{}", err))));
+                        .subscribe(observer::onNext, observer::onError)));
             }
             return Completable.complete();
         });
@@ -107,6 +108,14 @@ public class WebSocketConnection {
 
     public Completable handleSubscriptionRequest(WebSocketServerRequest req, boolean channelRequiredOnSubscribe) {
         return handleSubscriptionRequest(req, channelRequiredOnSubscribe, Optional.empty());
+    }
+
+    public void startKeepAliveTimer() {
+        ErrorHandlingObserver<Long> observer = new ErrorHandlingObserver<>();
+        Disposable disposable = Observable.interval(10, TimeUnit.SECONDS)
+                .doOnNext(Void -> send(WebSocketServerResponse.builder().event(SocketEvent.KeepAlive).build()))
+                .subscribe(observer::onNext, observer::onError);
+        addEventSubscription(SocketEvent.KeepAlive, Optional.empty(), Optional.of(disposable));
     }
 
     private void addEventSubscription(SocketEvent event, Optional<String> channel, Optional<Disposable> disposable) {

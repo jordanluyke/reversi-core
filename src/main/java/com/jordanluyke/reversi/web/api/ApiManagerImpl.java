@@ -5,9 +5,7 @@ import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.events.SocketEvent;
-import com.jordanluyke.reversi.web.api.model.HttpRoute;
 import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
-import com.jordanluyke.reversi.web.api.model.WebSocketRoute;
 import com.jordanluyke.reversi.web.model.*;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -122,7 +120,7 @@ public class ApiManagerImpl implements ApiManager {
     public Maybe<WebSocketServerResponse> handleRequest(WebSocketServerRequest request) {
         return Observable.defer(() -> {
             NodeUtil.get("event", request.getBody()).ifPresent(event -> {
-//                if(!event.equals(SocketEvent.KeepAlive.toString()))
+                if(!event.equals(SocketEvent.KeepAlive.toString()))
                     logger.info("WebSocketRequest: {} {}", request.getConnection().getCtx().channel().remoteAddress(), request.getBody());
             });
             return Observable.fromIterable(apiV1.getWebSocketEvents());
@@ -152,7 +150,7 @@ public class ApiManagerImpl implements ApiManager {
                 })
                 .flatMapMaybe(instance -> ((WebSocketEventHandler) instance).handle(Single.just(request)))
                 .doOnSuccess(res -> {
-//                    if(res.getEvent() != SocketEvent.KeepAlive)
+                    if(res.getEvent() != SocketEvent.KeepAlive)
                         logger.info("WebSocketResponse: {} {}", request.getConnection().getCtx().channel().remoteAddress(), res.toNode());
                 })
                 .onErrorResumeNext(err -> {
