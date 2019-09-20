@@ -34,7 +34,7 @@ public class WebSocketConnection {
     private ChannelHandlerContext ctx;
     private PublishSubject<Void> onClose = PublishSubject.create();
     private Map<SocketEvent, EventSubscription> eventSubscriptions = new HashMap<>();
-    private Map<String, Disposable> responsesAwaitingReceipt = new HashMap<>();
+    private Map<String, Disposable> receiptSubscriptions = new HashMap<>();
 
     public WebSocketConnection(ChannelHandlerContext ctx) {
         this.ctx = ctx;
@@ -63,14 +63,14 @@ public class WebSocketConnection {
         Disposable disposable = Observable.interval(3, TimeUnit.SECONDS)
                 .doOnNext(Void -> send(res))
                 .subscribe(observer::onNext, observer::onError);
-        responsesAwaitingReceipt.put(res.getReceiptId(), disposable);
+        receiptSubscriptions.put(res.getReceiptId(), disposable);
     }
 
     public void unsubscribeReceipt(String id) {
-        Disposable sub = responsesAwaitingReceipt.get(id);
+        Disposable sub = receiptSubscriptions.get(id);
         if(sub != null) {
             sub.dispose();
-            responsesAwaitingReceipt.remove(id);
+            receiptSubscriptions.remove(id);
         } else {
             logger.error("Receipt not found: {}", id);
         }
@@ -128,6 +128,6 @@ public class WebSocketConnection {
     private void disposeAllSubscriptions() {
         eventSubscriptions.values()
                 .forEach(eventSubscription -> eventSubscription.getDisposable().ifPresent(Disposable::dispose));
-        responsesAwaitingReceipt.forEach((key, value) -> value.dispose());
+        receiptSubscriptions.forEach((key, value) -> value.dispose());
     }
 }

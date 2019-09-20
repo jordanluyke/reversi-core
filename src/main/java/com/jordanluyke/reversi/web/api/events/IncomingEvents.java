@@ -12,7 +12,6 @@ import io.reactivex.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -56,12 +55,6 @@ public class IncomingEvents {
         @Override
         public Maybe<WebSocketServerResponse> handle(Single<WebSocketServerRequest> o) {
             return o.flatMapMaybe(req -> Maybe.empty());
-            //            return o.map(req -> WebSocketServerResponse.builder()
-//                    .event(SocketEvent.KeepAlive)
-//                    .body(NodeUtil.mapper.createObjectNode()
-//                            .put("time", Instant.now().toEpochMilli()))
-//                    .build())
-//                    .toMaybe();
         }
     }
 

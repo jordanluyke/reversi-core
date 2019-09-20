@@ -10,27 +10,9 @@
 
     ```
     brew tap caskroom/versions
-    brew cask install java8
+    brew cask install corretto8
     ```
     
-    ```
-    sudo apt-get install openjdk-8-jre-headless
-    ```
- 
-1. Unlimited strength JCE
-
-    Open file:
-
-    ```
-    $JAVE_HOME/jre/lib/security/java.security
-    ```
-
-    Uncomment the line:
-
-    ```
-    crypto.policy=unlimited
-    ```
-
 1. Maven
 
     ```
