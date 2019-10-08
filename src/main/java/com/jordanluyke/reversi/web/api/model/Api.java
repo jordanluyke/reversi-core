@@ -10,6 +10,4 @@ public interface Api {
     int getVersion();
 
     List<HttpRoute> getHttpRoutes();
-
-    List<WebSocketRoute> getWebSocketEvents();
 }

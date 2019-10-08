@@ -4,12 +4,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.util.NodeUtil;
-import com.jordanluyke.reversi.web.api.events.SocketEvent;
-import com.jordanluyke.reversi.web.api.model.WebSocketEventHandler;
 import com.jordanluyke.reversi.web.model.*;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import lombok.AllArgsConstructor;
@@ -113,49 +110,6 @@ public class ApiManagerImpl implements ApiManager {
                     if(!(err instanceof WebException))
                         err.printStackTrace();
                     return Single.just(e.toHttpServerResponse());
-                });
-    }
-
-    @Override
-    public Maybe<WebSocketServerResponse> handleRequest(WebSocketServerRequest request) {
-        return Observable.defer(() -> {
-            NodeUtil.get("event", request.getBody()).ifPresent(event -> {
-                if(!event.equals(SocketEvent.KeepAlive.toString()))
-                    logger.info("WebSocketRequest: {} {}", request.getConnection().getCtx().channel().remoteAddress(), request.getBody());
-            });
-            return Observable.fromIterable(apiV1.getWebSocketEvents());
-        })
-                .filter(event -> {
-                    Optional<String> e = NodeUtil.get("event", request.getBody());
-                    return e.isPresent() && event.getType().getSimpleName().equals(e.get());
-                })
-                .singleOrError()
-                .onErrorResumeNext(err -> Single.error(new WebException(HttpResponseStatus.NOT_FOUND)))
-                .flatMap(event -> {
-                    try {
-                        return Single.just(config.getInjector().getInstance(Class.forName(event.getType().getName())));
-                    } catch(ClassNotFoundException e) {
-                        logger.error("{}: {}", e.getClass().getSimpleName(), e.getMessage());
-                        return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
-                    }
-                })
-                .doOnSuccess(Void -> {
-                    NodeUtil.get("receiptId", request.getBody()).ifPresent(receiptId -> {
-                        WebSocketServerResponse receiptRes = WebSocketServerResponse.builder()
-                                .event(SocketEvent.Receipt)
-                                .body(NodeUtil.mapper.createObjectNode().put("id", receiptId))
-                                .build();
-                        request.getConnection().send(receiptRes);
-                    });
-                })
-                .flatMapMaybe(instance -> ((WebSocketEventHandler) instance).handle(Single.just(request)))
-                .doOnSuccess(res -> logger.info("WebSocketResponse: {} {}", request.getConnection().getCtx().channel().remoteAddress(), res.toNode()))
-                .onErrorResumeNext(err -> {
-                    WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    logger.error("WebSocketResponse: {} {}", request.getConnection().getCtx().channel().remoteAddress(), e.toWebSocketServerResponse().toNode());
-                    if(!(err instanceof WebException))
-                        err.printStackTrace();
-                    return Maybe.just(e.toWebSocketServerResponse());
                 });
     }
 }

@@ -3,7 +3,6 @@ package com.jordanluyke.reversi.session;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.session.model.Session;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
-import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import io.reactivex.Single;
 
 /**
@@ -16,6 +15,4 @@ public interface SessionManager {
     Single<Session> logout(String sessionId);
 
     Single<Session> validate(HttpServerRequest request);
-
-    Single<Session> validate(WebSocketServerRequest request);
 }

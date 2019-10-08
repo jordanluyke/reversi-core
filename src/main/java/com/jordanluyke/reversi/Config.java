@@ -32,6 +32,10 @@ public class Config {
     private String jdbcUser;
     private String jdbcPassword;
     private Injector injector;
+    private String pusherAppId;
+    private String pusherKey;
+    private String pusherSecret;
+    private String pusherCluster;
 
     public Config() {
         load();
@@ -53,6 +57,10 @@ public class Config {
         jdbcUrl = p.getProperty("jdbc.url");
         jdbcUser = p.getProperty("jdbc.user");
         jdbcPassword = p.getProperty("jdbc.password");
+        pusherAppId = p.getProperty("pusher.appId");
+        pusherKey = p.getProperty("pusher.key");
+        pusherSecret = p.getProperty("pusher.secret");
+        pusherCluster = p.getProperty("pusher.cluster");
 
         try {
             FileInputStream cert = new FileInputStream("cert.pem");

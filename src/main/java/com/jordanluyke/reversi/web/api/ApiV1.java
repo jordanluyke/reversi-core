@@ -1,14 +1,13 @@
 package com.jordanluyke.reversi.web.api;
 
-import com.jordanluyke.reversi.web.api.events.IncomingEvents;
 import com.jordanluyke.reversi.web.api.model.Api;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
-import com.jordanluyke.reversi.web.api.model.WebSocketRoute;
 import com.jordanluyke.reversi.web.api.routes.AccountRoutes;
 import com.jordanluyke.reversi.web.api.routes.MatchRoutes;
 import com.jordanluyke.reversi.web.api.routes.SessionRoutes;
 import com.jordanluyke.reversi.web.api.routes.SystemRoutes;
 import io.netty.handler.codec.http.HttpMethod;
+import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,12 +15,10 @@ import java.util.List;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
+@Getter
 public class ApiV1 implements Api {
 
-    @Override
-    public int getVersion() {
-        return 1;
-    }
+    private int version = 1;
 
     public List<HttpRoute> getHttpRoutes() {
         return Arrays.asList(
@@ -35,17 +32,6 @@ public class ApiV1 implements Api {
                 new HttpRoute("/matches/:matchId/join", HttpMethod.POST, MatchRoutes.Join.class),
                 new HttpRoute("/sessions", HttpMethod.POST, SessionRoutes.CreateSession.class),
                 new HttpRoute("/sessions/:sessionId", HttpMethod.DELETE, SessionRoutes.DeleteSession.class)
-        );
-    }
-
-    @Override
-    public List<WebSocketRoute> getWebSocketEvents() {
-        return Arrays.asList(
-                new WebSocketRoute(IncomingEvents.KeepAlive.class),
-                new WebSocketRoute(IncomingEvents.Account.class),
-                new WebSocketRoute(IncomingEvents.Match.class),
-                new WebSocketRoute(IncomingEvents.Receipt.class),
-                new WebSocketRoute(IncomingEvents.FindMatch.class)
         );
     }
 }

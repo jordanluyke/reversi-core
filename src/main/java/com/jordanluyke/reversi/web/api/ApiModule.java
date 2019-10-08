@@ -10,6 +10,6 @@ public class ApiModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(ApiManager.class).to(ApiManagerImpl.class);
-        bind(SocketManager.class).to(SocketManagerImpl.class).asEagerSingleton();
+        bind(SocketManager.class).to(SocketManagerImpl.class);
     }
 }

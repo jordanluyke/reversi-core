@@ -18,6 +18,6 @@ public class WebManagerImpl implements WebManager {
 
     @Override
     public Completable start() {
-        return nettyServerInitializer.initialize();
+        return nettyServerInitializer.init();
     }
 }

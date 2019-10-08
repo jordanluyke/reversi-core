@@ -7,7 +7,7 @@ import com.jordanluyke.reversi.match.model.Position;
 import com.jordanluyke.reversi.match.model.Side;
 import com.jordanluyke.reversi.util.ErrorHandlingSingleObserver;
 import com.jordanluyke.reversi.web.api.SocketManager;
-import com.jordanluyke.reversi.web.api.events.SocketEvent;
+import com.jordanluyke.reversi.web.api.model.SocketEvent;
 import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.Flowable;
@@ -65,7 +65,7 @@ public class MatchManagerImpl implements MatchManager {
                     return match.placePiece(side, position);
                 })
                 .doOnSuccess(match -> {
-                    socketManager.sendUpdateEvent(SocketEvent.Match, matchId);
+                    socketManager.send(SocketEvent.Match, matchId);
 
                     if(match.getCompletedAt().isPresent() && match.getPlayerDarkId().isPresent() && match.getPlayerLightId().isPresent()) {
                         Observable.fromIterable(Arrays.asList(match.getPlayerDarkId().get(), match.getPlayerLightId().get()))
@@ -105,6 +105,6 @@ public class MatchManagerImpl implements MatchManager {
 
     private Single<Match> join(Match match, String accountId) {
         return match.join(accountId)
-                .doOnSuccess(Void -> socketManager.sendUpdateEvent(SocketEvent.Match, match.getId()));
+                .doOnSuccess(Void -> socketManager.send(SocketEvent.Match, match.getId()));
     }
 }

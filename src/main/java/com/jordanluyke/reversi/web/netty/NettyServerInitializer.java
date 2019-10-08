@@ -26,7 +26,7 @@ public class NettyServerInitializer {
     private Config config;
     private NettyHttpChannelInitializer nettyHttpChannelInitializer;
 
-    public Completable initialize() {
+    public Completable init() {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap()

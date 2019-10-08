@@ -4,11 +4,9 @@ import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.session.model.Session;
-import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.WebException;
-import com.jordanluyke.reversi.web.model.WebSocketServerRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.Single;
 import lombok.AllArgsConstructor;
@@ -42,11 +40,6 @@ public class SessionManagerImpl implements SessionManager {
     @Override
     public Single<Session> validate(HttpServerRequest request) {
         return validate(Optional.ofNullable(request.getQueryParams().get("sessionId")));
-    }
-
-    @Override
-    public Single<Session> validate(WebSocketServerRequest request) {
-        return validate(NodeUtil.get("sessionId", request.getBody()));
     }
 
     private Single<Session> validate(Optional<String> sessionId) {

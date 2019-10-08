@@ -5,12 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.util.RandomUtil;
-import com.jordanluyke.reversi.web.api.events.SocketEvent;
+import com.jordanluyke.reversi.web.api.model.SocketEvent;
 import lombok.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.Arrays;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -20,10 +18,8 @@ import java.util.Arrays;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class WebSocketServerResponse {
-    private static final Logger logger = LogManager.getLogger(WebSocketServerResponse.class);
-
-    private final String receiptId = RandomUtil.generateRandom(6);
+public class SocketServerResponse {
+    private static final Logger logger = LogManager.getLogger(SocketServerResponse.class);
 
     private SocketEvent event;
     @Builder.Default private ObjectNode body = NodeUtil.mapper.createObjectNode();
@@ -33,8 +29,6 @@ public class WebSocketServerResponse {
             throw new RuntimeException("event null");
         ObjectNode node = NodeUtil.mapper.createObjectNode();
         node.put("event", event.toString());
-        if(event != SocketEvent.Receipt)
-            node.put("receiptId", receiptId);
         return node.setAll(body);
     }
 }
