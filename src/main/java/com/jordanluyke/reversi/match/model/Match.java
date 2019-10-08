@@ -1,8 +1,10 @@
 package com.jordanluyke.reversi.match.model;
 
+import com.jordanluyke.reversi.util.ErrorHandlingObserver;
 import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.reactivex.Observable;
 import io.reactivex.Single;
 import lombok.*;
 import org.apache.logging.log4j.LogManager;
@@ -10,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -32,6 +35,7 @@ public class Match {
     @Builder.Default private Optional<Instant> disabledAt = Optional.empty();
     @Builder.Default private Optional<String> winnerId = Optional.empty();
     @Builder.Default private boolean isPrivate = false;
+    @Builder.Default private Optional<Instant> lastMoveAt = Optional.empty();
 
     public Single<Match> placePiece(Side side, Position position) {
         if(completedAt.isPresent())
@@ -64,7 +68,19 @@ public class Match {
                                                 }
                                         );
                                     });
-                        }));
+                        })
+                        .doOnSuccess(Void -> {
+                            lastMoveAt = Optional.of(Instant.now());
+                            Observable.timer(5, TimeUnit.SECONDS)
+                                    .doAfterNext(Void1 -> {
+                                        if(lastMoveAt.isPresent() && lastMoveAt.get().isBefore(Instant.now())) {
+                                            completedAt = Optional.of(Instant.now());
+                                            winnerId = turn == Side.LIGHT ? playerDarkId : playerLightId;
+                                        }
+                                    })
+                                    .subscribe(new ErrorHandlingObserver<>());
+                        })
+                );
     }
 
     public Single<Match> join(String accountId) {
