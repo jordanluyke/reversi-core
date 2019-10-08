@@ -3,7 +3,7 @@ package com.jordanluyke.reversi.session;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.session.model.Session;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>

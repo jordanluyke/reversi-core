@@ -2,7 +2,7 @@ package com.jordanluyke.reversi.web;
 
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.web.netty.NettyServerInitializer;
-import io.reactivex.Completable;
+import io.reactivex.rxjava3.core.Completable;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

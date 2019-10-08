@@ -2,7 +2,7 @@ package com.jordanluyke.reversi.match;
 
 import com.jordanluyke.reversi.match.model.Match;
 import com.jordanluyke.reversi.match.model.Position;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>

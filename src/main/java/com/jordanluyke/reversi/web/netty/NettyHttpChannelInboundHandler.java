@@ -10,7 +10,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

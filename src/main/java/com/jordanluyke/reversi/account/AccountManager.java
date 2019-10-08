@@ -5,8 +5,8 @@ import com.jordanluyke.reversi.session.dto.AccountUpdateRequest;
 import com.jordanluyke.reversi.session.dto.ProfileResponse;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.account.model.PlayerStats;
-import io.reactivex.Observable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>

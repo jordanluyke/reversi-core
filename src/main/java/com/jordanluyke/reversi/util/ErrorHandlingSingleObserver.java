@@ -1,7 +1,7 @@
 package com.jordanluyke.reversi.util;
 
-import io.reactivex.SingleObserver;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.rxjava3.core.SingleObserver;
+import io.reactivex.rxjava3.disposables.Disposable;
 import org.apache.logging.log4j.LogManager;
 
 public class ErrorHandlingSingleObserver<T extends Object> implements SingleObserver<T> {

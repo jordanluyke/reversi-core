@@ -10,7 +10,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.jordanluyke.reversi.web.model.FieldRequiredException;
 import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

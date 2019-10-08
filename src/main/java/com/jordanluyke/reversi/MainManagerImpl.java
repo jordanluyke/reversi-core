@@ -3,7 +3,7 @@ package com.jordanluyke.reversi;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.db.DbManager;
 import com.jordanluyke.reversi.web.WebManager;
-import io.reactivex.Completable;
+import io.reactivex.rxjava3.core.Completable;
 import lombok.AllArgsConstructor;
 
 /**

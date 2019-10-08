@@ -2,7 +2,7 @@ package com.jordanluyke.reversi.db;
 
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
-import io.reactivex.Completable;
+import io.reactivex.rxjava3.core.Completable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.Flyway;

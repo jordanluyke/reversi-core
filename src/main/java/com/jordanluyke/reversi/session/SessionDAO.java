@@ -9,7 +9,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

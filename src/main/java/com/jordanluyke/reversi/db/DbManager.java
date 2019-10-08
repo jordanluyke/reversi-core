@@ -1,6 +1,6 @@
 package com.jordanluyke.reversi.db;
 
-import io.reactivex.Completable;
+import io.reactivex.rxjava3.core.Completable;
 import org.jooq.DSLContext;
 
 /**

@@ -7,7 +7,7 @@ import com.jordanluyke.reversi.session.model.Session;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
