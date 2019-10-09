@@ -8,7 +8,7 @@ import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.account.model.Account;
 import com.jordanluyke.reversi.account.model.PlayerStats;
 import com.jordanluyke.reversi.web.api.SocketManager;
-import com.jordanluyke.reversi.web.api.model.SocketEvent;
+import com.jordanluyke.reversi.web.api.model.SocketChannel;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -43,7 +43,7 @@ public class AccountManagerImpl implements AccountManager {
     public Single<AggregateAccount> updateAccount(String accountId, AccountUpdateRequest req) {
         return accountDAO.updateAccount(accountId, req)
                 .flatMap(this::getAggregateAccount)
-                .doOnSuccess(Void -> socketManager.send(SocketEvent.Account, accountId));
+                .doOnSuccess(Void -> socketManager.send(SocketChannel.Account, accountId));
     }
 
     @Override
@@ -83,7 +83,7 @@ public class AccountManagerImpl implements AccountManager {
     @Override
     public Single<PlayerStats> updatePlayerStats(PlayerStats playerStats) {
         return accountDAO.updatePlayerStats(playerStats)
-                .doOnSuccess(Void -> socketManager.send(SocketEvent.Account, playerStats.getOwnerId()));
+                .doOnSuccess(Void -> socketManager.send(SocketChannel.Account, playerStats.getOwnerId()));
     }
 
     private Single<AggregateAccount> getAggregateAccount(Account account) {

@@ -1,5 +1,7 @@
 package com.jordanluyke.reversi;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import io.netty.handler.ssl.SslContext;
@@ -26,15 +28,15 @@ import java.util.Properties;
 public class Config {
     private static final Logger logger = LogManager.getLogger(Config.class);
 
-    private int port = 8080;
-    private Optional<SslContext> sslContext = Optional.empty();
-    private String jdbcUrl;
-    private String jdbcUser;
-    private String jdbcPassword;
-    private Injector injector;
-    private String pusherAppId;
+    @JsonIgnore private int port = 8080;
+    @JsonIgnore private Optional<SslContext> sslContext = Optional.empty();
+    @JsonIgnore private String jdbcUrl;
+    @JsonIgnore private String jdbcUser;
+    @JsonIgnore private String jdbcPassword;
+    @JsonIgnore private Injector injector;
+    @JsonIgnore private String pusherAppId;
     private String pusherKey;
-    private String pusherSecret;
+    @JsonIgnore private String pusherSecret;
     private String pusherCluster;
 
     public Config() {

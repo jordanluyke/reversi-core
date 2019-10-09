@@ -57,7 +57,7 @@ public class NodeUtil {
     public static <T> Single<T> parseNodeInto(Class<T> clazz, JsonNode body) {
         try {
             return Single.just(mapper.treeToValue(body, clazz));
-        } catch (Exception e) {
+        } catch(Exception e) {
             logger.error("Json serialize fail: {} {}", clazz, body);
             for(Field field : clazz.getFields()) {
                 field.setAccessible(true);
@@ -71,6 +71,16 @@ public class NodeUtil {
 
     public static <T> Single<T> parseNodeInto(Class<T> clazz, Optional<JsonNode> body) {
         return body.map(jsonNode -> parseNodeInto(clazz, jsonNode)).orElseGet(() -> Single.error(new WebException(HttpResponseStatus.BAD_REQUEST, "Empty body")));
+    }
+
+    public static Single<JsonNode> parseObjectIntoNode(Object object) {
+        try {
+            return Single.just(mapper.valueToTree(object));
+        } catch(IllegalArgumentException e) {
+            e.printStackTrace();
+            logger.error("Object parse failed");
+            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+        }
     }
 
     public static Optional<String> get(String field, JsonNode node) {

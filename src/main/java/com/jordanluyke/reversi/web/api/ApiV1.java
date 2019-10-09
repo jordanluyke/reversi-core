@@ -26,6 +26,7 @@ public class ApiV1 implements Api {
                 new HttpRoute("/accounts/:accountId", HttpMethod.GET, AccountRoutes.GetAccount.class),
                 new HttpRoute("/accounts/:accountId", HttpMethod.PUT, AccountRoutes.UpdateAccount.class),
                 new HttpRoute("/accounts/:accountId/profile", HttpMethod.GET, AccountRoutes.GetProfile.class),
+                new HttpRoute("/config", HttpMethod.GET, SystemRoutes.GetConfig.class),
                 new HttpRoute("/matches", HttpMethod.POST, MatchRoutes.CreateMatch.class),
                 new HttpRoute("/matches/:matchId", HttpMethod.GET, MatchRoutes.GetMatch.class),
                 new HttpRoute("/matches/:matchId/move", HttpMethod.POST, MatchRoutes.Move.class),

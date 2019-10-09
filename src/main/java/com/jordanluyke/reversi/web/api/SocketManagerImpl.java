@@ -3,7 +3,7 @@ package com.jordanluyke.reversi.web.api;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.util.NodeUtil;
-import com.jordanluyke.reversi.web.api.model.SocketEvent;
+import com.jordanluyke.reversi.web.api.model.SocketChannel;
 import com.pusher.rest.Pusher;
 
 /**
@@ -22,7 +22,7 @@ public class SocketManagerImpl implements SocketManager {
     }
 
     @Override
-    public void send(SocketEvent event, String channel) {
-        pusher.trigger(channel, event.name(), NodeUtil.mapper.createObjectNode());
+    public void send(SocketChannel channel, String event) {
+        pusher.trigger(channel.name(), event, NodeUtil.mapper.createObjectNode());
     }
 }

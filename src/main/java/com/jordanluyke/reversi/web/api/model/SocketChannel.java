@@ -3,9 +3,8 @@ package com.jordanluyke.reversi.web.api.model;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public enum SocketEvent {
+public enum SocketChannel {
     Account,
     Match,
-    WebException,
     FindMatch,
 }
