@@ -17,12 +17,17 @@ public class SocketManagerImpl implements SocketManager {
     @Inject
     public SocketManagerImpl(Config config) {
         this.config = config;
-        pusher = new Pusher(config.getPusherAppId(), config.getPusherKey(), config.getPusherSecret());
-        pusher.setCluster(config.getPusherCluster());
+        setup();
     }
 
     @Override
     public void send(SocketChannel channel, String event) {
         pusher.trigger(channel.name(), event, NodeUtil.mapper.createObjectNode());
+    }
+
+    private void setup() {
+        pusher = new Pusher(config.getPusherAppId(), config.getPusherKey(), config.getPusherSecret());
+        pusher.setCluster(config.getPusherCluster());
+        pusher.setEncrypted(true);
     }
 }
