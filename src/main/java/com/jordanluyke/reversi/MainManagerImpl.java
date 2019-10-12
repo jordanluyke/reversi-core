@@ -17,9 +17,7 @@ public class MainManagerImpl implements MainManager {
 
     @Override
     public Completable start() {
-        return Completable.mergeArray(
-                webManager.start(),
-                dbManager.start()
-        );
+        return dbManager.start()
+                .andThen(webManager.start());
     }
 }

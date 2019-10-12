@@ -32,4 +32,9 @@ public class LobbyManagerImpl implements LobbyManager {
     public Observable<Lobby> getLobbies() {
         return lobbyDAO.getLobbies();
     }
+
+    @Override
+    public Single<Lobby> closeLobby(String id) {
+        return lobbyDAO.closeLobby(id);
+    }
 }

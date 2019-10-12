@@ -11,6 +11,8 @@ import lombok.AllArgsConstructor;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
+import java.time.Instant;
+
 import static org.jooq.sources.Tables.LOBBY;
 
 /**
@@ -40,5 +42,13 @@ public class LobbyDAO {
     public Observable<Lobby> getLobbies() {
         return Observable.fromIterable(dbManager.getDsl().selectFrom(LOBBY).fetch())
                 .map(Lobby::fromRecord);
+    }
+
+    public Single<Lobby> closeLobby(String id) {
+        return Single.just(dbManager.getDsl().update(LOBBY)
+                        .set(LOBBY.CLOSEDAT, Instant.now())
+                        .where(LOBBY.ID.eq(id))
+                        .execute())
+                .flatMap(Void -> getLobbyById(id));
     }
 }

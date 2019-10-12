@@ -65,4 +65,22 @@ public class LobbyRoutes {
                     .map(GetLobbiesResponse::new));
         }
     }
+
+    public static class CloseLobby implements HttpRouteHandler {
+        @Inject protected SessionManager sessionManager;
+        @Inject protected LobbyManager lobbyManager;
+        @Override
+        public Single<Lobby> handle(Single<HttpServerRequest> o) {
+            return o.flatMap(req -> sessionManager.validate(req)
+                    .flatMap(session -> {
+                        String id = req.getQueryParams().get("lobbyId");
+                        return lobbyManager.getLobbyById(id)
+                            .flatMap(lobby -> {
+                                if(!lobby.getPlayer1().equals(session.getOwnerId()))
+                                    return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
+                                return lobbyManager.closeLobby(id);
+                            });
+                    }));
+        }
+    }
 }

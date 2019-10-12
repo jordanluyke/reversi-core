@@ -14,4 +14,6 @@ public interface LobbyManager {
     Single<Lobby> createLobby(CreateLobbyRequest createLobbyRequest);
 
     Observable<Lobby> getLobbies();
+
+    Single<Lobby> closeLobby(String id);
 }

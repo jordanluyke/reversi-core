@@ -18,12 +18,12 @@ public class Lobby {
     private Instant createdAt;
     private Instant updatedAt;
     private Optional<String> name;
-    private Optional<String> player1;
+    private String player1;
     private Optional<String> player2;
     private Optional<Instant> closedAt;
     private boolean isPrivate = false;
 
     public static Lobby fromRecord(LobbyRecord record) {
-        return new Lobby(record.getId(), record.getCreatedat(), record.getUpdatedat(), Optional.ofNullable(record.getName()), Optional.ofNullable(record.getPlayer1()), Optional.ofNullable(record.getPlayer2()), Optional.ofNullable(record.getClosedat()), record.getIsprivate());
+        return new Lobby(record.getId(), record.getCreatedat(), record.getUpdatedat(), Optional.ofNullable(record.getName()), record.getPlayer1(), Optional.ofNullable(record.getPlayer2()), Optional.ofNullable(record.getClosedat()), record.getIsprivate());
     }
 }
