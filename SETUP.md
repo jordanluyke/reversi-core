@@ -25,11 +25,8 @@
     brew install mysql@5.7
     brew link mysql@5.7 --force
     brew services start mysql@5.7
+    mysql -u root
     ```
-
-    1. Once the MySQL server has started open a new terminal and run the command `mysql -u root`
-
-    1. Run the following SQL commands:
 
     ```mysql
     # SET PASSWORD = PASSWORD('abcd1234');

@@ -2,10 +2,7 @@ package com.jordanluyke.reversi.web.api;
 
 import com.jordanluyke.reversi.web.api.model.Api;
 import com.jordanluyke.reversi.web.api.model.HttpRoute;
-import com.jordanluyke.reversi.web.api.routes.AccountRoutes;
-import com.jordanluyke.reversi.web.api.routes.MatchRoutes;
-import com.jordanluyke.reversi.web.api.routes.SessionRoutes;
-import com.jordanluyke.reversi.web.api.routes.SystemRoutes;
+import com.jordanluyke.reversi.web.api.routes.*;
 import io.netty.handler.codec.http.HttpMethod;
 import lombok.Getter;
 
@@ -27,6 +24,9 @@ public class ApiV1 implements Api {
                 new HttpRoute("/accounts/:accountId", HttpMethod.GET, AccountRoutes.GetAccount.class),
                 new HttpRoute("/accounts/:accountId", HttpMethod.PUT, AccountRoutes.UpdateAccount.class),
                 new HttpRoute("/accounts/:accountId/profile", HttpMethod.GET, AccountRoutes.GetProfile.class),
+                new HttpRoute("/lobbies", HttpMethod.GET, LobbyRoutes.GetLobbies.class),
+                new HttpRoute("/lobbies", HttpMethod.POST, LobbyRoutes.CreateLobby.class),
+                new HttpRoute("/lobbies/:lobbyId", HttpMethod.GET, LobbyRoutes.GetLobby.class),
                 new HttpRoute("/matches", HttpMethod.POST, MatchRoutes.CreateMatch.class),
                 new HttpRoute("/matches/:matchId", HttpMethod.GET, MatchRoutes.GetMatch.class),
                 new HttpRoute("/matches/:matchId/move", HttpMethod.POST, MatchRoutes.Move.class),

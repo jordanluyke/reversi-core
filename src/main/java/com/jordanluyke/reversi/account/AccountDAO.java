@@ -32,7 +32,7 @@ public class AccountDAO {
 
     public Single<Account> createAccount(SessionCreationRequest req) {
         String id = RandomUtil.generateId();
-        return Single.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.NAME, ACCOUNT.FACEBOOKUSERID, ACCOUNT.GOOGLEUSERID, ACCOUNT.GUEST)
+        return Single.just(dbManager.getDsl().insertInto(ACCOUNT, ACCOUNT.ID, ACCOUNT.NAME, ACCOUNT.FACEBOOKUSERID, ACCOUNT.GOOGLEUSERID, ACCOUNT.ISGUEST)
                 .values(id, "Player", req.getFacebookUserId().orElse(null), req.getGoogleUserId().orElse(null), !req.getFacebookUserId().isPresent() && !req.getGoogleUserId().isPresent())
                 .execute())
                 .flatMap(Void -> getAccountById(id));
