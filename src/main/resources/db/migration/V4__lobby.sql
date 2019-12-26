@@ -4,8 +4,10 @@ CREATE TABLE lobby
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
     name VARCHAR(40),
-    player1 VARCHAR(40),
-    player2 VARCHAR(40) NULL,
+    playerIdDark VARCHAR(40),
+    playerIdLight VARCHAR(40) NULL,
     closedAt TIMESTAMP NULL,
-    isPrivate BIT DEFAULT 0
+    isPrivate BIT DEFAULT 0,
+    playerDarkReady BIT DEFAULT 0,
+    playerLightReady BIT DEFAULT 0
 )

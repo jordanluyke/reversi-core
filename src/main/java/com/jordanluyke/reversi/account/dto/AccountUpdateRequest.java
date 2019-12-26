@@ -1,4 +1,4 @@
-package com.jordanluyke.reversi.session.dto;
+package com.jordanluyke.reversi.account.dto;
 
 import lombok.Getter;
 import lombok.Setter;

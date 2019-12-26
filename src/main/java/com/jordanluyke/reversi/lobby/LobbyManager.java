@@ -1,6 +1,7 @@
 package com.jordanluyke.reversi.lobby;
 
 import com.jordanluyke.reversi.lobby.dto.CreateLobbyRequest;
+import com.jordanluyke.reversi.lobby.dto.UpdateLobbyRequest;
 import com.jordanluyke.reversi.lobby.model.Lobby;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -13,7 +14,11 @@ public interface LobbyManager {
 
     Single<Lobby> createLobby(CreateLobbyRequest createLobbyRequest);
 
+    Single<Lobby> updateLobby(String lobbyId, UpdateLobbyRequest updateLobbyRequest);
+
     Observable<Lobby> getLobbies();
 
     Single<Lobby> closeLobby(String id);
+
+    Single<Lobby> ready(String lobbyId, String playerId);
 }

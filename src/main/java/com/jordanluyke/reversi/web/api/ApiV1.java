@@ -27,11 +27,12 @@ public class ApiV1 implements Api {
                 new HttpRoute("/lobbies", HttpMethod.GET, LobbyRoutes.GetLobbies.class),
                 new HttpRoute("/lobbies", HttpMethod.POST, LobbyRoutes.CreateLobby.class),
                 new HttpRoute("/lobbies/:lobbyId", HttpMethod.GET, LobbyRoutes.GetLobby.class),
-                new HttpRoute("/lobbies/:lobbyId/close", HttpMethod.POST, LobbyRoutes.CloseLobby.class),
-                new HttpRoute("/matches", HttpMethod.POST, MatchRoutes.CreateMatch.class),
+                new HttpRoute("/lobbies/:lobbyId/close", HttpMethod.POST, LobbyRoutes.Close.class),
+                new HttpRoute("/lobbies/:lobbyId/ready", HttpMethod.POST, LobbyRoutes.Ready.class),
+//                new HttpRoute("/matches", HttpMethod.POST, MatchRoutes.CreateMatch.class),
                 new HttpRoute("/matches/:matchId", HttpMethod.GET, MatchRoutes.GetMatch.class),
                 new HttpRoute("/matches/:matchId/move", HttpMethod.POST, MatchRoutes.Move.class),
-                new HttpRoute("/matches/:matchId/join", HttpMethod.POST, MatchRoutes.Join.class),
+//                new HttpRoute("/matches/:matchId/join", HttpMethod.POST, MatchRoutes.Join.class),
                 new HttpRoute("/sessions", HttpMethod.POST, SessionRoutes.CreateSession.class),
                 new HttpRoute("/sessions/:sessionId", HttpMethod.DELETE, SessionRoutes.DeleteSession.class)
         );

@@ -24,15 +24,15 @@ import java.util.Optional;
 public class MatchRoutes {
     private static final Logger logger = LogManager.getLogger(MatchRoutes.class);
 
-    public static class CreateMatch implements HttpRouteHandler {
-        @Inject protected MatchManager matchManager;
-        @Inject protected SessionManager sessionManager;
-        @Override
-        public Single<Match> handle(Single<HttpServerRequest> o) {
-            return o.flatMap(req -> sessionManager.validate(req))
-                    .flatMap(session -> matchManager.createMatch(session.getOwnerId()));
-        }
-    }
+//    public static class CreateMatch implements HttpRouteHandler {
+//        @Inject protected MatchManager matchManager;
+//        @Inject protected SessionManager sessionManager;
+//        @Override
+//        public Single<Match> handle(Single<HttpServerRequest> o) {
+//            return o.flatMap(req -> sessionManager.validate(req))
+//                    .flatMap(session -> matchManager.createMatch(session.getOwnerId()));
+//        }
+//    }
 
     public static class GetMatch implements HttpRouteHandler {
         @Inject protected MatchManager matchManager;
@@ -73,16 +73,16 @@ public class MatchRoutes {
         }
     }
 
-    public static class Join implements HttpRouteHandler {
-        @Inject protected MatchManager matchManager;
-        @Inject protected SessionManager sessionManager;
-        @Override
-        public Single<Match> handle(Single<HttpServerRequest> o) {
-            return o.flatMap(req -> sessionManager.validate(req)
-                    .flatMap(session -> {
-                        String matchId = req.getQueryParams().get("matchId");
-                        return matchManager.join(matchId, session.getOwnerId());
-                    }));
-        }
-    }
+//    public static class Join implements HttpRouteHandler {
+//        @Inject protected MatchManager matchManager;
+//        @Inject protected SessionManager sessionManager;
+//        @Override
+//        public Single<Match> handle(Single<HttpServerRequest> o) {
+//            return o.flatMap(req -> sessionManager.validate(req)
+//                    .flatMap(session -> {
+//                        String matchId = req.getQueryParams().get("matchId");
+//                        return matchManager.join(matchId, session.getOwnerId());
+//                    }));
+//        }
+//    }
 }

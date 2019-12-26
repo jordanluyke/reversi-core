@@ -36,9 +36,10 @@ public class MatchManagerImpl implements MatchManager {
     private final List<Match> matches = new ArrayList<>();
 
     @Override
-    public Single<Match> createMatch(String accountId) {
+    public Single<Match> createMatch(String playerId1, String playerId2) {
         Match match = new Match();
-        match.setPlayerDarkId(Optional.of(accountId));
+        match.setPlayerDarkId(Optional.of(playerId1));
+        match.setPlayerLightId(Optional.of(playerId2));
         matches.add(match);
         return Single.just(match);
     }
@@ -82,29 +83,29 @@ public class MatchManagerImpl implements MatchManager {
                 });
     }
 
-    @Override
-    public Single<Match> join(String matchId, String accountId) {
-        return getMatch(matchId)
-                .flatMap(match -> join(match, accountId));
-    }
-
-    @Override
-    public Single<Match> findMatch(String accountId) {
-        return Observable.fromIterable(matches)
-                .filter(match -> !match.isPrivate()
-                        && (!match.getPlayerLightId().isPresent() || !match.getPlayerDarkId().isPresent())
-                        && (!match.getPlayerLightId().isPresent() || !match.getPlayerLightId().get().equals(accountId))
-                        && (!match.getPlayerDarkId().isPresent() || !match.getPlayerDarkId().get().equals(accountId)))
-                .singleOrError()
-                .retryWhen(errors -> errors.zipWith(Flowable.range(1, 15), (n, i) -> i)
-                        .flatMap(retryCount -> Flowable.timer(retryCount, TimeUnit.SECONDS)
-                                .doOnNext(Void -> logger.info("Find match retry... {} {}", retryCount, accountId))))
-                .onErrorResumeNext(e -> createMatch(accountId))
-                .flatMap(match -> join(match, accountId));
-    }
-
-    private Single<Match> join(Match match, String accountId) {
-        return match.join(accountId)
-                .doOnSuccess(Void -> socketManager.send(SocketChannel.Match, match.getId()));
-    }
+//    @Override
+//    public Single<Match> join(String matchId, String accountId) {
+//        return getMatch(matchId)
+//                .flatMap(match -> join(match, accountId));
+//    }
+//
+//    @Override
+//    public Single<Match> findMatch(String accountId) {
+//        return Observable.fromIterable(matches)
+//                .filter(match -> !match.isPrivate()
+//                        && (!match.getPlayerLightId().isPresent() || !match.getPlayerDarkId().isPresent())
+//                        && (!match.getPlayerLightId().isPresent() || !match.getPlayerLightId().get().equals(accountId))
+//                        && (!match.getPlayerDarkId().isPresent() || !match.getPlayerDarkId().get().equals(accountId)))
+//                .singleOrError()
+//                .retryWhen(errors -> errors.zipWith(Flowable.range(1, 15), (n, i) -> i)
+//                        .flatMap(retryCount -> Flowable.timer(retryCount, TimeUnit.SECONDS)
+//                                .doOnNext(Void -> logger.info("Find match retry... {} {}", retryCount, accountId))))
+//                .onErrorResumeNext(e -> createMatch(accountId))
+//                .flatMap(match -> join(match, accountId));
+//    }
+//
+//    private Single<Match> join(Match match, String accountId) {
+//        return match.join(accountId)
+//                .doOnSuccess(Void -> socketManager.send(SocketChannel.Match, match.getId()));
+//    }
 }

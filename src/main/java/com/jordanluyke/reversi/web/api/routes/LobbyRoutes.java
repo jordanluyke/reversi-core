@@ -1,6 +1,7 @@
 package com.jordanluyke.reversi.web.api.routes;
 
 import com.google.inject.Inject;
+import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.lobby.LobbyManager;
 import com.jordanluyke.reversi.lobby.dto.CreateLobbyRequest;
 import com.jordanluyke.reversi.lobby.dto.GetLobbiesResponse;
@@ -66,7 +67,7 @@ public class LobbyRoutes {
         }
     }
 
-    public static class CloseLobby implements HttpRouteHandler {
+    public static class Close implements HttpRouteHandler {
         @Inject protected SessionManager sessionManager;
         @Inject protected LobbyManager lobbyManager;
         @Override
@@ -76,10 +77,29 @@ public class LobbyRoutes {
                         String id = req.getQueryParams().get("lobbyId");
                         return lobbyManager.getLobbyById(id)
                             .flatMap(lobby -> {
-                                if(!lobby.getPlayer1().equals(session.getOwnerId()))
+                                if(!lobby.getPlayerIdDark().equals(session.getOwnerId()))
                                     return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
                                 return lobbyManager.closeLobby(id);
                             });
+                    }));
+        }
+    }
+
+    public static class Ready implements HttpRouteHandler {
+        @Inject protected SessionManager sessionManager;
+        @Inject protected LobbyManager lobbyManager;
+        @Inject protected AccountManager accountManager;
+        @Override
+        public Single<Lobby> handle(Single<HttpServerRequest> o) {
+            return o.flatMap(req -> sessionManager.validate(req)
+                    .flatMap(session -> {
+                        String lobbyId = req.getQueryParams().get("lobbyId");
+                        return lobbyManager.ready(lobbyId, session.getOwnerId());
+//                        return lobbyManager.getLobbyById(lobbyId)
+//                                .flatMap(lobby -> {
+//                                    if(!session.getId().equals(lobby.getPlayerDark()) && !(lobby.getPlayerLight().isPresent() && session.getId().equals(lobby.getPlayerLight().get())))
+//                                        return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
+//                                });
                     }));
         }
     }

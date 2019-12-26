@@ -2,7 +2,7 @@ package com.jordanluyke.reversi.account;
 
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.model.AggregateAccount;
-import com.jordanluyke.reversi.session.dto.AccountUpdateRequest;
+import com.jordanluyke.reversi.account.dto.AccountUpdateRequest;
 import com.jordanluyke.reversi.session.dto.ProfileResponse;
 import com.jordanluyke.reversi.session.dto.SessionCreationRequest;
 import com.jordanluyke.reversi.account.model.Account;

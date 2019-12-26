@@ -9,13 +9,13 @@ import io.reactivex.rxjava3.core.Single;
  */
 public interface MatchManager {
 
-    Single<Match> createMatch(String accountId);
+    Single<Match> createMatch(String playerId1, String playerId2);
 
     Single<Match> getMatch(String matchId);
 
     Single<Match> placePiece(String matchId, String accountId, Position position);
 
-    Single<Match> join(String matchId, String accountId);
+//    Single<Match> join(String matchId, String accountId);
 
-    Single<Match> findMatch(String accountId);
+//    Single<Match> findMatch(String accountId);
 }

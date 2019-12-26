@@ -5,7 +5,7 @@ import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.account.dto.AccountResponse;
 import com.jordanluyke.reversi.session.SessionManager;
 import com.jordanluyke.reversi.session.dto.ProfileResponse;
-import com.jordanluyke.reversi.session.dto.AccountUpdateRequest;
+import com.jordanluyke.reversi.account.dto.AccountUpdateRequest;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
