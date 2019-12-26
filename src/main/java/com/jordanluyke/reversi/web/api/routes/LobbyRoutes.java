@@ -4,12 +4,11 @@ import com.google.inject.Inject;
 import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.lobby.LobbyManager;
 import com.jordanluyke.reversi.lobby.dto.CreateLobbyRequest;
-import com.jordanluyke.reversi.lobby.dto.GetLobbiesResponse;
 import com.jordanluyke.reversi.lobby.model.Lobby;
 import com.jordanluyke.reversi.session.SessionManager;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
-import com.jordanluyke.reversi.web.model.FieldRequiredException;
+import com.jordanluyke.reversi.web.api.model.PagingResponse;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -45,11 +44,11 @@ public class LobbyRoutes {
         public Single<Lobby> handle(Single<HttpServerRequest> o) {
             return o.flatMap(req -> sessionManager.validate(req)
                     .flatMap(session -> NodeUtil.parseNodeInto(CreateLobbyRequest.class, req.getBody())
-                            .flatMap(creationRequest -> {
-                                if(!creationRequest.getName().isPresent())
-                                    return Single.error(new FieldRequiredException("name"));
-                                creationRequest.setAccountId(session.getOwnerId());
-                                return lobbyManager.createLobby(creationRequest);
+                            .flatMap(createLobbyRequest -> {
+//                                if(!createLobbyRequest.getName().isPresent())
+//                                    return Single.error(new FieldRequiredException("name"));
+                                createLobbyRequest.setAccountId(session.getOwnerId());
+                                return lobbyManager.createLobby(createLobbyRequest);
                             })));
         }
     }
@@ -58,12 +57,12 @@ public class LobbyRoutes {
         @Inject protected SessionManager sessionManager;
         @Inject protected LobbyManager lobbyManager;
         @Override
-        public Single<GetLobbiesResponse> handle(Single<HttpServerRequest> o) {
+        public Single<PagingResponse> handle(Single<HttpServerRequest> o) {
             return o.flatMap(req -> sessionManager.validate(req)
                     .flatMap(session -> lobbyManager.getLobbies()
                             .filter(lobby -> !lobby.isPrivate())
                             .toList())
-                    .map(GetLobbiesResponse::new));
+                    .map(lobbies -> new PagingResponse<>(lobbies, 0, lobbies.size())));
         }
     }
 
