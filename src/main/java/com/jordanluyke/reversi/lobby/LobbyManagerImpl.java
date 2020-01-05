@@ -10,6 +10,7 @@ import com.jordanluyke.reversi.web.api.SocketManager;
 import com.jordanluyke.reversi.web.api.model.SocketChannel;
 import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import lombok.AllArgsConstructor;
@@ -90,6 +91,13 @@ public class LobbyManagerImpl implements LobbyManager {
                 .flatMap(lobby -> {
                     if(!lobby.getPlayerIdDark().equals(accountId) && !lobby.getPlayerIdLight().isPresent()) {
                         lobby.setPlayerIdLight(Optional.of(accountId));
+
+                        for(Lobby l : lobbies)
+                            if(l.getPlayerIdDark().equals(accountId) || (l.getPlayerIdLight().isPresent() && l.getPlayerIdLight().get().equals(accountId)))
+                                return leave(l.getId(), accountId)
+                                        .flatMap(this::updateLobby)
+                                        .flatMap(Void -> updateLobby(lobby));
+
                         return updateLobby(lobby);
                     }
                     return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
