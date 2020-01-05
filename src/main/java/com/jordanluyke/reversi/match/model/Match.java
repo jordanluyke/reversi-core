@@ -65,14 +65,14 @@ public class Match {
         })
                 .doOnSuccess(Void -> {
                     lastMoveAt = Optional.of(Instant.now());
-                    Observable.timer(5, TimeUnit.MINUTES)
-                            .doAfterNext(Void1 -> {
-                                if(lastMoveAt.isPresent() && lastMoveAt.get().isBefore(Instant.now())) {
-                                    completedAt = Optional.of(Instant.now());
-                                    winnerId = turn == Side.LIGHT ? playerDarkId : playerLightId;
-                                }
-                            })
-                            .subscribe(new ErrorHandlingObserver<>());
+//                    Observable.timer(5, TimeUnit.MINUTES)
+//                            .doAfterNext(Void1 -> {
+//                                if(lastMoveAt.isPresent() && lastMoveAt.get().isBefore(Instant.now())) {
+//                                    completedAt = Optional.of(Instant.now());
+//                                    winnerId = turn == Side.LIGHT ? playerDarkId : playerLightId;
+//                                }
+//                            })
+//                            .subscribe(new ErrorHandlingObserver<>());
                 });
     }
 }
