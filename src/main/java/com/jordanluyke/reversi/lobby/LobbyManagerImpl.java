@@ -1,9 +1,11 @@
 package com.jordanluyke.reversi.lobby;
 
 import com.google.inject.Inject;
-import com.jordanluyke.reversi.lobby.dto.CreateLobbyRequest;
+import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.lobby.dto.UpdateLobbyRequest;
 import com.jordanluyke.reversi.lobby.model.Lobby;
+import com.jordanluyke.reversi.match.MatchManager;
+import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.web.api.SocketManager;
 import com.jordanluyke.reversi.web.api.model.SocketChannel;
 import com.jordanluyke.reversi.web.model.WebException;
@@ -11,8 +13,8 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import lombok.AllArgsConstructor;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -28,6 +30,8 @@ public class LobbyManagerImpl implements LobbyManager {
 
     private LobbyDAO lobbyDAO;
     private SocketManager socketManager;
+    private AccountManager accountManager;
+    private MatchManager matchManager;
 
     private final List<Lobby> lobbies = new ArrayList<>();
 
@@ -36,66 +40,122 @@ public class LobbyManagerImpl implements LobbyManager {
 //        return lobbyDAO.getLobbyById(lobbyId);
         return Observable.fromIterable(lobbies)
                 .filter(lobby -> lobby.getId().equals(lobbyId))
-                .firstOrError();
+                .firstOrError()
+                .onErrorResumeNext(e -> Single.error(new WebException(HttpResponseStatus.NOT_FOUND, "Lobby not found")));
     }
 
     @Override
-    public Single<Lobby> createLobby(CreateLobbyRequest createLobbyRequest) {
+    public Single<Lobby> createLobby(String accountId) {
 //        return lobbyDAO.createLobby(createLobbyRequest);
-        Lobby lobby = new Lobby();
-        lobby.setName(createLobbyRequest.getName());
-        lobby.setPlayerIdDark(createLobbyRequest.getAccountId());
-        lobbies.add(lobby);
-        return Single.just(lobby);
+        return accountManager.getAccountById(accountId)
+                .flatMap(account -> {
+                    Lobby lobby = new Lobby();
+                    lobby.setPlayerIdDark(accountId);
+                    lobby.setName(Optional.of(account.getAccount().getName() + "'s game"));
+                    lobby.setId(RandomUtil.generateId());
+                    lobby.setCreatedAt(Instant.now());
+                    lobby.setUpdatedAt(lobby.getCreatedAt());
+                    lobbies.add(lobby);
+                    return Single.just(lobby);
+                });
     }
 
     @Override
     public Single<Lobby> updateLobby(String lobbyId, UpdateLobbyRequest updateLobbyRequest) {
 //        return lobbyDAO.updateLobby(lobbyId, updateLobbyRequest)
 //                .doOnSuccess(Void -> socketManager.send(SocketChannel.Lobby, lobbyId));
-        for(Lobby lobby : lobbies) {
-            if(lobby.getId().equals(lobbyId)) {
-                updateLobbyRequest.getPlayerIdLight().ifPresent(id -> lobby.setPlayerIdLight(Optional.of(id)));
-                updateLobbyRequest.getPlayerDarkReady().ifPresent(lobby::setPlayerDarkReady);
-                updateLobbyRequest.getPlayerLightReady().ifPresent(lobby::setPlayerLightReady);
-                return Single.just(lobby);
+        return Single.defer(() -> {
+            for(Lobby lobby : lobbies) {
+                if(lobby.getId().equals(lobbyId)) {
+                    updateLobbyRequest.getPlayerIdLight().ifPresent(id -> lobby.setPlayerIdLight(Optional.of(id)));
+                    updateLobbyRequest.getPlayerDarkReady().ifPresent(lobby::setPlayerReadyDark);
+                    updateLobbyRequest.getPlayerLightReady().ifPresent(lobby::setPlayerReadyLight);
+                    return updateLobby(lobby);
+                }
             }
-        }
-        return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+            return Single.error(new WebException(HttpResponseStatus.NOT_FOUND));
+        });
     }
 
     @Override
     public Observable<Lobby> getLobbies() {
 //        return lobbyDAO.getLobbies();
-        return Observable.fromIterable(lobbies);
+        return Observable.fromIterable(lobbies)
+                .filter(lobby -> !lobby.getClosedAt().isPresent());
     }
 
     @Override
-    public Single<Lobby> closeLobby(String lobbyId) {
-//        return lobbyDAO.closeLobby(lobbyId);
-        for(int i = 0; i < lobbies.size(); i++) {
-            if(lobbies.get(i).getId().equals(lobbyId)) {
-                Lobby lobby = lobbies.get(i);
-                lobbies.remove(i);
-                lobby.setClosedAt(Optional.of(Instant.now()));
-                return Single.just(lobbies.get(i));
-            }
-        }
-        return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
-    }
-
-    @Override
-    public Single<Lobby> ready(String lobbyId, String playerId) {
+    public Single<Lobby> join(String lobbyId, String accountId) {
         return getLobbyById(lobbyId)
                 .flatMap(lobby -> {
-                    UpdateLobbyRequest req = new UpdateLobbyRequest();
-                    if(lobby.getPlayerIdDark().equals(playerId))
-                        req.setPlayerDarkReady(Optional.of(true));
-                    else if(lobby.getPlayerIdLight().isPresent() && lobby.getPlayerIdLight().get().equals(playerId))
-                        req.setPlayerLightReady(Optional.of(true));
+                    if(!lobby.getPlayerIdDark().equals(accountId) && !lobby.getPlayerIdLight().isPresent()) {
+                        lobby.setPlayerIdLight(Optional.of(accountId));
+                        return updateLobby(lobby);
+                    }
+                    return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
+                });
+    }
+
+    @Override
+    public Single<Lobby> leave(String lobbyId, String accountId) {
+        return getLobbyById(lobbyId)
+                .flatMap(lobby -> {
+                    if(lobby.getPlayerIdDark().equals(accountId) || (lobby.getPlayerIdLight().isPresent() && lobby.getPlayerIdLight().get().equals(accountId))) {
+                        if(lobby.getPlayerIdDark().equals(accountId)) {
+                            lobby.setClosedAt(Optional.of(Instant.now()));
+                        } else {
+                            lobby.setPlayerIdLight(Optional.empty());
+                            lobby.setPlayerReadyLight(false);
+                        }
+                        return updateLobby(lobby);
+                    }
+                    return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
+                });
+    }
+
+    @Override
+    public Single<Lobby> ready(String lobbyId, String accountId) {
+        return getLobbyById(lobbyId)
+                .flatMap(lobby -> {
+                    if(lobby.getPlayerIdDark().equals(accountId))
+                        lobby.setPlayerReadyDark(true);
+                    else if(lobby.getPlayerIdLight().isPresent() && lobby.getPlayerIdLight().get().equals(accountId))
+                        lobby.setPlayerReadyLight(true);
                     else
                         return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
-                    return updateLobby(lobbyId, req);
+                    if(lobby.getPlayerIdDark() != null && lobby.isPlayerReadyDark() &&
+                            lobby.getPlayerIdLight().isPresent() && lobby.isPlayerReadyLight()) {
+                        return matchManager.createMatch(lobby.getPlayerIdDark(), lobby.getPlayerIdLight().get())
+                                .flatMap(match -> {
+                                    lobby.setMatchId(Optional.of(match.getId()));
+                                    lobby.setStartingAt(Optional.of(Instant.now()));
+                                    return Single.just(lobby);
+                                });
+                    }
+                    return Single.just(lobby);
+                })
+                .flatMap(this::updateLobby);
+    }
+
+    @Override
+    public Single<Lobby> cancel(String lobbyId, String accountId) {
+        return getLobbyById(lobbyId)
+                .flatMap(lobby -> {
+                    if(lobby.getPlayerIdDark().equals(accountId))
+                        lobby.setPlayerReadyDark(false);
+                    else if(lobby.getPlayerIdLight().isPresent() && lobby.getPlayerIdLight().get().equals(accountId))
+                        lobby.setPlayerReadyLight(false);
+                    else
+                        return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
+                    return updateLobby(lobby);
                 });
+    }
+
+    private Single<Lobby> updateLobby(Lobby lobby) {
+        return Single.defer(() -> {
+            lobby.setUpdatedAt(Instant.now());
+            return Single.just(lobby);
+        })
+                .doOnSuccess(Void -> socketManager.send(SocketChannel.Lobby, lobby.getId()));
     }
 }

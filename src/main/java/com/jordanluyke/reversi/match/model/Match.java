@@ -38,60 +38,41 @@ public class Match {
     @Builder.Default private Optional<Instant> lastMoveAt = Optional.empty();
 
     public Single<Match> placePiece(Side side, Position position) {
-        if(completedAt.isPresent())
-            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Game completed"));
-        if(side != turn)
-            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Not your turn"));
-        if(!playerLightId.isPresent() || !playerDarkId.isPresent())
-            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Two players required"));
-        return board.placePiece(side, position)
-                .flatMap(board1 -> board1.canPlacePiece(side.getOpposite())
-                        .flatMap(opposingSideCanPlacePiece -> {
-                            if(opposingSideCanPlacePiece) {
-                                turn = turn.getOpposite();
-                                return Single.just(this);
-                            }
-                            return board1.canPlacePiece(side)
-                                    .flatMap(sameSideCanPlacePiece -> {
-                                        if(sameSideCanPlacePiece)
-                                            return Single.just(this);
-                                        completedAt = Optional.of(Instant.now());
-                                        return Single.zip(
-                                                board1.getAmount(Side.LIGHT),
-                                                board1.getAmount(Side.DARK),
-                                                (lightAmount, darkAmount) -> {
-                                                    if(lightAmount > darkAmount)
-                                                        winnerId = playerLightId;
-                                                    else if(darkAmount > lightAmount)
-                                                        winnerId = playerDarkId;
-                                                    return this;
-                                                }
-                                        );
-                                    });
-                        })
-                        .doOnSuccess(Void -> {
-                            lastMoveAt = Optional.of(Instant.now());
-                            Observable.timer(5, TimeUnit.MINUTES)
-                                    .doAfterNext(Void1 -> {
-                                        if(lastMoveAt.isPresent() && lastMoveAt.get().isBefore(Instant.now())) {
-                                            completedAt = Optional.of(Instant.now());
-                                            winnerId = turn == Side.LIGHT ? playerDarkId : playerLightId;
-                                        }
-                                    })
-                                    .subscribe(new ErrorHandlingObserver<>());
-                        })
-                );
-    }
-
-    public Single<Match> join(String accountId) {
-        if(playerDarkId.isPresent() && playerLightId.isPresent())
-            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Too many players"));
-        if(!playerDarkId.isPresent() && playerLightId.isPresent() && !playerLightId.get().equals(accountId))
-            playerDarkId = Optional.of(accountId);
-        else if(!playerLightId.isPresent() && playerDarkId.isPresent() && !playerDarkId.get().equals(accountId))
-            playerLightId = Optional.of(accountId);
-        else
-            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
-        return Single.just(this);
+        return Single.defer(() -> {
+            if(completedAt.isPresent())
+                return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Game completed"));
+            if(side != turn)
+                return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Not your turn"));
+            if(!playerLightId.isPresent() || !playerDarkId.isPresent())
+                return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Two players required"));
+            try {
+                board.placePiece(side, position);
+                if(board.isComplete()) {
+                    completedAt = Optional.of(Instant.now());
+                    int darkAmount = board.getAmount(Side.DARK);
+                    int lightAmount = board.getAmount(Side.LIGHT);
+                    if(lightAmount > darkAmount)
+                        winnerId = playerLightId;
+                    else if(darkAmount > lightAmount)
+                        winnerId = playerDarkId;
+                } else if(board.canPlacePiece(side.getOpposite())) {
+                    turn = turn.getOpposite();
+                }
+                return Single.just(this);
+            } catch(IllegalMoveException e) {
+                return Single.error(e);
+            }
+        })
+                .doOnSuccess(Void -> {
+                    lastMoveAt = Optional.of(Instant.now());
+                    Observable.timer(5, TimeUnit.MINUTES)
+                            .doAfterNext(Void1 -> {
+                                if(lastMoveAt.isPresent() && lastMoveAt.get().isBefore(Instant.now())) {
+                                    completedAt = Optional.of(Instant.now());
+                                    winnerId = turn == Side.LIGHT ? playerDarkId : playerLightId;
+                                }
+                            })
+                            .subscribe(new ErrorHandlingObserver<>());
+                });
     }
 }

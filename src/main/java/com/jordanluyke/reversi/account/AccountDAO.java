@@ -41,7 +41,7 @@ public class AccountDAO {
     public Single<Account> updateAccount(String accountId, AccountUpdateRequest req) {
         return getAccountById(accountId)
                 .map(account -> dbManager.getDsl().update(ACCOUNT)
-                        .set(ACCOUNT.NAME, req.getName().orElse(account.getName().orElse("Player")))
+                        .set(ACCOUNT.NAME, req.getName().orElse(account.getName()))
                         .where(ACCOUNT.ID.eq(accountId))
                         .execute())
                 .flatMap(Void -> getAccountById(accountId));

@@ -44,7 +44,7 @@ public class SessionManagerImpl implements SessionManager {
 
     private Single<Session> validate(Optional<String> sessionId) {
         if(!sessionId.isPresent())
-            return Single.error(new FieldRequiredException("sessionId"));
+            return Single.error(new FieldRequiredException("sessionId", HttpResponseStatus.UNAUTHORIZED));
         return sessionDAO.getSessionById(sessionId.get())
 
                 .flatMap(session -> {

@@ -84,12 +84,6 @@ public class MatchManagerImpl implements MatchManager {
     }
 
 //    @Override
-//    public Single<Match> join(String matchId, String accountId) {
-//        return getMatch(matchId)
-//                .flatMap(match -> join(match, accountId));
-//    }
-//
-//    @Override
 //    public Single<Match> findMatch(String accountId) {
 //        return Observable.fromIterable(matches)
 //                .filter(match -> !match.isPrivate()

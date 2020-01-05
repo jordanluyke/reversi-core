@@ -9,6 +9,7 @@ public class LobbyModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(LobbyManager.class).to(LobbyManagerImpl.class);
+        // remove .asEagerSingleton when lobbies variable no longer used
+        bind(LobbyManager.class).to(LobbyManagerImpl.class).asEagerSingleton();
     }
 }

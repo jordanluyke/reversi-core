@@ -26,12 +26,14 @@ public class SessionDAO {
     private DbManager dbManager;
 
     public Single<Session> createSession(String ownerId) {
-        String sessionId = RandomUtil.generateId();
-        Instant expiresAt = Instant.now().plus(21, ChronoUnit.DAYS);
-        return Single.just(dbManager.getDsl().insertInto(SESSION, SESSION.ID, SESSION.OWNERID, SESSION.EXPIRESAT)
+        return Single.defer(() -> {
+            String sessionId = RandomUtil.generateId();
+            Instant expiresAt = Instant.now().plus(21, ChronoUnit.DAYS);
+            return Single.just(dbManager.getDsl().insertInto(SESSION, SESSION.ID, SESSION.OWNERID, SESSION.EXPIRESAT)
                 .values(sessionId, ownerId, expiresAt)
                 .execute())
                 .flatMap(Void -> getSessionById(sessionId));
+        });
     }
 
     public Single<Session> expireSession(String sessionId) {
@@ -45,8 +47,11 @@ public class SessionDAO {
     public Single<Session> getSessionById(String sessionId) {
         return Single.just(dbManager.getDsl().selectFrom(SESSION)
                 .where(SESSION.ID.eq(sessionId))
-                .fetchAny())
-                .onErrorResumeNext(e -> Single.error(new WebException(HttpResponseStatus.UNAUTHORIZED)))
-                .map(Session::fromRecord);
+                .fetchOptional())
+                .flatMap(record -> {
+                    if(!record.isPresent())
+                        return Single.error(new WebException(HttpResponseStatus.NOT_FOUND));
+                    return Single.just(Session.fromRecord(record.get()));
+                });
     }
 }

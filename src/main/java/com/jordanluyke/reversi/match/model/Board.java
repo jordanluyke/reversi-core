@@ -9,9 +9,10 @@ import lombok.Setter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -35,57 +36,67 @@ public class Board {
         return new Board(squares, "");
     }
 
-    public Single<Integer> getAmount(Side side) {
-        return Observable.fromArray(squares)
+    public int getAmount(Side side) {
+        return (int) Arrays.stream(squares)
                 .filter(square -> square == side)
-                .toList()
-                .map(List::size);
+                .count();
     }
 
-    public Single<Board> placePiece(Side side, Position position) {
+    public void placePiece(Side side, Position position) throws IllegalMoveException {
         if(squares[position.getIndex()] != null)
-            return Single.error(new IllegalMoveException());
-        return Observable.fromArray(Direction.class.getEnumConstants())
+            throw new IllegalMoveException();
+        List<Position> connectingPositions = Arrays.stream(Direction.class.getEnumConstants())
                 .filter(direction -> position.isWithinBounds(direction) && squares[position.getNewPosition(direction).getIndex()] == side.getOpposite())
-                .flatMap(direction -> getConnectingPositions(side, position, direction))
-                .switchIfEmpty(Observable.error(new IllegalMoveException()))
-                .doOnNext(pos -> squares[pos.getIndex()] = side)
-                .toList()
-                .doOnSuccess(Void -> transcript += position.getCoordinates())
-                .map(Void -> this);
+                .map(direction -> getConnectingPositions(side, position, direction))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+        if(connectingPositions.size() == 0)
+            throw new IllegalMoveException();
+        connectingPositions.forEach(pos -> squares[pos.getIndex()] = side);
+        transcript += position.getCoordinates();
     }
 
-    public Single<Boolean> canPlacePiece(Side side) {
-        return Observable.range(0, squares.length)
+    public boolean canPlacePiece(Side side) {
+        return getValidPositions(side).size() > 0;
+
+    }
+
+    public boolean isComplete() {
+        return Arrays.stream(squares).noneMatch(Objects::isNull);
+    }
+
+    private List<Position> getValidPositions(Side side) {
+        return IntStream.range(0, squares.length)
                 .filter(index -> squares[index] == null)
-                .flatMap(index -> Observable.fromArray(Direction.class.getEnumConstants())
-                        .filter(direction -> Position.fromIndex(index).isWithinBounds(direction) && squares[Position.fromIndex(index).getNewPosition(direction).getIndex()] == side.getOpposite())
-                        .flatMap(direction -> getConnectingPositions(side, Position.fromIndex(index), direction))
-                )
-                .toList()
-                .map(Void -> true)
-                .onErrorResumeNext(e -> Single.just(false));
+                .mapToObj(index -> Arrays.stream(Direction.class.getEnumConstants())
+                            .filter(direction -> Position.fromIndex(index).isWithinBounds(direction) && squares[Position.fromIndex(index).getNewPosition(direction).getIndex()] == side.getOpposite())
+                            .map(direction -> getConnectingPositions(side, Position.fromIndex(index), direction))
+                            .filter(list -> list.size() > 0)
+                            .map(list -> list.get(0))
+                            .collect(Collectors.toList()))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 
-    private Observable<Position> getConnectingPositions(Side side, Position startPosition, Direction direction) {
-        return getConnectingPositions(side, Arrays.asList(startPosition), direction);
+    private List<Position> getConnectingPositions(Side side, Position startPosition, Direction direction) {
+        return getConnectingPositions(side, Collections.singletonList(startPosition), direction);
     }
 
-    private Observable<Position> getConnectingPositions(Side side, List<Position> positions, Direction direction) {
+    private List<Position> getConnectingPositions(Side side, List<Position> positions, Direction direction) {
         positions = new ArrayList<>(positions);
         Position lastPosition = positions.get(positions.size() - 1);
 
         if(!lastPosition.isWithinBounds(direction))
-            return Observable.empty();
+            return Collections.emptyList();
 
         Position currentPosition = lastPosition.getNewPosition(direction);
         Side square = squares[currentPosition.getIndex()];
 
         if(square == null)
-            return Observable.empty();
+            return Collections.emptyList();
 
         if(square == side)
-            return Observable.fromIterable(positions);
+            return positions;
 
         positions.add(currentPosition);
 

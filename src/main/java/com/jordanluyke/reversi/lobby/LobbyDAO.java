@@ -2,16 +2,14 @@ package com.jordanluyke.reversi.lobby;
 
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.db.DbManager;
-import com.jordanluyke.reversi.lobby.dto.CreateLobbyRequest;
 import com.jordanluyke.reversi.lobby.dto.UpdateLobbyRequest;
 import com.jordanluyke.reversi.lobby.model.Lobby;
 import com.jordanluyke.reversi.util.RandomUtil;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import lombok.AllArgsConstructor;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.jooq.UpdateSetFirstStep;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 
@@ -33,10 +31,10 @@ public class LobbyDAO {
                 .map(Lobby::fromRecord);
     }
 
-    public Single<Lobby> createLobby(CreateLobbyRequest createLobbyRequest) {
+    public Single<Lobby> createLobby(Lobby lobby) {
         String id = RandomUtil.generateId();
         return Single.just(dbManager.getDsl().insertInto(LOBBY, LOBBY.ID, LOBBY.NAME, LOBBY.PLAYERIDDARK)
-                .values(id, createLobbyRequest.getName().orElse("Lobby"), createLobbyRequest.getAccountId())
+                .values(id, lobby.getName().orElse(null), lobby.getPlayerIdDark())
                 .execute())
                 .flatMap(Void -> getLobbyById(id));
     }

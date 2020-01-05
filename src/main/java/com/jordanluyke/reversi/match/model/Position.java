@@ -67,4 +67,12 @@ public class Position {
             return -1;
         return index + (8 * direction.getVerticalShift()) + direction.getHorizontalShift();
     }
+
+    @Override
+    public String toString() {
+        return "Position{" +
+                "index=" + index + ", " +
+                "coordinates=" + getCoordinates() +
+                '}';
+    }
 }

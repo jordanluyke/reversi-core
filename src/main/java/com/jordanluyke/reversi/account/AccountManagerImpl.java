@@ -70,7 +70,7 @@ public class AccountManagerImpl implements AccountManager {
     public Single<ProfileResponse> getProfile(String accountId) {
         return getAccountById(accountId)
                 .map(aggregateAccount -> ProfileResponse.builder()
-                        .name(aggregateAccount.getAccount().getName().orElse(null))
+                        .name(aggregateAccount.getAccount().getName())
                         .stats(aggregateAccount.getStats())
                         .build());
     }

@@ -103,10 +103,10 @@ public class ApiManagerImpl implements ApiManager {
 
                     return Single.just(res);
                 })
-                .doOnSuccess(res -> logger.info("HttpResponse: {} {}", request.getCtx().channel().remoteAddress(), res.getBody()))
+                .doOnSuccess(res -> logger.info("HttpResponse: {} {} {} {}", request.getCtx().channel().remoteAddress(), request.getMethod(), request.getPath(), res.getBody()))
                 .onErrorResumeNext(err -> {
                     WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    logger.error("HttpResponse: {} {}", request.getCtx().channel().remoteAddress(), e.toHttpServerResponse().getBody());
+                    logger.error("HttpResponse: {} {} {} {}", request.getCtx().channel().remoteAddress(), request.getMethod(), request.getPath(), e.toHttpServerResponse().getBody());
                     if(!(err instanceof WebException))
                         err.printStackTrace();
                     return Single.just(e.toHttpServerResponse());
