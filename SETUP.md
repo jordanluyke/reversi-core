@@ -34,6 +34,13 @@
     SET GLOBAL time_zone = '+0:00';
     CREATE DATABASE reversi DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;
     ```
+   
+    Import/Export
+    
+    ```
+    mysqldump -uroot -p reversi > reversi.sql
+    mysql -uroot -p reversi < reversi.sql
+    ```
     
     1. Edit /etc/mysql/my.cnf and add:
     
