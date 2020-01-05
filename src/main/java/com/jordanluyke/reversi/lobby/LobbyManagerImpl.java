@@ -5,6 +5,7 @@ import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.lobby.dto.UpdateLobbyRequest;
 import com.jordanluyke.reversi.lobby.model.Lobby;
 import com.jordanluyke.reversi.match.MatchManager;
+import com.jordanluyke.reversi.util.ErrorHandlingObserver;
 import com.jordanluyke.reversi.util.RandomUtil;
 import com.jordanluyke.reversi.web.api.SocketManager;
 import com.jordanluyke.reversi.web.api.model.SocketChannel;
@@ -58,6 +59,13 @@ public class LobbyManagerImpl implements LobbyManager {
                     lobby.setUpdatedAt(lobby.getCreatedAt());
                     lobbies.add(lobby);
                     return Single.just(lobby);
+                })
+                .doOnSuccess(lobby -> {
+                    Observable.fromIterable(lobbies)
+                            .filter(l -> !lobby.getId().equals(l.getId()) && (l.getPlayerIdDark().equals(accountId) || (l.getPlayerIdLight().isPresent() && l.getPlayerIdLight().get().equals(accountId))))
+                            .flatMapSingle(l -> leave(l.getId(), accountId)
+                                    .flatMap(this::updateLobby))
+                            .subscribe(new ErrorHandlingObserver<>());
                 });
     }
 
@@ -91,18 +99,16 @@ public class LobbyManagerImpl implements LobbyManager {
                 .flatMap(lobby -> {
                     if(!lobby.getPlayerIdDark().equals(accountId) && !lobby.getPlayerIdLight().isPresent()) {
                         lobby.setPlayerIdLight(Optional.of(accountId));
-
-                        for(Lobby l : lobbies) {
-                            if(!lobby.getId().equals(l.getId()) && (l.getPlayerIdDark().equals(accountId) || (l.getPlayerIdLight().isPresent() && l.getPlayerIdLight().get().equals(accountId)))) {
-                                return leave(l.getId(), accountId)
-                                        .flatMap(this::updateLobby)
-                                        .flatMap(Void -> updateLobby(lobby));
-                            }
-                        }
-
                         return updateLobby(lobby);
                     }
                     return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
+                })
+                .doOnSuccess(lobby -> {
+                    Observable.fromIterable(lobbies)
+                            .filter(l -> !lobby.getId().equals(l.getId()) && (l.getPlayerIdDark().equals(accountId) || (l.getPlayerIdLight().isPresent() && l.getPlayerIdLight().get().equals(accountId))))
+                            .flatMapSingle(l -> leave(l.getId(), accountId)
+                                    .flatMap(this::updateLobby))
+                            .subscribe(new ErrorHandlingObserver<>());
                 });
     }
 
@@ -110,13 +116,14 @@ public class LobbyManagerImpl implements LobbyManager {
     public Single<Lobby> leave(String lobbyId, String accountId) {
         return getLobbyById(lobbyId)
                 .flatMap(lobby -> {
-                    if(lobby.getPlayerIdDark().equals(accountId) || (lobby.getPlayerIdLight().isPresent() && lobby.getPlayerIdLight().get().equals(accountId))) {
+                    if(!lobby.getMatchId().isPresent() && (lobby.getPlayerIdDark().equals(accountId) || (lobby.getPlayerIdLight().isPresent() && lobby.getPlayerIdLight().get().equals(accountId)))) {
                         if(lobby.getPlayerIdDark().equals(accountId)) {
                             lobby.setClosedAt(Optional.of(Instant.now()));
                         } else {
                             lobby.setPlayerIdLight(Optional.empty());
                             lobby.setPlayerReadyLight(false);
                         }
+                        lobby.setStartingAt(Optional.empty());
                         return updateLobby(lobby);
                     }
                     return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
