@@ -7,5 +7,6 @@ public enum SocketChannel {
     Account,
     Match,
     FindMatch,
+    Lobbies,
     Lobby,
 }

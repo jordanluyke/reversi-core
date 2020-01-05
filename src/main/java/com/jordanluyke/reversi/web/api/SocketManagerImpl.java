@@ -21,6 +21,11 @@ public class SocketManagerImpl implements SocketManager {
     }
 
     @Override
+    public void send(SocketChannel channel) {
+        send(channel, "update");
+    }
+
+    @Override
     public void send(SocketChannel channel, String event) {
         pusher.trigger(channel.name(), event, NodeUtil.mapper.createObjectNode());
     }

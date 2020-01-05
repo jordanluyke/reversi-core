@@ -66,6 +66,8 @@ public class LobbyManagerImpl implements LobbyManager {
                             .flatMapSingle(l -> leave(l.getId(), accountId)
                                     .flatMap(this::updateLobby))
                             .subscribe(new ErrorHandlingObserver<>());
+
+                    socketManager.send(SocketChannel.Lobbies);
                 });
     }
 
@@ -109,6 +111,8 @@ public class LobbyManagerImpl implements LobbyManager {
                             .flatMapSingle(l -> leave(l.getId(), accountId)
                                     .flatMap(this::updateLobby))
                             .subscribe(new ErrorHandlingObserver<>());
+
+                    socketManager.send(SocketChannel.Lobbies);
                 });
     }
 
@@ -127,7 +131,8 @@ public class LobbyManagerImpl implements LobbyManager {
                         return updateLobby(lobby);
                     }
                     return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
-                });
+                })
+                .doOnSuccess(lobby -> socketManager.send(SocketChannel.Lobbies));
     }
 
     @Override
