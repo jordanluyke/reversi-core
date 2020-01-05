@@ -92,11 +92,13 @@ public class LobbyManagerImpl implements LobbyManager {
                     if(!lobby.getPlayerIdDark().equals(accountId) && !lobby.getPlayerIdLight().isPresent()) {
                         lobby.setPlayerIdLight(Optional.of(accountId));
 
-                        for(Lobby l : lobbies)
-                            if(l.getPlayerIdDark().equals(accountId) || (l.getPlayerIdLight().isPresent() && l.getPlayerIdLight().get().equals(accountId)))
+                        for(Lobby l : lobbies) {
+                            if(!lobby.getId().equals(l.getId()) && (l.getPlayerIdDark().equals(accountId) || (l.getPlayerIdLight().isPresent() && l.getPlayerIdLight().get().equals(accountId)))) {
                                 return leave(l.getId(), accountId)
                                         .flatMap(this::updateLobby)
                                         .flatMap(Void -> updateLobby(lobby));
+                            }
+                        }
 
                         return updateLobby(lobby);
                     }
