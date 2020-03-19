@@ -1,5 +1,6 @@
 package com.jordanluyke.reversi.web.netty;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.jordanluyke.reversi.util.ErrorHandlingSingleObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.ApiManager;
@@ -10,11 +11,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
+import io.netty.util.CharsetUtil;
 import io.reactivex.rxjava3.core.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -83,7 +87,17 @@ public class NettyHttpChannelInboundHandler extends SimpleChannelInboundHandler<
 //                return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST));
             if(reqBuf.readableBytes() > 0) {
                 try {
-                    httpServerRequest.setBody(Optional.of(NodeUtil.getJsonNode(reqBuf.array())));
+                    Optional<JsonNode> body = Optional.empty();
+                    if(httpServerRequest.getHeaders().get(HttpHeaderNames.CONTENT_TYPE.toString()).equalsIgnoreCase(HttpHeaderValues.APPLICATION_JSON.toString())) {
+                        body = Optional.of(NodeUtil.getJsonNode(reqBuf.array()));
+                    } else if(httpServerRequest.getHeaders().get(HttpHeaderNames.CONTENT_TYPE.toString()).equalsIgnoreCase(HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED.toString())) {
+                        String form = URLDecoder.decode(new String(reqBuf.array(), CharsetUtil.UTF_8), "UTF-8");
+                        Map<String, String> params = Arrays.stream(form.split("&"))
+                                .map(entry -> Arrays.asList(entry.split("=")))
+                                .collect(Collectors.toMap(pair -> pair.get(0), pair -> pair.get(1)));
+                        body = Optional.of(NodeUtil.mapper.valueToTree(params));
+                    }
+                    httpServerRequest.setBody(body);
                 } catch(RuntimeException e) {
                     return Single.error(new WebException(HttpResponseStatus.BAD_REQUEST, "Unable to parse JSON"));
                 } finally {
