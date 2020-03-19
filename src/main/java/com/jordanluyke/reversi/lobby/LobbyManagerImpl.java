@@ -13,6 +13,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,6 +35,7 @@ public class LobbyManagerImpl implements LobbyManager {
     private MatchManager matchManager;
 
     private final List<Lobby> lobbies = new ArrayList<>();
+    private final Map<String, List<Disposable>> disposables = new HashMap<>();
 
     @Override
     public Single<Lobby> getLobbyById(String lobbyId) {
@@ -59,7 +61,7 @@ public class LobbyManagerImpl implements LobbyManager {
                     return Single.just(lobby);
                 })
                 .doOnSuccess(lobby -> {
-                    Observable.interval(1, TimeUnit.MINUTES)
+                    Disposable timeout = Observable.interval(1, TimeUnit.MINUTES)
                             .flatMapSingle(t -> socketManager.getActiveUserIds()
                                     .contains(lobby.getPlayerIdDark())
                                     .flatMap(contains -> contains ? Single.just(lobby) : Single.error(new RuntimeException()))
@@ -69,7 +71,9 @@ public class LobbyManagerImpl implements LobbyManager {
                                         logger.info("Player {} timed out of lobby {}. Closing..", accountId, lobby.getId());
                                         return leave(lobby.getId(), accountId);
                                     }))
-                            .subscribe(new ErrorHandlingObserver<>());
+                            .subscribe();
+
+                    disposables.put(lobby.getId(), Arrays.asList(timeout));
 
                     socketManager.send(PusherChannel.Lobbies);
                 });
@@ -135,7 +139,11 @@ public class LobbyManagerImpl implements LobbyManager {
                     }
                     return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
                 })
-                .doOnSuccess(lobby -> socketManager.send(PusherChannel.Lobbies));
+                .doOnSuccess(lobby -> {
+                    socketManager.send(PusherChannel.Lobbies);
+                    disposables.get(lobbyId).forEach(Disposable::dispose);
+                    disposables.remove(lobbyId);
+                });
     }
 
     @Override
