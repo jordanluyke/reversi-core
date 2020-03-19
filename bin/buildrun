@@ -13,4 +13,6 @@ if [ "$1" == "-s" ] || [ "$1" == "--sync" ]; then
     echo "Copied to sync/reversi"
 fi
 
-java -jar ${JAR}
+if [ "$1" != "-b" ]; then
+    java -jar ${JAR}
+fi

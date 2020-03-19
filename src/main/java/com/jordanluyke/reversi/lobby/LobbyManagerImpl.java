@@ -5,13 +5,12 @@ import com.jordanluyke.reversi.account.AccountManager;
 import com.jordanluyke.reversi.lobby.dto.UpdateLobbyRequest;
 import com.jordanluyke.reversi.lobby.model.Lobby;
 import com.jordanluyke.reversi.match.MatchManager;
-import com.jordanluyke.reversi.util.ErrorHandlingObserver;
-import com.jordanluyke.reversi.util.RandomUtil;
+import com.jordanluyke.reversi.util.*;
 import com.jordanluyke.reversi.web.api.SocketManager;
-import com.jordanluyke.reversi.web.api.model.SocketChannel;
+import com.jordanluyke.reversi.web.api.model.PusherChannel;
 import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import lombok.AllArgsConstructor;
@@ -19,9 +18,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -61,13 +59,19 @@ public class LobbyManagerImpl implements LobbyManager {
                     return Single.just(lobby);
                 })
                 .doOnSuccess(lobby -> {
-                    Observable.fromIterable(lobbies)
-                            .filter(l -> !lobby.getId().equals(l.getId()) && (l.getPlayerIdDark().equals(accountId) || (l.getPlayerIdLight().isPresent() && l.getPlayerIdLight().get().equals(accountId))))
-                            .flatMapSingle(l -> leave(l.getId(), accountId)
-                                    .flatMap(this::updateLobby))
+                    Observable.interval(1, TimeUnit.MINUTES)
+                            .flatMapSingle(t -> socketManager.getActiveUserIds()
+                                    .contains(lobby.getPlayerIdDark())
+                                    .flatMap(contains -> contains ? Single.just(lobby) : Single.error(new RuntimeException()))
+                                    .retryWhen(errors -> errors.zipWith(Flowable.range(1, 3), (n, i) -> i)
+                                            .flatMap(i -> Flowable.timer(10, TimeUnit.SECONDS)))
+                                    .onErrorResumeNext(e -> {
+                                        logger.info("Player {} timed out of lobby {}. Closing..", accountId, lobby.getId());
+                                        return leave(lobby.getId(), accountId);
+                                    }))
                             .subscribe(new ErrorHandlingObserver<>());
 
-                    socketManager.send(SocketChannel.Lobbies);
+                    socketManager.send(PusherChannel.Lobbies);
                 });
     }
 
@@ -75,17 +79,16 @@ public class LobbyManagerImpl implements LobbyManager {
     public Single<Lobby> updateLobby(String lobbyId, UpdateLobbyRequest updateLobbyRequest) {
 //        return lobbyDAO.updateLobby(lobbyId, updateLobbyRequest)
 //                .doOnSuccess(Void -> socketManager.send(SocketChannel.Lobby, lobbyId));
-        return Single.defer(() -> {
-            for(Lobby lobby : lobbies) {
-                if(lobby.getId().equals(lobbyId)) {
+        return Observable.fromIterable(lobbies)
+                .filter(lobby -> lobby.getId().equals(lobbyId))
+                .firstOrError()
+                .onErrorResumeNext(e -> Single.error(new WebException(HttpResponseStatus.NOT_FOUND)))
+                .flatMap(lobby -> {
                     updateLobbyRequest.getPlayerIdLight().ifPresent(id -> lobby.setPlayerIdLight(Optional.of(id)));
                     updateLobbyRequest.getPlayerDarkReady().ifPresent(lobby::setPlayerReadyDark);
                     updateLobbyRequest.getPlayerLightReady().ifPresent(lobby::setPlayerReadyLight);
                     return updateLobby(lobby);
-                }
-            }
-            return Single.error(new WebException(HttpResponseStatus.NOT_FOUND));
-        });
+                });
     }
 
     @Override
@@ -112,7 +115,7 @@ public class LobbyManagerImpl implements LobbyManager {
                                     .flatMap(this::updateLobby))
                             .subscribe(new ErrorHandlingObserver<>());
 
-                    socketManager.send(SocketChannel.Lobbies);
+                    socketManager.send(PusherChannel.Lobbies);
                 });
     }
 
@@ -132,7 +135,7 @@ public class LobbyManagerImpl implements LobbyManager {
                     }
                     return Single.error(new WebException(HttpResponseStatus.FORBIDDEN));
                 })
-                .doOnSuccess(lobby -> socketManager.send(SocketChannel.Lobbies));
+                .doOnSuccess(lobby -> socketManager.send(PusherChannel.Lobbies));
     }
 
     @Override
@@ -178,6 +181,6 @@ public class LobbyManagerImpl implements LobbyManager {
             lobby.setUpdatedAt(Instant.now());
             return Single.just(lobby);
         })
-                .doOnSuccess(Void -> socketManager.send(SocketChannel.Lobby, lobby.getId()));
+                .doOnSuccess(Void -> socketManager.send(PusherChannel.Lobby, lobby.getId()));
     }
 }

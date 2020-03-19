@@ -46,7 +46,6 @@ public class SessionManagerImpl implements SessionManager {
         if(!sessionId.isPresent())
             return Single.error(new FieldRequiredException("sessionId", HttpResponseStatus.UNAUTHORIZED));
         return sessionDAO.getSessionById(sessionId.get())
-
                 .flatMap(session -> {
                     if(session == null || (session.getExpiresAt().isPresent() && Instant.now().isAfter(session.getExpiresAt().get())))
                         return Single.error(new WebException(HttpResponseStatus.UNAUTHORIZED));
