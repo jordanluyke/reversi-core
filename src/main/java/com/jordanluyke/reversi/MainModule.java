@@ -15,7 +15,7 @@ public class MainModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(MainManager.class).to(MainManagerImpl.class);
+        bind(MainManager.class).to(MainManagerImpl.class).asEagerSingleton();
         install(new WebModule());
         install(new DbModule());
         install(new AccountModule());

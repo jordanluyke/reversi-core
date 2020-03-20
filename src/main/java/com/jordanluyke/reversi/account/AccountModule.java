@@ -9,6 +9,6 @@ public class AccountModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(AccountManager.class).to(AccountManagerImpl.class);
+        bind(AccountManager.class).to(AccountManagerImpl.class).asEagerSingleton();
     }
 }
