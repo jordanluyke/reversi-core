@@ -44,7 +44,7 @@ public class LobbyRoutes {
         @Inject protected SessionManager sessionManager;
         @Inject protected LobbyManager lobbyManager;
         @Override
-        public Single<PagingResponse> handle(Single<HttpServerRequest> o) {
+        public Single<PagingResponse<Lobby>> handle(Single<HttpServerRequest> o) {
             return o.flatMap(req -> sessionManager.validate(req)
                     .flatMap(session -> lobbyManager.getLobbies()
                             .filter(lobby -> !lobby.isPrivate())
