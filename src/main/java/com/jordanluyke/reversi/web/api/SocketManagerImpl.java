@@ -4,21 +4,22 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
+import com.jordanluyke.reversi.util.ErrorHandlingObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.PusherChannel;
+import com.jordanluyke.reversi.web.api.model.UserStatus;
 import com.jordanluyke.reversi.web.model.WebException;
 import com.pusher.rest.Pusher;
 import com.pusher.rest.data.PresenceUser;
-import com.pusher.rest.data.Result;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -28,6 +29,8 @@ public class SocketManagerImpl implements SocketManager {
 
     private Config config;
     private Pusher pusher;
+
+    private final Map<String, UserStatus> users = new HashMap<>();
 
     @Inject
     public SocketManagerImpl(Config config) {
@@ -46,38 +49,88 @@ public class SocketManagerImpl implements SocketManager {
     }
 
     @Override
-    public Single<JsonNode> authenticate(String socketId, String channel, PresenceUser user) {
-        try {
-            String res = pusher.authenticate(socketId, channel, user);
-            return Single.just(NodeUtil.mapper.readTree(res));
-        } catch(JsonProcessingException e) {
-            return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
-        }
+    public Single<JsonNode> authenticate(String socketId, String channel, String accountId) {
+        return Single.defer(() -> {
+            try {
+                String res = pusher.authenticate(socketId, channel, new PresenceUser(accountId));
+                return Single.just(NodeUtil.mapper.readTree(res));
+            } catch(JsonProcessingException e) {
+                return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
+            }
+        });
     }
 
     @Override
-    public Observable<String> getActiveUserIds() {
-        Result result = pusher.get("/channels/" + PusherChannel.Users.getChannelName() + "/users");
-        try {
-            JsonNode message = NodeUtil.mapper.readTree(result.getMessage());
-            List<String> ids = new ArrayList<>();
-            for(JsonNode user : message.get("users")) {
-                Optional<String> id = NodeUtil.get("id", user);
-                if(!id.isPresent()) {
-                    logger.error("id not present");
-                    return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
-                }
-                ids.add(id.get());
-            }
-            return Observable.fromIterable(ids);
-        } catch(JsonProcessingException e) {
-            return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
-        }
+    public UserStatus getUserStatus(String accountId) {
+        if(!users.containsKey(accountId))
+            users.put(accountId, new UserStatus());
+        return users.get(accountId);
     }
 
     private void setup() {
         pusher = new Pusher(config.getPusherAppId(), config.getPusherKey(), config.getPusherSecret());
         pusher.setCluster(config.getPusherCluster());
         pusher.setEncrypted(true);
+        startUserStatusUpdateInterval();
+    }
+
+    private void startUserStatusUpdateInterval() {
+        Observable.interval(5, TimeUnit.SECONDS)
+                .map(t -> pusher.get("/channels/" + PusherChannel.Users.getChannelName() + "/users"))
+                .flatMap(result -> {
+                    if(result.getHttpStatus() != 200) {
+                        logger.error("Pusher http error {}: {}", result.getHttpStatus(), result.getMessage());
+                        return Observable.error(new RuntimeException("Pusher http error"));
+                    }
+
+                    try {
+                        JsonNode message = NodeUtil.mapper.readTree(result.getMessage());
+                        List<String> ids = new ArrayList<>();
+                        for(JsonNode user : message.get("users")) {
+                            Optional<String> id = NodeUtil.get("id", user);
+                            if(!id.isPresent()) {
+                                logger.error("id not present");
+                                return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                            }
+                            ids.add(id.get());
+                        }
+                        return Observable.just(ids);
+                    } catch(JsonProcessingException e) {
+                        logger.error("Bad response: {}", e.getMessage());
+                        return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                    }
+                })
+                .doOnNext(ids -> {
+                    ids.stream()
+                            .filter(id -> !users.containsKey(id))
+                            .forEach(id -> users.put(id, new UserStatus()));
+
+                    List<String> toRemove = users.entrySet()
+                            .stream()
+                            .filter(entry -> {
+                                boolean inList = ids.contains(entry.getKey());
+                                if(inList && entry.getValue().getStatus() != UserStatus.Status.ACTIVE)
+                                    entry.getValue().reset();
+                                return !inList;
+                            })
+                            .filter(entry -> {
+                                if(entry.getValue().getDisconnectChecksRemaining() == 0) {
+                                    entry.getValue().setStatus(UserStatus.Status.OFFLINE);
+                                    entry.getValue().getOnChange().onNext(UserStatus.Status.OFFLINE);
+                                    entry.getValue().getOnChange().onComplete();
+                                    return true;
+                                } else {
+                                    if(entry.getValue().getStatus() != UserStatus.Status.IDLE)
+                                        entry.getValue().setStatus(UserStatus.Status.IDLE);
+                                    entry.getValue().setDisconnectChecksRemaining(entry.getValue().getDisconnectChecksRemaining() - 1);
+                                    return false;
+                                }
+                            })
+                            .map(Map.Entry::getKey)
+                            .collect(Collectors.toList());
+
+                    toRemove.forEach(users::remove);
+                })
+                .subscribe(new ErrorHandlingObserver<>());
     }
 }

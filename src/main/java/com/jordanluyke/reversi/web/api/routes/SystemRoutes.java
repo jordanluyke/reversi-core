@@ -62,7 +62,7 @@ public class SystemRoutes {
                         Optional<String> channelName = NodeUtil.get("channel_name", req.getBody().get());
                         if(!socketId.isPresent() || !channelName.isPresent())
                             return Single.error(new WebException (HttpResponseStatus.BAD_REQUEST));
-                        return socketManager.authenticate(socketId.get(), channelName.get(), new PresenceUser(account.getAccount().getId()));
+                        return socketManager.authenticate(socketId.get(), channelName.get(), account.getAccount().getId());
                     }));
         }
     }

@@ -8,9 +8,9 @@ import com.jordanluyke.reversi.match.MatchManager;
 import com.jordanluyke.reversi.util.*;
 import com.jordanluyke.reversi.web.api.SocketManager;
 import com.jordanluyke.reversi.web.api.model.PusherChannel;
+import com.jordanluyke.reversi.web.api.model.UserStatus;
 import com.jordanluyke.reversi.web.model.WebException;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -20,7 +20,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -41,7 +40,7 @@ public class LobbyManagerImpl implements LobbyManager {
     public Single<Lobby> getLobbyById(String lobbyId) {
 //        return lobbyDAO.getLobbyById(lobbyId);
         return Observable.fromIterable(lobbies)
-                .filter(lobby -> lobby.getId().equals(lobbyId))
+                .filter(lobby -> lobby.getId().equals(lobbyId) && !lobby.getClosedAt().isPresent())
                 .firstOrError()
                 .onErrorResumeNext(e -> Single.error(new WebException(HttpResponseStatus.NOT_FOUND, "Lobby not found")));
     }
@@ -61,19 +60,12 @@ public class LobbyManagerImpl implements LobbyManager {
                     return Single.just(lobby);
                 })
                 .doOnSuccess(lobby -> {
-                    Disposable timeout = Observable.interval(1, TimeUnit.MINUTES)
-                            .flatMapSingle(t -> socketManager.getActiveUserIds()
-                                    .contains(lobby.getPlayerIdDark())
-                                    .flatMap(contains -> contains ? Single.just(lobby) : Single.error(new RuntimeException()))
-                                    .retryWhen(errors -> errors.zipWith(Flowable.range(1, 3), (n, i) -> i)
-                                            .flatMap(i -> Flowable.timer(10, TimeUnit.SECONDS)))
-                                    .onErrorResumeNext(e -> {
-                                        logger.info("Player {} timed out of lobby {}. Closing..", accountId, lobby.getId());
-                                        return leave(lobby.getId(), accountId);
-                                    }))
-                            .subscribe();
+                    Disposable offline = socketManager.getUserStatus(accountId).getOnChange()
+                            .filter(status -> status == UserStatus.Status.OFFLINE)
+                            .flatMapSingle(status -> leave(lobby.getId(), accountId))
+                            .subscribe(o -> {}, e -> logger.error("Error: {}", e.getMessage()));
 
-                    disposables.put(lobby.getId(), Arrays.asList(timeout));
+                    disposables.put(lobby.getId(), Arrays.asList(offline));
 
                     socketManager.send(PusherChannel.Lobbies);
                 });
@@ -141,8 +133,7 @@ public class LobbyManagerImpl implements LobbyManager {
                 })
                 .doOnSuccess(lobby -> {
                     socketManager.send(PusherChannel.Lobbies);
-                    disposables.get(lobbyId).forEach(Disposable::dispose);
-                    disposables.remove(lobbyId);
+                    removeSubscriptions(lobbyId);
                 });
     }
 
@@ -163,7 +154,8 @@ public class LobbyManagerImpl implements LobbyManager {
                                     lobby.setMatchId(Optional.of(match.getId()));
                                     lobby.setStartingAt(Optional.of(Instant.now()));
                                     return Single.just(lobby);
-                                });
+                                })
+                                .doOnSuccess(Void -> removeSubscriptions(lobbyId));
                     }
                     return Single.just(lobby);
                 })
@@ -190,5 +182,10 @@ public class LobbyManagerImpl implements LobbyManager {
             return Single.just(lobby);
         })
                 .doOnSuccess(Void -> socketManager.send(PusherChannel.Lobby, lobby.getId()));
+    }
+
+    private void removeSubscriptions(String lobbyId) {
+        disposables.get(lobbyId).forEach(Disposable::dispose);
+        disposables.remove(lobbyId);
     }
 }
