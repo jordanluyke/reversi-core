@@ -12,7 +12,6 @@ import com.jordanluyke.reversi.web.api.SocketManager;
 import com.jordanluyke.reversi.web.api.model.HttpRouteHandler;
 import com.jordanluyke.reversi.web.model.HttpServerRequest;
 import com.jordanluyke.reversi.web.model.WebException;
-import com.pusher.rest.data.PresenceUser;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.rxjava3.core.Single;
 import org.apache.logging.log4j.LogManager;

@@ -14,12 +14,12 @@ public class UserStatus {
 
     private Status status = Status.ACTIVE;
     private Subject<Status> onChange = PublishSubject.create();
-    private int disconnectChecksRemaining = 3;
+    private int offlineChecksRemaining = 3;
 
     public void reset() {
         status = Status.ACTIVE;
         onChange.onNext(Status.ACTIVE);
-        disconnectChecksRemaining = 3;
+        offlineChecksRemaining = 3;
     }
 
     public enum Status {
@@ -33,7 +33,7 @@ public class UserStatus {
         return "UserStatus{" +
                 "status=" + status +
                 ", onChange=" + onChange +
-                ", disconnectChecksRemaining=" + disconnectChecksRemaining +
+                ", disconnectChecksRemaining=" + offlineChecksRemaining +
                 '}';
     }
 }

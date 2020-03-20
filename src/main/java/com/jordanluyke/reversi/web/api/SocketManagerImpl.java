@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Inject;
 import com.jordanluyke.reversi.Config;
 import com.jordanluyke.reversi.util.ErrorHandlingObserver;
+import com.jordanluyke.reversi.util.ErrorHandlingSingleObserver;
 import com.jordanluyke.reversi.util.NodeUtil;
 import com.jordanluyke.reversi.web.api.model.PusherChannel;
 import com.jordanluyke.reversi.web.api.model.UserStatus;
@@ -100,29 +101,28 @@ public class SocketManagerImpl implements SocketManager {
                         return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
                     }
                 })
-                .doOnNext(ids -> {
-                    ids.stream()
+                .doOnNext(channelIds -> {
+                    channelIds.stream()
                             .filter(id -> !users.containsKey(id))
                             .forEach(id -> users.put(id, new UserStatus()));
 
                     List<String> toRemove = users.entrySet()
                             .stream()
-                            .filter(entry -> {
-                                boolean inList = ids.contains(entry.getKey());
-                                if(inList && entry.getValue().getStatus() != UserStatus.Status.ACTIVE)
-                                    entry.getValue().reset();
-                                return !inList;
+                            .filter(user -> {
+                                boolean userInChannel = channelIds.contains(user.getKey());
+                                if(userInChannel && user.getValue().getStatus() != UserStatus.Status.ACTIVE)
+                                    user.getValue().reset();
+                                return !userInChannel;
                             })
-                            .filter(entry -> {
-                                if(entry.getValue().getDisconnectChecksRemaining() == 0) {
-                                    entry.getValue().setStatus(UserStatus.Status.OFFLINE);
-                                    entry.getValue().getOnChange().onNext(UserStatus.Status.OFFLINE);
-                                    entry.getValue().getOnChange().onComplete();
+                            .filter(user -> {
+                                if(user.getValue().getOfflineChecksRemaining() == 0) {
+                                    user.getValue().setStatus(UserStatus.Status.OFFLINE);
+                                    user.getValue().getOnChange().onNext(UserStatus.Status.OFFLINE);
+                                    user.getValue().getOnChange().onComplete();
                                     return true;
                                 } else {
-                                    if(entry.getValue().getStatus() != UserStatus.Status.IDLE)
-                                        entry.getValue().setStatus(UserStatus.Status.IDLE);
-                                    entry.getValue().setDisconnectChecksRemaining(entry.getValue().getDisconnectChecksRemaining() - 1);
+                                    user.getValue().setStatus(UserStatus.Status.IDLE);
+                                    user.getValue().setOfflineChecksRemaining(user.getValue().getOfflineChecksRemaining() - 1);
                                     return false;
                                 }
                             })
