@@ -9,6 +9,6 @@ public class SessionModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(SessionManager.class).to(SessionManagerImpl.class).asEagerSingleton();
+        bind(SessionManager.class).to(SessionManagerImpl.class);
     }
 }
