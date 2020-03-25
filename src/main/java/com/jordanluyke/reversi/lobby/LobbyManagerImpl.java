@@ -49,7 +49,7 @@ public class LobbyManagerImpl implements LobbyManager {
     public Single<Lobby> createLobby(String accountId) {
 //        return lobbyDAO.createLobby(createLobbyRequest);
         return accountManager.getAccountById(accountId)
-                .flatMap(account -> {
+                .map(account -> {
                     Lobby lobby = new Lobby();
                     lobby.setPlayerIdDark(accountId);
                     lobby.setName(Optional.of(account.getAccount().getName() + "'s game"));
@@ -57,7 +57,7 @@ public class LobbyManagerImpl implements LobbyManager {
                     lobby.setCreatedAt(Instant.now());
                     lobby.setUpdatedAt(lobby.getCreatedAt());
                     lobbies.add(lobby);
-                    return Single.just(lobby);
+                    return lobby;
                 })
                 .doOnSuccess(lobby -> {
                     Disposable offline = socketManager.getUserStatus(accountId).getOnChange()
@@ -150,10 +150,10 @@ public class LobbyManagerImpl implements LobbyManager {
                     if(lobby.getPlayerIdDark() != null && lobby.isPlayerReadyDark() &&
                             lobby.getPlayerIdLight().isPresent() && lobby.isPlayerReadyLight()) {
                         return matchManager.createMatch(lobby.getPlayerIdDark(), lobby.getPlayerIdLight().get())
-                                .flatMap(match -> {
+                                .map(match -> {
                                     lobby.setMatchId(Optional.of(match.getId()));
                                     lobby.setStartingAt(Optional.of(Instant.now()));
-                                    return Single.just(lobby);
+                                    return lobby;
                                 })
                                 .doOnSuccess(Void -> removeSubscriptions(lobbyId));
                     }
