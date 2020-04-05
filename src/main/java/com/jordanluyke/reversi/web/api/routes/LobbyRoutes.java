@@ -47,7 +47,7 @@ public class LobbyRoutes {
         public Single<PagingResponse<Lobby>> handle(Single<HttpServerRequest> o) {
             return o.flatMap(req -> sessionManager.validate(req)
                     .flatMap(session -> lobbyManager.getLobbies()
-                            .filter(lobby -> !lobby.isPrivate() && !lobby.getClosedAt().isPresent() && !lobby.getStartingAt().isPresent())
+                            .filter(lobby -> !lobby.isPrivate() && !lobby.getClosedAt().isPresent() && !lobby.getStartingAt().isPresent() && (!lobby.getPlayerIdLight().isPresent() || (lobby.getPlayerIdDark().equals(session.getOwnerId()) || (lobby.getPlayerIdLight().isPresent() && lobby.getPlayerIdLight().get().equals(session.getOwnerId())))))
                             .toList())
                     .map(lobbies -> new PagingResponse<>(lobbies, 0, lobbies.size())));
         }
