@@ -47,7 +47,7 @@ public class LobbyRoutes {
         public Single<PagingResponse<Lobby>> handle(Single<HttpServerRequest> o) {
             return o.flatMap(req -> sessionManager.validate(req)
                     .flatMap(session -> lobbyManager.getLobbies()
-                            .filter(lobby -> !lobby.isPrivate())
+                            .filter(lobby -> !lobby.isPrivate() && !lobby.getClosedAt().isPresent() && !lobby.getStartingAt().isPresent())
                             .toList())
                     .map(lobbies -> new PagingResponse<>(lobbies, 0, lobbies.size())));
         }

@@ -90,8 +90,7 @@ public class LobbyManagerImpl implements LobbyManager {
     @Override
     public Observable<Lobby> getLobbies() {
 //        return lobbyDAO.getLobbies();
-        return Observable.fromIterable(lobbies)
-                .filter(lobby -> !lobby.getClosedAt().isPresent());
+        return Observable.fromIterable(lobbies);
     }
 
     @Override
