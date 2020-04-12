@@ -47,7 +47,9 @@ public class Match {
                 return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, "Two players required"));
             try {
                 board.placePiece(side, position);
-                if(board.isComplete()) {
+                if(board.canPlacePiece(side.getOpposite())) {
+                    turn = turn.getOpposite();
+                } else if(!board.canPlacePiece(side)) {
                     completedAt = Optional.of(Instant.now());
                     int darkAmount = board.getAmount(Side.DARK);
                     int lightAmount = board.getAmount(Side.LIGHT);
@@ -55,8 +57,6 @@ public class Match {
                         winnerId = playerLightId;
                     else if(darkAmount > lightAmount)
                         winnerId = playerDarkId;
-                } else if(board.canPlacePiece(side.getOpposite())) {
-                    turn = turn.getOpposite();
                 }
                 return Single.just(this);
             } catch(IllegalMoveException e) {

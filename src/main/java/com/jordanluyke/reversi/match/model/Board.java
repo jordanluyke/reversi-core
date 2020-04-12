@@ -61,10 +61,6 @@ public class Board {
 
     }
 
-    public boolean isComplete() {
-        return Arrays.stream(squares).noneMatch(Objects::isNull);
-    }
-
     private List<Position> getValidPositions(Side side) {
         return IntStream.range(0, squares.length)
                 .filter(index -> squares[index] == null)

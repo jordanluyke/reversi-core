@@ -22,5 +22,12 @@ public class BoardTest {
 
         board.setSquares(new Side[]{null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,Side.LIGHT,Side.DARK,null,null,null,null,null,null,Side.DARK,Side.LIGHT,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null});
         Assertions.assertTrue(board.canPlacePiece(Side.LIGHT));
+
+        board.setSquares(new Side[]{Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,null,Side.LIGHT,Side.LIGHT,Side.DARK,Side.DARK,Side.DARK,null,null,null,Side.LIGHT,null,Side.LIGHT,null,null,null,null,null,null,Side.LIGHT,null,null,null,null,null,null});
+        Assertions.assertTrue(board.canPlacePiece(Side.LIGHT));
+
+        board.setSquares(new Side[]{Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,null,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,Side.LIGHT,null,null,Side.LIGHT,null,Side.LIGHT,null,null,null,null,null,null,Side.LIGHT,null,null,null,null,null,null});
+        Assertions.assertFalse(board.canPlacePiece(Side.LIGHT));
+        Assertions.assertFalse(board.canPlacePiece(Side.DARK));
     }
 }
