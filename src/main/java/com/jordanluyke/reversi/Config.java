@@ -1,6 +1,5 @@
 package com.jordanluyke.reversi;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import io.netty.handler.ssl.SslContext;
@@ -27,16 +26,21 @@ import java.util.Properties;
 public class Config {
     private static final Logger logger = LogManager.getLogger(Config.class);
 
-    @JsonIgnore private int port = 8080;
-    @JsonIgnore private Optional<SslContext> sslContext = Optional.empty();
-    @JsonIgnore private String jdbcUrl;
-    @JsonIgnore private String jdbcUser;
-    @JsonIgnore private String jdbcPassword;
-    @JsonIgnore private Injector injector;
-    @JsonIgnore private String pusherAppId;
+    private int port = 8080;
+    private Optional<SslContext> sslContext = Optional.empty();
+    // config.properties
+    private String jdbcUrl;
+    private String jdbcUser;
+    private String jdbcPassword;
+    private Injector injector;
+    private String pusherAppId;
     private String pusherKey;
-    @JsonIgnore private String pusherSecret;
+    private String pusherSecret;
     private String pusherCluster;
+    // build.properties
+    private String branch;
+    private long builtAt;
+    private String commit;
 
     public Config() {
         load();
@@ -44,24 +48,24 @@ public class Config {
     }
 
     private void load() {
-        Properties p = new Properties();
+        Properties cp = new Properties();
         try {
-            p.load(new FileInputStream("config.properties"));
+            cp.load(new FileInputStream("config.properties"));
         } catch(IOException e1) {
             try {
-                p.load(new FileInputStream("src/main/resources/config.properties"));
+                cp.load(new FileInputStream("src/main/resources/config.properties"));
             } catch(IOException e2) {
                 throw new RuntimeException("Unable to load config.properties file");
             }
         }
 
-        jdbcUrl = p.getProperty("jdbc.url");
-        jdbcUser = p.getProperty("jdbc.user");
-        jdbcPassword = p.getProperty("jdbc.password");
-        pusherAppId = p.getProperty("pusher.appId");
-        pusherKey = p.getProperty("pusher.key");
-        pusherSecret = p.getProperty("pusher.secret");
-        pusherCluster = p.getProperty("pusher.cluster");
+        jdbcUrl = cp.getProperty("jdbc.url");
+        jdbcUser = cp.getProperty("jdbc.user");
+        jdbcPassword = cp.getProperty("jdbc.password");
+        pusherAppId = cp.getProperty("pusher.appId");
+        pusherKey = cp.getProperty("pusher.key");
+        pusherSecret = cp.getProperty("pusher.secret");
+        pusherCluster = cp.getProperty("pusher.cluster");
 
         try {
             FileInputStream cert = new FileInputStream("cert.pem");
@@ -72,5 +76,20 @@ public class Config {
             logger.error(e.getMessage());
         } catch(FileNotFoundException e) {
         }
+
+        Properties bp = new Properties();
+        try {
+            bp.load(new FileInputStream("build.properties"));
+        } catch(IOException e1) {
+            try {
+                bp.load(new FileInputStream("target/build.properties"));
+            } catch(IOException e2) {
+                throw new RuntimeException("Unable to load build.properties file");
+            }
+        }
+
+        branch = bp.getProperty("branch");
+        builtAt = Long.parseLong(bp.getProperty("builtAt"));
+        commit = bp.getProperty("commit");
     }
 }

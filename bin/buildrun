@@ -8,8 +8,14 @@ fi
 
 JAR=target/reversi-1.0-SNAPSHOT-jar-with-dependencies.jar
 
+P1="branch=$(git rev-parse --abbrev-ref HEAD)"
+P2="builtAt=$(date +%s000)"
+P3="commit=$(git rev-parse HEAD)"
+printf '%s\n%s\n%s' $P1 $P2 $P3 > target/build.properties
+
 if [ "$1" == "-s" ] || [ "$1" == "--sync" ]; then
     cp ${JAR} ~/Documents/sync/reversi
+    cp target/build.properties ~/Documents/sync/reversi/build.properties
     echo "Copied to sync/reversi"
 fi
 

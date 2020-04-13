@@ -26,12 +26,14 @@ public class SystemRoutes {
     private static final Logger logger = LogManager.getLogger(SystemRoutes.class);
 
     public static class GetStatus implements HttpRouteHandler {
+        @Inject protected Config config;
         @Override
         public Single<ObjectNode> handle(Single<HttpServerRequest> o) {
             return o.map(req -> {
                 ObjectNode body = new ObjectMapper().createObjectNode();
-                body.put("time", System.currentTimeMillis());
-                body.put("status", "OK");
+                body.put("branch", config.getBranch());
+                body.put("builtAt", config.getBuiltAt());
+                body.put("commit", config.getCommit());
                 return body;
             });
         }
@@ -41,8 +43,12 @@ public class SystemRoutes {
         @Inject protected Config config;
         @Override
         public Single<ObjectNode> handle(Single<HttpServerRequest> o) {
-            return o.flatMap(req -> NodeUtil.parseObjectIntoNode(config))
-                    .map(JsonNode::deepCopy);
+            return o.map(req -> {
+                ObjectNode body = new ObjectMapper().createObjectNode();
+                body.put("pusherKey", config.getPusherKey());
+                body.put("pusherCluster", config.getPusherCluster());
+                return body;
+            });
         }
     }
 
