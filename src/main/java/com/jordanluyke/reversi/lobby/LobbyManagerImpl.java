@@ -34,7 +34,7 @@ public class LobbyManagerImpl implements LobbyManager {
     private MatchManager matchManager;
 
     private final List<Lobby> lobbies = new ArrayList<>();
-    private final Map<String, List<Disposable>> disposables = new HashMap<>();
+    private final Map<String, List<Disposable>> lobbySubscriptions = new HashMap<>();
 
     @Override
     public Single<Lobby> getLobbyById(String lobbyId) {
@@ -60,12 +60,14 @@ public class LobbyManagerImpl implements LobbyManager {
                     return lobby;
                 })
                 .doOnSuccess(lobby -> {
-                    Disposable offline = socketManager.getUserStatus(accountId).getOnChange()
-                            .filter(status -> status == UserStatus.Status.OFFLINE)
-                            .flatMapSingle(status -> leave(lobby.getId(), accountId))
-                            .subscribe(o -> {}, e -> logger.error("Error: {}", e.getMessage()));
+                    socketManager.getUserStatus(accountId).ifPresent(userStatus -> {
+                        Disposable offline = userStatus.getOnChange()
+                                .filter(status -> status == UserStatus.Status.OFFLINE)
+                                .flatMap(status -> leave(lobby.getId(), accountId).toObservable())
+                                .subscribe(o -> {}, e -> logger.error("Error: {}", e.getMessage()));
 
-                    disposables.put(lobby.getId(), Arrays.asList(offline));
+                        lobbySubscriptions.put(lobby.getId(), Arrays.asList(offline));
+                    });
 
                     socketManager.send(PusherChannel.Lobbies);
                 });
@@ -184,7 +186,10 @@ public class LobbyManagerImpl implements LobbyManager {
     }
 
     private void removeSubscriptions(String lobbyId) {
-        disposables.get(lobbyId).forEach(Disposable::dispose);
-        disposables.remove(lobbyId);
+
+        List<Disposable> disposables = lobbySubscriptions.get(lobbyId);
+        if(disposables != null)
+            disposables.forEach(Disposable::dispose);
+        lobbySubscriptions.remove(lobbyId);
     }
 }

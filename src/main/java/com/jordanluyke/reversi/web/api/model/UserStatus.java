@@ -24,7 +24,7 @@ public class UserStatus {
 
     public enum Status {
         ACTIVE,
-        IDLE,
+        DISCONNECTED,
         OFFLINE
     }
 

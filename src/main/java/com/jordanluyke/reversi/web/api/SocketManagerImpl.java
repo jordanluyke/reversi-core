@@ -57,14 +57,13 @@ public class SocketManagerImpl implements SocketManager {
             } catch(JsonProcessingException e) {
                 return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
             }
-        });
+        })
+                .doOnSuccess(Void -> users.put(accountId, new UserStatus()));
     }
 
     @Override
-    public UserStatus getUserStatus(String accountId) {
-        if(!users.containsKey(accountId))
-            users.put(accountId, new UserStatus());
-        return users.get(accountId);
+    public Optional<UserStatus> getUserStatus(String accountId) {
+        return Optional.ofNullable(users.get(accountId));
     }
 
     private void setup() {
@@ -74,13 +73,12 @@ public class SocketManagerImpl implements SocketManager {
         startUserStatusUpdateInterval();
     }
 
-    private void startUserStatusUpdateInterval() {
-        Observable.interval(5, TimeUnit.SECONDS)
-                .map(t -> pusher.get("/channels/" + PusherChannel.Users.getChannelName() + "/users"))
+    private Single<List<String>> getPresenceChannelUserIds(String channelName) {
+        return Single.just(pusher.get("/channels/" + channelName + "/users"))
                 .flatMap(result -> {
                     if(result.getHttpStatus() != 200) {
                         logger.error("Pusher http error {}: {}", result.getHttpStatus(), result.getMessage());
-                        return Observable.error(new RuntimeException("Pusher http error"));
+                        return Single.error(new RuntimeException("Pusher http error"));
                     }
 
                     try {
@@ -90,16 +88,22 @@ public class SocketManagerImpl implements SocketManager {
                             Optional<String> id = NodeUtil.get("id", user);
                             if(!id.isPresent()) {
                                 logger.error("id not present");
-                                return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                                return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
                             }
                             ids.add(id.get());
                         }
-                        return Observable.just(ids);
+                        return Single.just(ids);
                     } catch(JsonProcessingException e) {
                         logger.error("Bad response: {}", e.getMessage());
-                        return Observable.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
+                        return Single.error(new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR));
                     }
-                })
+                });
+
+    }
+
+    private void startUserStatusUpdateInterval() {
+        Observable.interval(5, TimeUnit.SECONDS)
+                .flatMapSingle(Void -> getPresenceChannelUserIds(PusherChannel.Users.getChannelName()))
                 .doOnNext(channelIds -> {
                     channelIds.stream()
                             .filter(id -> !users.containsKey(id))
@@ -109,19 +113,22 @@ public class SocketManagerImpl implements SocketManager {
                             .stream()
                             .filter(user -> {
                                 boolean userInChannel = channelIds.contains(user.getKey());
-                                if(userInChannel && user.getValue().getStatus() != UserStatus.Status.ACTIVE)
-                                    user.getValue().reset();
-                                return !userInChannel;
-                            })
-                            .filter(user -> {
-                                if(user.getValue().getOfflineChecksRemaining() == 0) {
-                                    user.getValue().setStatus(UserStatus.Status.OFFLINE);
-                                    user.getValue().getOnChange().onNext(UserStatus.Status.OFFLINE);
-                                    user.getValue().getOnChange().onComplete();
+                                UserStatus userStatus = user.getValue();
+                                if(userInChannel) {
+                                    if(userStatus.getStatus() != UserStatus.Status.ACTIVE)
+                                        user.getValue().reset();
+                                    return false;
+                                }
+                                if(userStatus.getOfflineChecksRemaining() == 0) {
+                                    userStatus.getOnChange().onNext(UserStatus.Status.OFFLINE);
+                                    userStatus.getOnChange().onComplete();
                                     return true;
                                 } else {
-                                    user.getValue().setStatus(UserStatus.Status.IDLE);
-                                    user.getValue().setOfflineChecksRemaining(user.getValue().getOfflineChecksRemaining() - 1);
+                                    if(userStatus.getStatus() != UserStatus.Status.DISCONNECTED) {
+                                        userStatus.setStatus(UserStatus.Status.DISCONNECTED);
+                                        userStatus.getOnChange().onNext(UserStatus.Status.DISCONNECTED);
+                                    }
+                                    userStatus.setOfflineChecksRemaining(userStatus.getOfflineChecksRemaining() - 1);
                                     return false;
                                 }
                             })
