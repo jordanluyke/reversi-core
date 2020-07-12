@@ -31,7 +31,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -49,8 +48,7 @@ public class NettyHttpClient {
     }
 
     public static Single<ClientResponse> get(String url, Map<String, Object> params, Map<String, String> headers) {
-        String _url = params.size() > 0 ? url + "?" + toQuerystring(params) : url;
-        return request(_url, HttpMethod.GET, new byte[0], headers);
+        return request(url, HttpMethod.GET, params, Collections.emptyMap(), headers);
     }
 
     public static Single<ClientResponse> post(String url) {
@@ -62,7 +60,7 @@ public class NettyHttpClient {
     }
 
     public static Single<ClientResponse> post(String url, Map<String, Object> body, Map<String, String> headers) {
-        return request(url, HttpMethod.POST, body, headers);
+        return request(url, HttpMethod.POST, Collections.emptyMap(), body, headers);
     }
 
     public static Single<ClientResponse> put(String url) {
@@ -74,7 +72,7 @@ public class NettyHttpClient {
     }
 
     public static Single<ClientResponse> put(String url, Map<String, Object> body, Map<String, String> headers) {
-        return request(url, HttpMethod.PUT, body, headers);
+        return request(url, HttpMethod.PUT, Collections.emptyMap(), body, headers);
     }
 
     public static Single<ClientResponse> delete(String url) {
@@ -86,18 +84,15 @@ public class NettyHttpClient {
     }
 
     public static Single<ClientResponse> delete(String url, Map<String, Object> body, Map<String, String> headers) {
-        return request(url, HttpMethod.DELETE, body, headers);
+        return request(url, HttpMethod.DELETE, Collections.emptyMap(), body, headers);
     }
 
-    public static Single<ClientResponse> request(String url, HttpMethod method, Map<String, Object> body, Map<String, String> headers) {
-        return request(url, method, bodyToBytes(body, headers), headers);
-    }
-
-    public static Single<ClientResponse> request(String url, HttpMethod method, byte[] body, Map<String, String> headers) {
+    public static Single<ClientResponse> request(String url, HttpMethod method, Map<String, Object> params, Map<String, Object> body, Map<String, String> headers) {
         return Single.defer(() -> {
             URI uri;
             try {
-                URI u = new URI(url);
+                String _url = params.size() > 0 ? url + "?" + toQuerystring(params) : url;
+                URI u = new URI(_url);
                 uri = new URI(u.getScheme(),
                         null,
                         u.getHost(),
@@ -113,7 +108,7 @@ public class NettyHttpClient {
             try {
                 if(uri.getPort() == HttpScheme.HTTPS.port())
                     sslCtx = SslContextBuilder.forClient()
-                        .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+                            .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
                 else
                     sslCtx = null;
             } catch (SSLException e) {
@@ -130,7 +125,7 @@ public class NettyHttpClient {
                         protected void initChannel(SocketChannel channel) {
                             ChannelPipeline pipeline = channel.pipeline();
                             if(sslCtx != null)
-                                pipeline.addLast(sslCtx.newHandler(channel.alloc()));
+                                pipeline.addLast(sslCtx.newHandler(channel.alloc(), uri.getHost(), uri.getPort()));
                             pipeline.addLast(new HttpClientCodec());
                             pipeline.addLast(new HttpContentDecompressor());
                             pipeline.addLast(new SimpleChannelInboundHandler<HttpObject>() {
@@ -192,14 +187,15 @@ public class NettyHttpClient {
 
             return getChannel(bootstrap.connect(uri.getHost(), uri.getPort()))
                     .flatMap(channel -> {
-                        ByteBuf content = Unpooled.copiedBuffer(body);
+                        byte[] bodyBytes = bodyToBytes(body, headers);
+                        ByteBuf content = Unpooled.copiedBuffer(bodyBytes);
                         DefaultFullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, uri.toString(), content);
                         request.headers().set(HttpHeaderNames.HOST, uri.getHost());
                         request.headers().set(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.GZIP);
                         request.headers().set(HttpHeaderNames.CONTENT_TYPE, headers.getOrDefault(HttpHeaderNames.CONTENT_TYPE.toString(), HttpHeaderValues.APPLICATION_JSON.toString()));
                         request.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
                         headers.forEach((key, value) -> request.headers().set(key, value));
-                        channel.config().setConnectTimeoutMillis((int) TimeUnit.SECONDS.toMillis(2));
+//                        channel.config().setConnectTimeoutMillis((int) TimeUnit.SECONDS.toMillis(2));
                         return getChannel(channel.writeAndFlush(request));
                     })
                     .flatMap(channel -> getChannel(channel.closeFuture()))
