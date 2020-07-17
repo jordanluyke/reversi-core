@@ -24,27 +24,27 @@
     ```
     brew install mysql@5.7
     brew link mysql@5.7 --force
-    brew services start mysql@5.7
-    mysql -u root
     ```
 
-    ```mysql
-    # SET PASSWORD = PASSWORD('abcd1234');
-    ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
-    SET GLOBAL time_zone = '+0:00';
-    CREATE DATABASE reversi DEFAULT CHARSET=utf8mb4 DEFAULT COLLATE utf8mb4_general_ci;
+    Edit /etc/mysql/my.cnf and add:
+    ```
+    [mysqld]
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_general_ci
+    wait_timeout=999999999
+    interactive_timeout=999999999
+    ```
+
+    ```
+    brew services start mysql@5.7
+    mysql -u root
+    mysql> ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
+    mysql> SET GLOBAL time_zone = '+0:00';
+    mysql> CREATE DATABASE reversi;
     ```
    
     Import/Export
-    
     ```
     mysqldump -uroot -p reversi > reversi.sql
     mysql -uroot -p reversi < reversi.sql
-    ```
-    
-    1. Edit /etc/mysql/my.cnf and add:
-    
-    ```
-    wait_timeout=999999999
-    interactive_timeout=999999999
     ```
