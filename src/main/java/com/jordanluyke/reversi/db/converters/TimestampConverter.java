@@ -1,33 +1,30 @@
 package com.jordanluyke.reversi.db.converters;
 
-import org.jooq.Converter;
+import org.jooq.impl.AbstractConverter;
 
-import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
-public class TimestampConverter implements Converter<Timestamp, Instant> {
+public class TimestampConverter extends AbstractConverter<LocalDateTime, Instant> {
     public static final long serialVersionUID = 102L;
 
-    @Override
-    public Instant from(Timestamp timestamp) {
-        return timestamp == null ? null : timestamp.toInstant();
+    public TimestampConverter() {
+        super(LocalDateTime.class, Instant.class);
     }
 
     @Override
-    public Timestamp to(Instant instant) {
-        return instant == null ? null : Timestamp.from(instant);
+    public Instant from(LocalDateTime localDateTime) {
+        return localDateTime == null ? null : localDateTime.toInstant(ZoneOffset.UTC);
     }
 
     @Override
-    public Class<Timestamp> fromType() {
-        return Timestamp.class;
-    }
-
-    @Override
-    public Class<Instant> toType() {
-        return Instant.class;
+    public LocalDateTime to(Instant instant) {
+        return instant == null ? null : instant.atZone(ZoneId.of("UTC")).toLocalDateTime();
     }
 }
