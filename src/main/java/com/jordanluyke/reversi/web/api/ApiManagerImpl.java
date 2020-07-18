@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -106,9 +107,10 @@ public class ApiManagerImpl implements ApiManager {
                 .doOnSuccess(res -> logger.info("HttpResponse: {} {} {} {}", request.getCtx().channel().remoteAddress(), request.getMethod(), request.getPath(), res.getBody()))
                 .onErrorResumeNext(err -> {
                     WebException e = (err instanceof WebException) ? (WebException) err : new WebException(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-                    logger.error("HttpResponse: {} {} {} {}", request.getCtx().channel().remoteAddress(), request.getMethod(), request.getPath(), e.toHttpServerResponse().getBody());
                     if(!(err instanceof WebException))
-                        err.printStackTrace();
+                        Stream.of(err.getStackTrace())
+                                .forEach(trace -> logger.error("Error: {}", trace));
+                    logger.error("HttpResponse: {} {} {} {}", request.getCtx().channel().remoteAddress(), request.getMethod(), request.getPath(), e.toHttpServerResponse().getBody());
                     return Single.just(e.toHttpServerResponse());
                 });
     }
