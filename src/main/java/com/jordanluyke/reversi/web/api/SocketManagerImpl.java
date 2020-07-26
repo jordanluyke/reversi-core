@@ -102,7 +102,7 @@ public class SocketManagerImpl implements SocketManager {
     }
 
     private void startUserStatusUpdateInterval() {
-        Observable.interval(5, TimeUnit.SECONDS)
+        Observable.interval(1, TimeUnit.SECONDS)
                 .flatMapSingle(Void -> getPresenceChannelUserIds(PusherChannel.Users.getChannelName()))
                 .doOnNext(channelIds -> {
                     channelIds.stream()

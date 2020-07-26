@@ -20,6 +20,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
@@ -47,8 +48,14 @@ public class LobbyManagerImpl implements LobbyManager {
 
     @Override
     public Single<Lobby> createLobby(String accountId) {
-//        return lobbyDAO.createLobby(createLobbyRequest);
-        return accountManager.getAccountById(accountId)
+        return Single.just(socketManager.getUserStatus(accountId))
+                .flatMap(userStatus -> {
+                    if(userStatus.isPresent())
+                        return Single.just(userStatus);
+                    return Single.timer(1, TimeUnit.SECONDS)
+                            .map(Void -> userStatus);
+                })
+                .flatMap(Void -> accountManager.getAccountById(accountId))
                 .map(account -> {
                     Lobby lobby = new Lobby();
                     lobby.setPlayerIdDark(accountId);
@@ -60,14 +67,17 @@ public class LobbyManagerImpl implements LobbyManager {
                     return lobby;
                 })
                 .doOnSuccess(lobby -> {
-                    socketManager.getUserStatus(accountId).ifPresent(userStatus -> {
-                        Disposable offline = userStatus.getOnChange()
+                    Optional<UserStatus> userStatus = socketManager.getUserStatus(accountId);
+                    if(!userStatus.isPresent())
+                        logger.warn("User status not present: {}", accountId);
+                    else {
+                        Disposable offline = userStatus.get().getOnChange()
                                 .filter(status -> status == UserStatus.Status.OFFLINE)
                                 .flatMap(status -> leave(lobby.getId(), accountId).toObservable())
                                 .subscribe(o -> {}, e -> logger.error("Error: {}", e.getMessage()));
 
                         lobbySubscriptions.put(lobby.getId(), Arrays.asList(offline));
-                    });
+                    }
 
                     socketManager.send(PusherChannel.Lobbies);
                 });

@@ -1,6 +1,7 @@
 package com.jordanluyke.reversi.match.model;
 
 import lombok.Getter;
+import lombok.ToString;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -10,6 +11,7 @@ import java.util.List;
 /**
  * @author Jordan Luyke <jordanluyke@gmail.com>
  */
+@ToString
 public class Position {
     private static final Logger logger = LogManager.getLogger(Position.class);
 
@@ -66,13 +68,5 @@ public class Position {
         if((index % 8 == 0 && direction.getHorizontalShift() == -1) || (index % 8 == 7 && direction.getHorizontalShift() == 1))
             return -1;
         return index + (8 * direction.getVerticalShift()) + direction.getHorizontalShift();
-    }
-
-    @Override
-    public String toString() {
-        return "Position{" +
-                "index=" + index + ", " +
-                "coordinates=" + getCoordinates() +
-                '}';
     }
 }
